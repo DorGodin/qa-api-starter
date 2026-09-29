@@ -67,16 +67,31 @@ Do not add per-assertion filing calls back into test files.
 
 `.claude/` carries the workflow, not just the conventions:
 
-| | |
+| Agents | |
 |---|---|
-| `test-reviewer` agent | reviews a diff against this file and asks whether each test would fail if the product broke |
-| `ticket-verifier` agent | verifies one ticket: distills the criteria, maps them to coverage, writes and runs the missing tests, drafts a report |
-| `/qa-sweep` | sweeps the tickets waiting for QA and reports where coverage is missing |
-| `/new-suite` | scaffolds an obj class, fixture and suite for one resource |
-| `/explore-api` | reads the product source and reports exactly what the tests must send |
-| `/file-bugs` | dry run first, then file, after an explicit yes |
-| `verify-story` skill | derives criteria, verifies each one with evidence, assigns PASS / FAIL / UNCERTAIN |
-| `write-bug` skill | how a bug report is written so product, support and engineering can all act on it |
+| `test-reviewer` | reviews a diff and asks whether each test would fail if the product broke |
+| `ticket-verifier` | maps a ticket's criteria to coverage, writes and runs what is missing |
+| `flake-hunter` | reproduces an intermittent failure and separates a flaky test from a flaky product |
+| `coverage-mapper` | classifies the API surface as proven, touched or untested and ranks gaps by risk |
+| `env-doctor` | finds why a suite will not run, outside in, and stops at the first real failure |
+
+| Skills | |
+|---|---|
+| `verify-story` | evidence per criterion, and a verdict of PASS, FAIL or UNCERTAIN |
+| `write-bug` | how a report is written so product, support and engineering can all act on it |
+| `test-data-strategy` | resolve-or-seed, idempotency, isolation scope, the production guard |
+| `flaky-test-policy` | what is allowed with a flaky test, and what is banned |
+| `release-readiness` | which suites block a release, and why a skip is not a pass |
+
+| Commands | |
+|---|---|
+| `/new-suite` | scaffolds a resource, its fixture and its suite |
+| `/explore-api` | reads the product source and reports what the tests must send |
+| `/qa-sweep` | sweeps the tickets waiting for QA |
+| `/file-bugs` | dry run, then file, after an explicit yes |
+| `/flake-check` | investigates an intermittent test |
+| `/coverage-gap` | maps coverage and ranks what is missing |
+| `/env-doctor` | diagnoses a suite that will not start |
 
 Every agent is read-only against the tracker. A comment is drafted and shown; a human
 sends it.

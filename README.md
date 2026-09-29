@@ -59,32 +59,21 @@ change should not wait for a browser to start.
 
 ## The AI workflow
 
-### Two agents
+**Five agents.** `test-reviewer` asks whether a test would fail if the product broke.
+`ticket-verifier` maps a ticket's criteria to coverage and writes what is missing.
+`flake-hunter` reproduces an intermittent failure and tells a flaky test from a flaky
+product. `coverage-mapper` classifies every endpoint as proven, touched or untested and
+ranks the gaps by risk. `env-doctor` finds why a suite will not start.
 
-**`test-reviewer`** — reviews your diff before a merge request and asks the question that
-matters: *if the product broke, would this test fail?* It mentally flips a boolean or
-returns a wrong total. A test that survives is decoration, and it says so.
+**Five skills.** `verify-story` (evidence per criterion, and UNCERTAIN is a real verdict),
+`write-bug` (a report product and support can act on), `test-data-strategy` (resolve-or-seed
+and the production guard), `flaky-test-policy` (what is allowed, and why `xfail` is banned),
+`release-readiness` (what blocks a release, and why a skip is not a pass).
 
-**`ticket-verifier`** — takes one ticket, lists the acceptance criteria, checks which are
-already covered, writes the missing tests, runs them, and drafts a report.
-
-### Two skills
-
-**`verify-story`** — how a ticket gets verified: evidence per criterion, and a verdict of
-PASS, FAIL or **UNCERTAIN**, which is a real answer and never rounds up to PASS.
-
-**`write-bug`** — how a bug is written so product, support and engineering can all act on
-it. The title names the defect, plain language first, evidence in a table.
-
-### Four commands
-
-`/new-suite` scaffolds a resource and its suite · `/explore-api` reads the product source
-and reports what the tests must send · `/qa-sweep` checks tickets waiting for QA ·
-`/file-bugs` files one ticket per failed test, after a dry run and a yes.
+**Seven commands.** `/new-suite` · `/explore-api` · `/qa-sweep` · `/file-bugs` ·
+`/flake-check` · `/coverage-gap` · `/env-doctor`
 
 Agents never write to the tracker. They draft; a human sends.
-
----
 
 ## Filing bugs from a run
 
@@ -192,19 +181,19 @@ make test        # טרמינל 2 — הרצת הבדיקות
 
 ## שכבת ה-AI
 
-**שני סוכנים.** `test-reviewer` עובר על השינויים שלך לפני MR ושואל את השאלה שחשובה באמת:
-אם המוצר היה נשבר, הטסט הזה היה נופל? הוא הופך בוליאני או מחזיר סכום שגוי בראש, ואם הטסט
-שורד — הוא אומר לך שהטסט הוא קישוט. `ticket-verifier` לוקח כרטיס אחד, מפרק אותו לקריטריונים,
-בודק מה כבר מכוסה, כותב את מה שחסר, מריץ, ומנסח דוח.
+**חמישה סוכנים.** `test-reviewer` שואל אם הטסט היה נופל לו המוצר נשבר. `ticket-verifier`
+ממפה קריטריונים של כרטיס מול הכיסוי הקיים וכותב את מה שחסר. `flake-hunter` משחזר כשל
+מתחלף ומבדיל בין טסט לא יציב למוצר לא יציב. `coverage-mapper` מסווג כל אנדפוינט כמוכח,
+נגוע או לא נבדק — וטסט שבודק רק קוד סטטוס הוא נגוע, לא מכוסה. `env-doctor` מאתר למה
+הסוויטה בכלל לא עולה.
 
-**שני סקילים.** `verify-story` קובע איך מאמתים כרטיס: ראיה לכל קריטריון, ופסק דין של
-PASS, FAIL או **UNCERTAIN** — שהוא תשובה לגיטימית ולעולם לא מתעגל ל-PASS. `write-bug` קובע
-איך כותבים באג שגם מוצר, גם תמיכה וגם פיתוח יכולים לעבוד איתו: הכותרת נוקבת בתקלה, שפה
-פשוטה קודם, ראיות בטבלה.
+**חמישה סקילים.** `verify-story` (ראיה לכל קריטריון, ו-UNCERTAIN היא תשובה לגיטימית),
+`write-bug` (דוח שמוצר ותמיכה יכולים לעבוד איתו), `test-data-strategy` (resolve-or-seed
+והגנת prod), `flaky-test-policy` (מה מותר עם טסט מתחלף ולמה `xfail` אסור),
+`release-readiness` (מה חוסם שחרור, ולמה טסט מדולג הוא לא טסט שעבר).
 
-**ארבע פקודות.** `/new-suite` בונה משאב וסוויטה, `/explore-api` קורא את קוד המוצר ומדווח מה
-בדיוק צריך לשלוח, `/qa-sweep` סורק כרטיסים שממתינים ל-QA, ו-`/file-bugs` פותח כרטיס לכל
-טסט שנפל — אחרי הרצה יבשה ואישור.
+**שבע פקודות.** `/new-suite` · `/explore-api` · `/qa-sweep` · `/file-bugs` ·
+`/flake-check` · `/coverage-gap` · `/env-doctor`
 
 **הסוכנים לא כותבים לכרטיס.** הם מנסחים, ואדם שולח.
 

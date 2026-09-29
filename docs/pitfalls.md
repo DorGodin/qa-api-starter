@@ -48,3 +48,13 @@ blind to half the feature.
 **Rule:** when a feature can emit more than one variant, enumerate the variants and cover
 each one. Then break each on purpose and confirm the suite goes red. A suite that stays
 green under a deliberate defect is not covering that code.
+
+## 2026-09-29 — "Fails every time" meant the server was not running
+
+`flake_check.sh` reported 3 failures out of 3 on a stable test. The test was fine; the demo
+API had been stopped earlier and nothing in the output said so.
+
+**Rule:** before investigating a failing test, confirm the environment answers. This is the
+first check in the `env-doctor` agent for exactly this reason, and it is why the health
+check in `tests/conftest.py` raises with a remediation instead of letting the failure
+surface as an assertion.
