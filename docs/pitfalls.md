@@ -69,3 +69,12 @@ whatever its siblings had created or spent. The failures read as product bugs.
 goes red. A module whose tests assert absolute values declares
 `pytestmark = pytest.mark.usefixtures("fresh_state")`. A module that continues a flow keeps
 the module scoped reset.
+
+## 2026-09-29 — Two names for the same field, depending on the branch
+
+An LLM isolation test failed with a `KeyError`. The assistant returned `order_count` when
+the user had orders and `orders` when they had none, so any consumer reading the response
+broke on the empty case only — the case nobody demos.
+
+**Rule:** a response contract is the same on every branch, including the empty one. When a
+test fails because a field is named differently in one path, fix the API, not the test.

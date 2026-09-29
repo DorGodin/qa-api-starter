@@ -268,7 +268,11 @@ def assistant_answer(body: AssistantQuestion, user: dict = Depends(current_user)
 
     if "order" in question:
         if not mine:
-            return {"answer": "You have no orders yet.", "grounded_in": {"orders": 0}, "refused": False}
+            return {
+                "answer": "You have no orders yet.",
+                "grounded_in": {"order_count": 0, "total": 0.0},
+                "refused": False,
+            }
         total = _round(sum(o["total_amount"] for o in mine))
         text = (
             f"You have {len(mine)} order(s) totalling {total:.2f}."

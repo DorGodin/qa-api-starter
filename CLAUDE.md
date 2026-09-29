@@ -138,6 +138,18 @@ sends it.
 - Judged metrics are opt-in, live in their own test so a missing key skips only that test,
   and never stand alone between a wrong number and a user.
 
+## Assistant features are an access control surface
+
+An assistant with access to a user's data is not only a quality question. Cover, for every
+such feature:
+
+- **Injection.** A sentence in the input must not widen what the answer covers. Test the
+  direct attempt, the role-play, the appended request and the fake system turn.
+- **Isolation.** Each persona is answered from its own data. Assert the grounding record,
+  not only the sentence.
+- **Authentication.** The endpoint refuses an anonymous caller like any other.
+- **Refusals carry no figures.** A refusal that names a number has already leaked.
+
 ## Performance
 
 `perf/` holds k6 scripts. `smoke.js` answers "does it work under one user" in seconds and
