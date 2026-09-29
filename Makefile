@@ -41,3 +41,15 @@ ui:             ## browser suite (needs: playwright install chromium)
 
 llm:            ## LLM evaluation with DeepEval, deterministic metrics, no API key
 	ENV=$(ENV) PYTHONPATH=. $(PY) -m pytest --llm tests/llm
+
+docker-test:    ## run the suites in containers, no local Python needed
+	docker compose run --rm tests
+
+docker-ui:      ## run the browser suite in a container with browsers preinstalled
+	docker compose run --rm ui
+
+docker-api:     ## just the API, on http://127.0.0.1:8000
+	docker compose up --build api
+
+docker-down:
+	docker compose down -v

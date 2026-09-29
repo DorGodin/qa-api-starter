@@ -72,3 +72,14 @@ jobs:
           python -m uvicorn demo_api.app:app --host 127.0.0.1 --port 8000 &
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/health && break; sleep 0.5; done
       - run: ENV=ci PYTHONPATH=. pytest --llm tests/llm
+
+  docker:
+    name: docker compose
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: build and run the suites in containers
+        run: docker compose run --rm tests
+      - name: stop
+        if: always()
+        run: docker compose down -v

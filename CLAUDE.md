@@ -118,6 +118,15 @@ Thresholds in `options.thresholds` are the release gate: a breach exits non-zero
 the pipeline. They are not numbers somebody eyeballs in a dashboard. When a threshold
 moves, say why in the commit message.
 
+## Docker
+
+`docker compose run --rm tests` runs the suites in containers with no local Python. The
+`docker` environment block points at `http://api:8000`, the service name, not localhost.
+
+The `tests` service waits on the API's healthcheck rather than sleeping, and the `ui`
+service uses the official Playwright image so browsers are already installed. CI builds
+the image and runs the compose suite on every push, so the Dockerfile cannot rot quietly.
+
 ## Environments
 
 Every environment is one block in `config/config.json` carrying `url`, `admin_user` and

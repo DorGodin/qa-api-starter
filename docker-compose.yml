@@ -1,0 +1,33 @@
+# Run the whole thing without installing Python locally:
+#   docker compose up --build api        # just the API
+#   docker compose run --rm tests        # API suites + edge cases
+#   docker compose run --rm ui           # browser suite
+services:
+  api:
+    build: .
+    ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8000/health"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  tests:
+    build: .
+    environment:
+      ENV: docker
+    depends_on:
+      api: { condition: service_healthy }
+    command: ["pytest", "--unit", "--edge-cases", "--llm", "-q"]
+
+  ui:
+    # Browsers are pre-installed in this image, so the UI suite needs no extra setup.
+    image: mcr.microsoft.com/playwright/python:v1.49.0-noble
+    working_dir: /app
+    volumes: ["./:/app"]
+    environment:
+      ENV: docker
+      PYTHONPATH: /app
+    depends_on:
+      api: { condition: service_healthy }
+    command: ["bash", "-lc", "pip install -q -r requirements.lock.txt && pytest --ui tests/ui -q"]

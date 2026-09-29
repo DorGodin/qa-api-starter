@@ -18,5 +18,10 @@
     "url": "https://api.example.invalid",
     "admin_user": "admin",
     "member_user": "member"
+  },
+  "docker": {
+    "url": "http://api:8000",
+    "admin_user": "admin",
+    "member_user": "member"
   }
 }
