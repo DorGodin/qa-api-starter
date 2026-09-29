@@ -72,21 +72,10 @@ def test_an_unparseable_timestamp_degrades_instead_of_crashing():
     assert dashboard.local_time("not-a-date") == "not-a-date"
 
 
-def test_headings_carry_a_hebrew_translation():
-    html_out = dashboard.heading("Runs")
-
-    assert "Runs" in html_out
-    assert "ריצות" in html_out
-    assert 'dir="rtl"' in html_out, "without isolation the parentheses render on the wrong side"
-
-
-def test_an_untranslated_heading_is_left_alone():
-    assert dashboard.heading("Something new") == "<h2>Something new</h2>"
-
-
-def test_column_headers_carry_a_translation_too():
-    assert "מתי" in dashboard.column("When")
-    assert dashboard.column("Unknown") == "<th>Unknown</th>"
+def test_headings_and_columns_are_plain_and_escaped():
+    assert dashboard.heading("Runs") == "<h2>Runs</h2>"
+    assert dashboard.column("When") == "<th>When</th>"
+    assert "&lt;b&gt;" in dashboard.heading("<b>x</b>")
 
 
 def test_the_page_is_written_and_self_contained(tmp_path: Path):

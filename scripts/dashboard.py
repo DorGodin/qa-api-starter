@@ -30,16 +30,6 @@ REPORTS = Path(__file__).resolve().parents[1] / "reports"
 # is never ambiguous. DASHBOARD_TZ overrides, e.g. DASHBOARD_TZ=Asia/Jerusalem.
 DISPLAY_TZ = ZoneInfo(os.environ["DASHBOARD_TZ"]) if os.environ.get("DASHBOARD_TZ") else None
 
-HEBREW = {
-    "At a glance": "מבט מהיר",
-    "Runs": "ריצות",
-    "Objects created by the tests": "אובייקטים שהבדיקות יצרו",
-}
-COLUMN_HE = {
-    "When": "מתי", "Env": "סביבה", "Verdict": "תוצאה", "Pass": "עברו", "Fail": "נכשלו",
-    "Skip": "דולגו", "Time": "משך", "Groups": "קבוצות", "Resource": "משאב", "Id": "מזהה",
-    "Created as": "נוצר בתור", "By test": "על ידי הטסט",
-}
 
 
 def local_time(value: str) -> str:
@@ -53,15 +43,11 @@ def local_time(value: str) -> str:
 
 
 def heading(title: str) -> str:
-    hebrew = HEBREW.get(title, "")
-    suffix = f'<span dir="rtl" class="he">({html.escape(hebrew)})</span>' if hebrew else ""
-    return f"<h2>{html.escape(title)}{suffix}</h2>"
+    return f"<h2>{html.escape(title)}</h2>"
 
 
 def column(title: str) -> str:
-    hebrew = COLUMN_HE.get(title, "")
-    suffix = f'<span dir="rtl" class="he">({html.escape(hebrew)})</span>' if hebrew else ""
-    return f"<th>{html.escape(title)}{suffix}</th>"
+    return f"<th>{html.escape(title)}</th>"
 
 CSS = """
 :root{--ok:#0e7c66;--bad:#b4232c;--warn:#b26a00;--ink:#1f2933;--mut:#6b7280;--line:#e4e7eb;--bg:#f7f8fa}
@@ -73,9 +59,6 @@ header p{margin:6px 0 0;color:#bfe0e2;font-size:13px}
 main{max-width:1060px;margin:22px auto;padding:0 18px 40px}
 section{background:#fff;border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin-bottom:18px}
 h2{margin:0 0 12px;font-size:13px;letter-spacing:1.4px;text-transform:uppercase;color:#0e5c63}
-.he{display:block;color:#7b8794;font-weight:400;letter-spacing:0;text-transform:none;
-    font-size:12px;unicode-bidi:isolate;margin-top:2px;text-align:left}
-th .he{font-size:11px;margin-top:1px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;color:var(--mut);font-weight:600;padding:6px 8px;border-bottom:2px solid var(--line)}
 td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top;word-break:break-word}
