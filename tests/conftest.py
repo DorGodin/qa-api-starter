@@ -95,6 +95,18 @@ def _clean_state(request):
     request.getfixturevalue("api").request("POST", "/_test/reset", persona="admin").assert_ok(204)
 
 
+@pytest.fixture
+def fresh_state(api):
+    """Opt in to a pristine environment for one test.
+
+    The module scoped reset above keeps an ordered flow's state alive, which is
+    what a flow needs and exactly what a test asserting an absolute value cannot
+    tolerate. A module whose tests each need a clean slate declares
+    `pytestmark = pytest.mark.usefixtures("fresh_state")`.
+    """
+    api.request("POST", "/_test/reset", persona="admin").assert_ok(204)
+
+
 @pytest.fixture(scope="module")
 def ctx():
     """Shared state for ordered tests inside one module."""

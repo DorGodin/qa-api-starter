@@ -4,7 +4,7 @@ A ready-to-use API test framework in Python and pytest.
 Clone it, run it, then point it at your own product.
 
 It comes with a small demo API, so the tests work the moment you clone — nothing here is
-theory. **79 tests across five groups**, all running in CI on every push.
+theory. **122 tests across five groups**, all running in CI on every push.
 
 ---
 
@@ -28,9 +28,9 @@ docker compose run --rm tests
 
 | Command | Runs | Tests |
 |---|---|---|
-| `make test` | does the product behave? | 20 |
-| `make unit` | is the framework itself correct? | 31 |
-| `make edge` | what happens on bad input? | 11 |
+| `make test` | does the product behave? | 46 |
+| `make unit` | is the framework itself correct? | 39 |
+| `make edge` | what happens on bad input? | 20 |
 | `make ui` | does the user see the right thing? | 7 |
 | `make llm` | is the AI feature telling the truth? | 10 |
 | `make perf-smoke` | is it fast enough? | k6 |
@@ -45,9 +45,9 @@ change should not wait for a browser to start.
 | Folder | What it holds |
 |---|---|
 | `obj/` | one class per API resource, over a shared CRUD base. Payloads and URLs live here, never in a test |
-| `tests/suites/` | product behaviour: the ordering flow, CRUD, auth and roles |
+| `tests/suites/` | product behaviour: ordering, CRUD, auth and roles, paging and filters, budget rules, response shape, concurrency |
 | `tests/unit/` | the framework's own tests. No API, no network |
-| `tests/edge-cases/` | broken payloads on purpose |
+| `tests/edge-cases/` | broken payloads on purpose, and the error contract |
 | `tests/ui/` | Playwright, driving a real browser |
 | `tests/llm/` | DeepEval, checking an AI feature does not invent numbers |
 | `perf/` | k6 scripts whose thresholds fail the pipeline |
@@ -139,7 +139,7 @@ every helper that writes data must guard production. Claude Code reads it automa
 ## מה זה
 
 תשתית מוכנה לבדיקות API בפייתון ו-pytest. מגיעה עם API קטן לדוגמה, כך שהבדיקות עובדות
-מהרגע שמשכפלים את הריפו. **79 בדיקות בחמש קבוצות**, כולן רצות ב-CI בכל דחיפה.
+מהרגע שמשכפלים את הריפו. **122 בדיקות בחמש קבוצות**, כולן רצות ב-CI בכל דחיפה.
 
 ## איך מתחילים
 
@@ -158,9 +158,9 @@ make test        # טרמינל 2 — הרצת הבדיקות
 
 | קבוצה | על מה היא עונה | כמות |
 |---|---|---|
-| `tests/suites` | האם המוצר מתנהג נכון | 20 |
-| `tests/unit` | האם התשתית עצמה תקינה — בלי API ובלי רשת | 31 |
-| `tests/edge-cases` | מה קורה כשהקלט שבור | 11 |
+| `tests/suites` | האם המוצר מתנהג נכון | 46 |
+| `tests/unit` | האם התשתית עצמה תקינה — בלי API ובלי רשת | 39 |
+| `tests/edge-cases` | מה קורה כשהקלט שבור, וחוזה השגיאות | 20 |
 | `tests/ui` | מה המשתמש באמת רואה בדפדפן | 7 |
 | `tests/llm` | האם פיצ׳ר ה-AI לא ממציא מספרים | 10 |
 

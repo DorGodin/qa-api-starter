@@ -9,14 +9,13 @@ def ui_base_url(env_config):
 
 
 @pytest.fixture(autouse=True)
-def fresh_state(api):
-    """UI tests reset per test.
+def _reset_between_ui_tests(fresh_state):
+    """Every UI test starts from a clean slate.
 
     A browser test reads whatever is on the screen, so leftover rows from an
     earlier test do not just add noise, they change what `.first` and `.last`
     point at.
     """
-    api.request("POST", "/_test/reset", persona="admin").assert_ok(204)
 
 
 @pytest.fixture

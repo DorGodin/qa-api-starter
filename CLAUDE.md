@@ -45,6 +45,20 @@ and `obj/resources/` with the real product; everything else stays.
 Default `pytest` is product verification. `tests/unit/` must never need the network, so
 the environment check lives in the session fixture and not in `pytest_configure`.
 
+## Test isolation
+
+Two resets, and the choice is deliberate.
+
+- `_clean_state` is **module scoped** and autouse. An ordered flow keeps its state across
+  the tests that make it up, and one module never inherits another's leftovers.
+- `fresh_state` is **function scoped** and opt in. A module whose tests each assert an
+  absolute value declares `pytestmark = pytest.mark.usefixtures("fresh_state")`.
+
+A test that asserts "there are seven items" or "the budget is 500" needs the second. A test
+that continues a flow the previous test started needs the first. Picking the wrong one
+produces failures that look like product bugs, which is why both are named and documented
+rather than left to habit.
+
 ## Bug Filing
 
 Bug filing is a **run level opt-in**, never an inline call in a test. A test asserts; the

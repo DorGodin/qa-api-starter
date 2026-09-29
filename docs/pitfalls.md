@@ -58,3 +58,14 @@ API had been stopped earlier and nothing in the output said so.
 first check in the `env-doctor` agent for exactly this reason, and it is why the health
 check in `tests/conftest.py` raises with a remediation instead of letting the failure
 surface as an assertion.
+
+## 2026-09-29 — Eight new tests failed on their first run, all for one reason
+
+A pagination suite asserting "there are seven items" and a budget suite asserting "the
+budget is 500" were both written under the module scoped reset, so each test inherited
+whatever its siblings had created or spent. The failures read as product bugs.
+
+**Rule:** decide the isolation scope when you write the first assertion, not when the suite
+goes red. A module whose tests assert absolute values declares
+`pytestmark = pytest.mark.usefixtures("fresh_state")`. A module that continues a flow keeps
+the module scoped reset.
