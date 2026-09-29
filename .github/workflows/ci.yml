@@ -1,0 +1,30 @@
+name: ci
+
+on:
+  push: { branches: [main] }
+  pull_request:
+
+jobs:
+  unit:
+    name: unit (no API, no network)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - run: pip install -r requirements.lock.txt
+      - run: PYTHONPATH=. pytest --unit tests/unit
+
+  suites:
+    name: product suites + edge cases
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - run: pip install -r requirements.lock.txt
+      - name: start demo API
+        run: |
+          python -m uvicorn demo_api.app:app --host 127.0.0.1 --port 8000 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/health && break; sleep 0.5; done
+      - run: ENV=ci PYTHONPATH=. pytest --edge-cases

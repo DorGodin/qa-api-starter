@@ -1,0 +1,22 @@
+{
+  "local": {
+    "url": "http://127.0.0.1:8000",
+    "admin_user": "admin",
+    "member_user": "member"
+  },
+  "ci": {
+    "url": "http://127.0.0.1:8000",
+    "admin_user": "admin",
+    "member_user": "member"
+  },
+  "staging": {
+    "url": "https://staging.example.invalid",
+    "admin_user": "admin",
+    "member_user": "member"
+  },
+  "prod": {
+    "url": "https://api.example.invalid",
+    "admin_user": "admin",
+    "member_user": "member"
+  }
+}

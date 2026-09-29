@@ -1,0 +1,10 @@
+# Direct dependencies only, pinned with ==.
+# An unpinned suite cannot tell a product regression from a dependency release.
+pytest==8.3.4
+pytest-dependency==0.6.0
+requests==2.32.3
+Faker==33.1.0
+
+# demo target only - drop these when you point the framework at a real API
+fastapi==0.115.6
+uvicorn==0.34.0
