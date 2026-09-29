@@ -3,8 +3,7 @@
 A ready-to-use API test framework in Python and pytest.
 Clone it, run it, then point it at your own product.
 
-It ships with a small demo API, so the tests work the moment you clone. **205 tests across
-six groups**, all running in CI on every push.
+It ships with a small demo API, so the tests work the moment you clone. **287 tests across six groups**, all running in CI on every push.
 
 The point: arrive at a new job and not rebuild what takes weeks — the object layer,
 environments, personas, suite gating, the production guard, bug filing and CI.
@@ -19,7 +18,8 @@ make api         # terminal 1 — demo API on http://127.0.0.1:8000
 make test        # terminal 2 — run the tests
 ```
 
-No Python on your machine? `docker compose run --rm tests` runs everything in a container.
+No Python on your machine? `docker compose run --rm tests` runs every group except the
+browser suite in a container. `docker compose run --rm ui` runs that one.
 
 ---
 
@@ -28,7 +28,7 @@ No Python on your machine? `docker compose run --rm tests` runs everything in a 
 | Command | What it checks | Tests |
 |---|---|---|
 | `make test` | the product behaves | 64 |
-| `make unit` | the framework itself is correct. No API, no network | 39 |
+| `make unit` | the framework itself is correct. No API, no network | 120 |
 | `make edge` | what happens on bad input | 20 |
 | `make security` | nobody reaches what is not theirs | 22 |
 | `make ui` | what the user sees in a browser | 20 |
@@ -108,70 +108,83 @@ start. When everything always runs, people stop running anything.
 
 ---
 
-## Reports, monitoring and bugs
+## What happens after the tests run
 
-Every run writes three things, with no service to keep alive:
+Three files land in `reports/` after every run. No server, no database, nothing to keep
+alive — just files.
 
-| File | Holds |
-|---|---|
-| `reports/last-run.md` | this run: counts per group, failures, skips with reasons, slowest tests |
-| `reports/history.jsonl` | one line per run: when, environment, verdict, counts |
-| `reports/artifacts.jsonl` | every object a run created, with its id and the test that made it |
-
-```bash
-make dashboard    # one self-contained HTML page from both ledgers
-```
-
-Objects are recorded in `Base.create`, so a test opts into nothing and nothing is missed.
-That answers the question a shared environment always raises: what did that run leave
-behind, and which test made this record.
+**`last-run.md`** — a summary of the run that just finished: how many passed and failed in
+each group, which tests failed and what exactly broke in each, which were skipped and why,
+and which were slowest.
 
 ```bash
-pytest --file-bugs-dry-run    # shows exactly what it would file
-pytest --file-bugs            # one ticket per failed test
+make report
 ```
 
-A test asserts, the run reports. Each ticket carries the test's id, so re-running a known
-failure comments on the open ticket instead of opening a duplicate. Credentials come from
-environment variables only.
+**`history.jsonl`** — one line per run: when it ran, on which environment, and the results.
+This is what makes comparing runs possible.
+
+```bash
+make trends
+```
+
+That compares the last run to earlier ones and flags three things that are easy to miss: a
+**group that shrank** (fewer tests ran than last time — usually a forgotten flag or a
+renamed folder), a **test that became skipped**, and a **new failure**. It also says when a
+run got slower, but that never blocks.
+
+**`artifacts.jsonl`** — every object the tests created: what it was, its id, on which
+environment, and which test made it.
+
+The line is written automatically on every create, because every API call goes through one
+place in the code. **No test opts in, and nothing can be forgotten.**
+
+That answers the two questions a shared environment always raises:
+
+```bash
+make cleanup ENV=qa          # what the tests left on qa
+make cleanup ENV=qa YES=1    # remove it
+```
+
+And when somebody asks where a record came from, you search its id in the file and see
+which test made it.
+
+**`make dashboard`** turns all of it into one HTML page: every run with its environment and
+verdict, and every object created. Open it in a browser or attach it to a message.
 
 ---
 
-## Using it on your own product
+## Filing bugs from a failed run
 
-Five steps. The first suite should take a day.
-
-**1. Drop the demo**
+When a test fails you can open a ticket from it — but **never from inside the test**. A
+test asserts; the decision to file belongs to the run, and it is off by default.
 
 ```bash
-rm -rf demo_api tests/ui tests/llm
+pytest --file-bugs-dry-run   # shows the exact ticket it would open, without opening it
+pytest --file-bugs           # one ticket per failed test
 ```
 
-**2. Add your environments** in `config/config.json`, one block each:
+The ticket follows the team's bug template — ENV, Precondition, Steps to reproduce, Actual
+result, Expected result, Notes — filled with what the run actually knows. **Steps to
+reproduce are the calls the test really made**, not an instruction to run the suite. The BE
+or FE prefix comes from where the test lives.
 
-```json
-{ "qa": { "url": "https://qa.yourproduct.com/api", "admin_user": "...", "member_user": "..." } }
+**No duplicates:** every ticket carries the test's id. If the same test fails again
+tomorrow, the filer finds the open ticket and comments on it instead of opening a second.
+
+The tracker URL and token come from environment variables, never from the repo.
+
+---
+
+## Notifications
+
+```bash
+make notify-dry              # print the message without sending
+pytest --notify              # send it to NOTIFY_WEBHOOK
 ```
 
-Select one with `ENV=qa pytest`. An unknown name fails at once and lists the real ones.
-
-**3. Change how it logs in** — one method in `obj/client.py`. The demo posts a username and
-password and keeps a bearer token. Swap in OAuth, an API key, or whatever the product uses.
-
-**4. Add one resource at a time**, copying `obj/resources/items.py`:
-
-```python
-class Customers(Base):
-    resource = "customers"
-
-    def create_fake_customer(self, **kwargs):
-        return self.create(self.build_customer_payload(**kwargs), persona="admin").assert_ok(201).as_dict
-```
-
-`/new-suite customers` writes the class, the fixture and the suite for you.
-
-**5. Keep everything else** — the gating, the production guard, the unit tests, the bug
-filer, CI and the agents. That is the part you never have to build again.
+The message carries the environment, the counts, the failing tests with each assertion, and
+any regression finding. Slack and Teams both accept it.
 
 ---
 
@@ -213,7 +226,13 @@ works, so you can stop at any point and still be ahead.
 1. `make install`, then `make api` and `make test`. If the demo passes, your machine is fine
    and any later failure is the product or the config, not the setup.
 2. Read `CLAUDE.md` once. It is fifteen minutes and it is the whole contract.
-3. Add a block for one real environment in `config/config.json`.
+3. Add a block for one real environment in `config/config.json`:
+
+   ```json
+   { "qa": { "url": "https://qa.yourproduct.com/api", "admin_user": "...", "member_user": "..." } }
+   ```
+
+   An unknown `ENV` fails at once and lists the names that do exist.
 4. Change `register_persona` in `obj/client.py` to the product's real login.
 5. Run `ENV=<yours> pytest -q`. It will fail — the demo's resources do not exist there.
    That is expected; you have proved the client, the config and the credentials work.
@@ -222,7 +241,17 @@ works, so you can stop at any point and still be ahead.
 
 6. Pick the smallest resource in the product. Not the most important one.
 7. Copy `obj/resources/items.py`, rename it, set `resource`, keep the builder and the
-   action method.
+   action method:
+
+   ```python
+   class Customers(Base):
+       resource = "customers"
+
+       def create_fake_customer(self, **kwargs):
+           return self.create(self.build_customer_payload(**kwargs), persona="admin").assert_ok(201).as_dict
+   ```
+
+   `/new-suite customers` writes the class, the fixture and the suite for you.
 8. Register it in `obj/__init__.py` and add a fixture in `tests/conftest.py`.
 9. Write one happy path and one unhappy path. Assert values, not status codes.
 10. Delete `tests/suites/test_order_flow.py`, `test_items_crud.py` and the other demo suites
@@ -268,7 +297,7 @@ every helper that writes data must guard production. Claude Code reads it automa
 ## מה זה
 
 תשתית מוכנה לבדיקות API בפייתון ו-pytest. היא מגיעה עם API קטן לדוגמה, אז הבדיקות רצות
-מהרגע שמשכפלים את הריפו. **205 בדיקות בשש קבוצות**, וכולן רצות ב-CI בכל דחיפה.
+מהרגע שמשכפלים את הריפו. **287 בדיקות בשש קבוצות**, וכולן רצות ב-CI בכל דחיפה.
 
 המטרה: להגיע למקום עבודה חדש ולא לבנות מאפס את מה שלוקח שבועות — שכבת האובייקטים, ניהול
 הסביבות, הפרסונות, הגידור של הסוויטות, ההגנה על פרודקשן, פתיחת הבאגים וה-CI.
@@ -281,14 +310,15 @@ make api         # טרמינל 1 — ה-API על פורט 8000
 make test        # טרמינל 2 — הרצת הבדיקות
 ```
 
-אם אין פייתון על המחשב: `docker compose run --rm tests` מריץ הכל בקונטיינר.
+אם אין פייתון על המחשב: `docker compose run --rm tests` מריץ בקונטיינר את כל הקבוצות חוץ
+מסוויטת הדפדפן, ו-`docker compose run --rm ui` מריץ אותה.
 
 ## שש הקבוצות
 
 | פקודה | מה היא בודקת | כמות |
 |---|---|---|
 | `make test` | שהמוצר מתנהג נכון | 64 |
-| `make unit` | שהתשתית עצמה תקינה. בלי API ובלי רשת | 39 |
+| `make unit` | שהתשתית עצמה תקינה. בלי API ובלי רשת | 120 |
 | `make edge` | מה קורה כשהקלט שבור | 20 |
 | `make security` | שאי אפשר להגיע למה שלא שלך | 22 |
 | `make ui` | מה המשתמש רואה בדפדפן | 20 |
@@ -423,18 +453,6 @@ pytest --notify              # שולח ל-NOTIFY_WEBHOOK
 ההודעה כוללת את הסביבה, הספירות, הבדיקות שנכשלו עם השגיאה של כל אחת, וכל ממצא רגרסיה.
 עובד מול Slack ו-Teams.
 
-## חיבור למקום העבודה הבא
-
-חמישה שלבים. הסוויטה הראשונה אמורה לקחת יום.
-
-1. **מוחקים את הדמו**: `demo_api/`, `tests/ui/`, `tests/llm/`.
-2. **מוסיפים סביבה** ב-`config/config.json` עם ה-URL האמיתי.
-3. **משנים את שיטת האימות** — מתודה אחת ב-`obj/client.py`. הדמו שולח שם משתמש וסיסמה ושומר
-   טוקן. מחליפים ל-OAuth, מפתח API או מה שהמוצר משתמש בו.
-4. **מוסיפים משאב אחד בכל פעם** לפי התבנית של `obj/resources/items.py`. הפקודה
-   `/new-suite <resource>` כותבת את המחלקה, את ה-fixture ואת הסוויטה.
-5. **את כל השאר משאירים** — הגידור, הגנת prod, בדיקות היחידה, פוקדן הבאגים, ה-CI והסוכנים.
-
 ## שימוש בלי Claude Code
 
 כל מה שמחוץ ל-`.claude/` הוא פייתון ו-pytest רגילים. התשתית, הסוויטות, פותח הבאגים,
@@ -471,7 +489,13 @@ ln -s CLAUDE.md .cursorrules
 1. `make install`, ואז `make api` ו-`make test`. אם הדמו עובר, המחשב שלך תקין — וכל כשל
    מאוחר יותר הוא המוצר או הקונפיג, לא ההתקנה.
 2. לקרוא את `CLAUDE.md` פעם אחת. רבע שעה, וזה כל החוזה.
-3. להוסיף בלוק לסביבה אמיתית אחת ב-`config/config.json`.
+3. להוסיף בלוק לסביבה אמיתית אחת ב-`config/config.json`:
+
+   ```json
+   { "qa": { "url": "https://qa.yourproduct.com/api", "admin_user": "...", "member_user": "..." } }
+   ```
+
+   שם סביבה שלא קיים נכשל מיד ומדפיס אילו סביבות כן קיימות.
 4. לשנות את `register_persona` ב-`obj/client.py` לשיטת ההתחברות של המוצר.
 5. להריץ `ENV=<שלך> pytest -q`. זה ייכשל — המשאבים של הדמו לא קיימים שם. זה תקין: הוכחת
    שהקליינט, הקונפיג והאישורים עובדים.
@@ -480,7 +504,17 @@ ln -s CLAUDE.md .cursorrules
 
 6. לבחור את המשאב **הכי קטן** במוצר. לא את הכי חשוב.
 7. להעתיק את `obj/resources/items.py`, לשנות שם, להגדיר `resource`, ולשמור על הבנאי ועל
-   מתודת הפעולה.
+   מתודת הפעולה:
+
+   ```python
+   class Customers(Base):
+       resource = "customers"
+
+       def create_fake_customer(self, **kwargs):
+           return self.create(self.build_customer_payload(**kwargs), persona="admin").assert_ok(201).as_dict
+   ```
+
+   הפקודה `/new-suite customers` כותבת את המחלקה, את ה-fixture ואת הסוויטה.
 8. לרשום אותו ב-`obj/__init__.py` ולהוסיף fixture ב-`tests/conftest.py`.
 9. לכתוב מסלול מוצלח אחד ומסלול כושל אחד. לבדוק ערכים, לא קודי סטטוס.
 10. למחוק את סוויטות הדמו ברגע שיש לך משלך.

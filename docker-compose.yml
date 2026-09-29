@@ -1,6 +1,6 @@
 # Run the whole thing without installing Python locally:
 #   docker compose up --build api        # just the API
-#   docker compose run --rm tests        # API suites + edge cases
+#   docker compose run --rm tests        # every group except the browser suite
 #   docker compose run --rm ui           # browser suite
 services:
   api:
@@ -18,7 +18,7 @@ services:
       ENV: docker
     depends_on:
       api: { condition: service_healthy }
-    command: ["pytest", "--unit", "--edge-cases", "--llm", "-q"]
+    command: ["pytest", "--unit", "--edge-cases", "--security", "--llm", "-q"]
 
   ui:
     # Browsers are pre-installed in this image, so the UI suite needs no extra setup.
