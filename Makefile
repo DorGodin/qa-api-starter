@@ -53,3 +53,6 @@ docker-api:     ## just the API, on http://127.0.0.1:8000
 
 docker-down:
 	docker compose down -v
+
+security:       ## access control and exposure checks
+	ENV=$(ENV) PYTHONPATH=. $(PY) -m pytest --security tests/security

@@ -41,9 +41,37 @@ and `obj/resources/` with the real product; everything else stays.
 | `pytest --edge-cases` | + `tests/edge-cases/` — validation edge cases |
 | `pytest --ui` | + `tests/ui/` — Playwright browser suite |
 | `pytest --llm` | + `tests/llm/` — LLM evaluation with DeepEval |
+| `pytest --security` | + `tests/security/` — access control and exposure |
 
 Default `pytest` is product verification. `tests/unit/` must never need the network, so
 the environment check lives in the session fixture and not in `pytest_configure`.
+
+## Contract testing
+
+`tests/suites/test_openapi_contract.py` validates responses against the product's own
+OpenAPI document. Asserting field by field covers the fields a test cares about; the spec
+covers the rest, so a type that quietly changes elsewhere is still caught.
+
+Validate the response you already have rather than adding a separate call. If an operation
+is not in the document, that is the finding — do not work around it.
+
+## Security
+
+`tests/security/` is gated behind `--security` and stays close to what actually happens:
+
+- an id guessed from a URL must not return another account's record
+- a valid token for the wrong role is still refused
+- **every malformed credential fails identically**, so nothing can be enumerated
+- a failed login must not reveal which half was wrong
+- hostile strings are stored as data and matched as data, never interpreted
+- error bodies name no internal machinery, and responses carry the baseline headers
+
+## Scenario files
+
+`data/scenarios/` holds cases as CSV and JSON so someone who does not write Python can add
+one. The test stays a single parametrised function. Any suite loading a file asserts the
+file is not empty — a scenario file that shrinks to nothing otherwise reports success while
+testing nothing.
 
 ## Test isolation
 

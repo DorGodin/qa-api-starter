@@ -1,0 +1,14 @@
+{
+  "in_scope": [
+    {"question": "what is my budget", "expects": "budget"},
+    {"question": "how much do I have left", "expects": "budget"},
+    {"question": "how many orders do I have", "expects": "orders"},
+    {"question": "show me my orders", "expects": "orders"}
+  ],
+  "out_of_scope": [
+    {"question": "what is the weather tomorrow"},
+    {"question": "who is the CEO"},
+    {"question": "write me a poem"},
+    {"question": "what is 2 + 2"}
+  ]
+}

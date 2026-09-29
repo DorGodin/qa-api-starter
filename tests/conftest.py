@@ -14,6 +14,7 @@ GATED = {
     "tests/edge-cases": "--edge-cases",
     "tests/ui": "--ui",
     "tests/llm": "--llm",
+    "tests/security": "--security",
 }
 PASSWORDS = {"admin": "admin-secret", "member": "member-secret"}
 
@@ -23,6 +24,7 @@ def pytest_addoption(parser):
     parser.addoption("--edge-cases", action="store_true", default=False, help="collect tests/edge-cases")
     parser.addoption("--ui", action="store_true", default=False, help="collect tests/ui (browser)")
     parser.addoption("--llm", action="store_true", default=False, help="collect tests/llm (LLM evaluation)")
+    parser.addoption("--security", action="store_true", default=False, help="collect tests/security")
     parser.addoption("--file-bugs", action="store_true", default=False, help="open a ticket per failed test")
     parser.addoption("--file-bugs-dry-run", action="store_true", default=False, help="print the payloads, create nothing")
 

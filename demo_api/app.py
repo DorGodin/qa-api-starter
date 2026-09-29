@@ -17,6 +17,22 @@ from pydantic import BaseModel, Field
 
 app = FastAPI(title="Starter Demo API", version="1.0.0")
 
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "no-referrer",
+    "Cache-Control": "no-store",
+}
+
+
+@app.middleware("http")
+async def security_headers(request, call_next):
+    """Headers every API should send. Cheap, and their absence is a finding."""
+    response = await call_next(request)
+    for header, value in SECURITY_HEADERS.items():
+        response.headers.setdefault(header, value)
+    return response
+
 USERS = {
     "admin": {"password": "admin-secret", "role": "admin", "budget": 0.0},
     "member": {"password": "member-secret", "role": "member", "budget": 500.0},
@@ -240,6 +256,10 @@ def approve_order(order_id: str, _: dict = Depends(admin_only)):
     return _view(order, {"lines"})
 
 
+BUDGET_WORDS = ("budget", "how much", "left", "remaining", "balance")
+ORDER_WORDS = ("order", "purchase", "bought")
+
+
 class AssistantQuestion(BaseModel):
     question: str = Field(min_length=1, max_length=300)
 
@@ -258,7 +278,7 @@ def assistant_answer(body: AssistantQuestion, user: dict = Depends(current_user)
     mine = [o for o in DB["orders"].values() if o["owner"] == user["username"]]
     phrasing = len(question) % 2
 
-    if "budget" in question:
+    if any(word in question for word in BUDGET_WORDS):
         text = (
             f"You have {budget:.2f} left in your budget."
             if phrasing == 0
@@ -266,7 +286,7 @@ def assistant_answer(body: AssistantQuestion, user: dict = Depends(current_user)
         )
         return {"answer": text, "grounded_in": {"budget": budget}, "refused": False}
 
-    if "order" in question:
+    if any(word in question for word in ORDER_WORDS):
         if not mine:
             return {
                 "answer": "You have no orders yet.",

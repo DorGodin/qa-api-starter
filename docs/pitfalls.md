@@ -78,3 +78,14 @@ broke on the empty case only — the case nobody demos.
 
 **Rule:** a response contract is the same on every branch, including the empty one. When a
 test fails because a field is named differently in one path, fix the API, not the test.
+
+## 2026-09-29 — A scenario file found a refusal nobody meant to ship
+
+Moving the assistant's intents into `data/scenarios/assistant_intents.json` immediately
+failed on "how much do I have left". The endpoint matched the literal word "budget", so a
+perfectly ordinary way of asking was refused. Nothing in the hand-written tests had used
+that phrasing.
+
+**Rule:** scenario files are worth adding precisely because the cases nobody would think to
+type in Python are the ones that find gaps. When one fails on its first run, check the
+product before assuming the file is wrong.

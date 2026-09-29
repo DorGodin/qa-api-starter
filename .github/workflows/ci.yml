@@ -27,7 +27,7 @@ jobs:
         run: |
           python -m uvicorn demo_api.app:app --host 127.0.0.1 --port 8000 &
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/health && break; sleep 0.5; done
-      - run: ENV=ci PYTHONPATH=. pytest --edge-cases
+      - run: ENV=ci PYTHONPATH=. pytest --edge-cases --security
 
   ui:
     name: browser suite (playwright)
