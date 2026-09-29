@@ -87,6 +87,15 @@ that continues a flow the previous test started needs the first. Picking the wro
 produces failures that look like product bugs, which is why both are named and documented
 rather than left to habit.
 
+## Run reports
+
+Every run writes `reports/last-run.md`: counts per group, failures with the assertion that
+caused them, skips with their reasons, and the slowest tests. The directory is gitignored.
+
+Two things the report is built to make visible, because both hide easily in terminal
+output: **a skip is a question the run did not answer**, and **fewer failures because fewer
+tests ran is not an improvement**. Read it with the `run-report` skill.
+
 ## Bug Filing
 
 Bug filing is a **run level opt-in**, never an inline call in a test. A test asserts; the
@@ -128,6 +137,7 @@ Do not add per-assertion filing calls back into test files.
 | `release-readiness` | which suites block a release, and why a skip is not a pass |
 | `plan-test-work` | a plan written to a file so it survives losing the conversation |
 | `commit-and-pr` | messages that say what changed, why, and what was verified |
+| `run-report` | turns `reports/last-run.md` into a verdict a person can act on |
 
 | Commands | |
 |---|---|

@@ -89,3 +89,13 @@ that phrasing.
 **Rule:** scenario files are worth adding precisely because the cases nobody would think to
 type in Python are the ones that find gaps. When one fails on its first run, check the
 product before assuming the file is wrong.
+
+## 2026-09-29 — A unit test that only passed because its input was tidy
+
+`first_line` was supposed to show the assertion that failed. Its unit test fed it
+`"E   AssertionError: ..."` and passed. On a real run the report printed `def test_x():`,
+because pytest's longrepr starts with the source line and the error is further down, marked
+with `E`.
+
+**Rule:** when a helper parses output from another tool, test it with that tool's real
+output, pasted verbatim, not with a cleaned-up version of what you assume it looks like.

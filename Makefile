@@ -56,3 +56,6 @@ docker-down:
 
 security:       ## access control and exposure checks
 	ENV=$(ENV) PYTHONPATH=. $(PY) -m pytest --security tests/security
+
+report:         ## show the report from the last run
+	@cat reports/last-run.md

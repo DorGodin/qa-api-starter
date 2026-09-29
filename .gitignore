@@ -4,3 +4,5 @@ __pycache__/
 *.pyc
 config/config.local.json
 .env
+reports/*
+!reports/README.md

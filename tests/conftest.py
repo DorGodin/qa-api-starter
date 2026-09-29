@@ -8,6 +8,7 @@ import pytest
 from config.loader import load_env_config
 from obj import ApiClient, Assistant, Items, Orders
 from utils.bug_filing import Failure, JiraTracker, file_failures, format_report
+from utils.run_report import RunReport, TestOutcome
 
 GATED = {
     "tests/unit": "--unit",
@@ -120,11 +121,21 @@ def ctx():
 # run and CI file nothing.
 
 _FAILURES: list[Failure] = []
+_REPORT = RunReport(env=os.getenv("ENV", "local"))
 
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     report = (yield).get_result()
+    if report.when == "call" or (report.when == "setup" and report.skipped):
+        _REPORT.add(
+            TestOutcome(
+                nodeid=report.nodeid,
+                outcome=report.outcome,
+                duration=getattr(report, "duration", 0.0),
+                message=str(report.longrepr) if report.longrepr else "",
+            )
+        )
     if report.when == "call" and report.failed:
         _FAILURES.append(
             Failure(nodeid=report.nodeid, message=str(report.longrepr), duration=report.duration)
@@ -133,6 +144,11 @@ def pytest_runtest_makereport(item, call):
 
 def pytest_sessionfinish(session, exitstatus):
     config = session.config
+    written = _REPORT.write(Path(__file__).resolve().parents[1] / "reports")
+    reporter = config.pluginmanager.get_plugin("terminalreporter")
+    if reporter is not None:
+        reporter.write_line(f"run report: {written.relative_to(Path.cwd())}" if written.is_relative_to(Path.cwd()) else f"run report: {written}")
+
     dry_run = config.getoption("file_bugs_dry_run")
     if not (config.getoption("file_bugs") or dry_run) or not _FAILURES:
         return

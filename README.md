@@ -3,8 +3,11 @@
 A ready-to-use API test framework in Python and pytest.
 Clone it, run it, then point it at your own product.
 
-It comes with a small demo API, so the tests work the moment you clone — nothing here is
-theory. **205 tests across six groups**, all running in CI on every push.
+It ships with a small demo API, so the tests work the moment you clone. **205 tests across
+six groups**, all running in CI on every push.
+
+The point: arrive at a new job and not rebuild what takes weeks — the object layer,
+environments, personas, suite gating, the production guard, bug filing and CI.
 
 ---
 
@@ -16,80 +19,95 @@ make api         # terminal 1 — demo API on http://127.0.0.1:8000
 make test        # terminal 2 — run the tests
 ```
 
-No Python on your machine? Use Docker instead:
-
-```bash
-docker compose run --rm tests
-```
+No Python on your machine? `docker compose run --rm tests` runs everything in a container.
 
 ---
 
-## What you can run
+## The six groups
 
-| Command | Runs | Tests |
+| Command | What it checks | Tests |
 |---|---|---|
-| `make test` | does the product behave? | 64 |
-| `make unit` | is the framework itself correct? | 39 |
-| `make edge` | what happens on bad input? | 20 |
-| `make ui` | does the user see the right thing? | 20 |
-| `make llm` | is the AI feature telling the truth? | 41 |
-| `make security` | can someone reach what is not theirs? | 22 |
-| `make perf-smoke` | is it fast enough? | k6 |
+| `make test` | the product behaves | 64 |
+| `make unit` | the framework itself is correct. No API, no network | 39 |
+| `make edge` | what happens on bad input | 20 |
+| `make security` | nobody reaches what is not theirs | 22 |
+| `make ui` | what the user sees in a browser | 20 |
+| `make llm` | the AI feature does not invent data | 41 |
 
-Only `make test` runs by default. The rest are opt-in, because a developer checking a
-change should not wait for a browser to start.
+Only `make test` runs by default. The rest need a flag.
+
+**Why they are separate.** A developer checking one change should not wait for a browser to
+start. When everything always runs, people stop running anything.
 
 ---
 
-## What is inside
+## What is in each folder
 
 | Folder | What it holds |
 |---|---|
 | `obj/` | one class per API resource, over a shared CRUD base. Payloads and URLs live here, never in a test |
-| `tests/suites/` | product behaviour: ordering, CRUD, auth and roles, paging and filters, budget rules, response shape, concurrency |
-| `tests/unit/` | the framework's own tests. No API, no network |
+| `tests/suites/` | ordering, CRUD, auth, paging, budget rules, response shape, concurrency, contract |
+| `tests/unit/` | the framework's own tests |
 | `tests/edge-cases/` | broken payloads on purpose, and the error contract |
-| `tests/ui/` | Playwright: the ordering flow, resilience when the API fails, accessibility and small screens |
-| `tests/llm/` | DeepEval: grounded facts, prompt injection, data isolation, messy input |
 | `tests/security/` | access control, credential handling, exposure |
-| `data/scenarios/` | cases as CSV and JSON, so a non-engineer can add one |
+| `tests/ui/` | Playwright: the flow, resilience when the API fails, accessibility |
+| `tests/llm/` | DeepEval: grounded facts, prompt injection, data isolation |
 | `perf/` | k6 scripts whose thresholds fail the pipeline |
-| `utils/` | helpers, data seeding, and the bug filer |
 | `config/` | one block per environment |
+| `data/scenarios/` | cases as CSV and JSON, so a non-engineer can add one |
 | `.claude/` | the AI workflow: agents, skills, commands |
 
 ---
 
 ## The AI workflow
 
-**Five agents.** `test-reviewer` asks whether a test would fail if the product broke.
-`ticket-verifier` maps a ticket's criteria to coverage and writes what is missing.
-`flake-hunter` reproduces an intermittent failure and tells a flaky test from a flaky
-product. `coverage-mapper` classifies every endpoint as proven, touched or untested and
-ranks the gaps by risk. `env-doctor` finds why a suite will not start.
+### Five agents
 
-**Nine skills.** `write-tests` (which group, what to assert, and what makes a test
-worthless), `verify-before-claiming` (never report a result you did not observe),
-`verify-story` (evidence per criterion; UNCERTAIN is a real verdict), `write-bug` (a report
-product and support can act on), `test-data-strategy` (resolve-or-seed and the production
-guard), `flaky-test-policy` (what is allowed, and why `xfail` is banned),
-`release-readiness` (what blocks a release), `plan-test-work` (a plan that survives losing
-the conversation), `commit-and-pr` (messages that say what was verified).
+| Agent | What it does |
+|---|---|
+| `test-reviewer` | reads your diff and asks: if the product broke, would this test fail? |
+| `ticket-verifier` | takes a ticket, checks what is covered, writes and runs what is missing |
+| `flake-hunter` | reruns an intermittent test and tells a flaky test from a flaky product |
+| `coverage-mapper` | marks every endpoint proven, touched or untested, and ranks gaps by risk |
+| `env-doctor` | finds why a suite will not start, layer by layer |
 
-**Seven commands.** `/new-suite` · `/explore-api` · `/qa-sweep` · `/file-bugs` ·
-`/flake-check` · `/coverage-gap` · `/env-doctor`
+### Ten skills
 
-Agents never write to the tracker. They draft; a human sends.
+| Skill | Covers |
+|---|---|
+| `write-tests` | which group a test belongs in, and what to assert |
+| `verify-before-claiming` | never report a result you did not observe |
+| `verify-story` | how a ticket gets verified, with a verdict per criterion |
+| `write-bug` | how a bug is written for product, support and engineering |
+| `test-data-strategy` | test data, idempotency and the production guard |
+| `flaky-test-policy` | what to do with a flaky test, and what is banned |
+| `release-readiness` | what blocks a release |
+| `plan-test-work` | a plan written to a file, so it survives the conversation |
+| `commit-and-pr` | messages that say what changed and what was verified |
+| `run-report` | turns the last run into a verdict, not a wall of output |
 
-## Filing bugs from a run
+### Seven commands
+
+`/new-suite` · `/explore-api` · `/qa-sweep` · `/file-bugs` · `/flake-check` ·
+`/coverage-gap` · `/env-doctor`
+
+**Agents never write to the tracker.** They draft; a person sends.
+
+---
+
+## Reports and bugs from a run
+
+Every run writes `reports/last-run.md`: counts per group, failures, slowest tests, and
+skips with their reasons.
 
 ```bash
-pytest --file-bugs-dry-run    # shows exactly what it would send
+pytest --file-bugs-dry-run    # shows exactly what it would file
 pytest --file-bugs            # one ticket per failed test
 ```
 
-Each ticket carries the test's id, so a re-run **comments on the open ticket instead of
-opening a duplicate**. Credentials come from environment variables, never from the repo.
+A test asserts, the run reports. Each ticket carries the test's id, so re-running a known
+failure comments on the open ticket instead of opening a duplicate. Credentials come from
+environment variables only.
 
 ---
 
@@ -103,18 +121,18 @@ Five steps. The first suite should take a day.
 rm -rf demo_api tests/ui tests/llm
 ```
 
-**2. Add your environments** — `config/config.json`, one block each:
+**2. Add your environments** in `config/config.json`, one block each:
 
 ```json
 { "qa": { "url": "https://qa.yourproduct.com/api", "admin_user": "...", "member_user": "..." } }
 ```
 
-Pick one with `ENV=qa pytest`. An unknown name fails immediately and lists the real ones.
+Select one with `ENV=qa pytest`. An unknown name fails at once and lists the real ones.
 
 **3. Change how it logs in** — one method in `obj/client.py`. The demo posts a username and
-password and keeps a bearer token. Swap in OAuth, an API key, whatever your product uses.
+password and keeps a bearer token. Swap in OAuth, an API key, or whatever the product uses.
 
-**4. Add one resource at a time** — copy `obj/resources/items.py` as the shape:
+**4. Add one resource at a time**, copying `obj/resources/items.py`:
 
 ```python
 class Customers(Base):
@@ -127,7 +145,7 @@ class Customers(Base):
 `/new-suite customers` writes the class, the fixture and the suite for you.
 
 **5. Keep everything else** — the gating, the production guard, the unit tests, the bug
-filer, CI, the agents. That is the part you never have to build again.
+filer, CI and the agents. That is the part you never have to build again.
 
 ---
 
@@ -203,13 +221,13 @@ make test        # טרמינל 2 — הרצת הבדיקות
 | `coverage-mapper` | מסמן כל אנדפוינט כמוכח, נגוע או לא נבדק, ומדרג לפי סיכון |
 | `env-doctor` | מאתר למה הסוויטה לא עולה, שכבה אחרי שכבה |
 
-**תשעה סקילים**
+**עשרה סקילים**
 
 `write-tests` (לאיזו קבוצה שייך הטסט ומה לבדוק) · `verify-before-claiming` (לא מדווחים על
 תוצאה שלא ראית) · `verify-story` (איך מאמתים כרטיס) · `write-bug` (איך כותבים באג) ·
 `test-data-strategy` (נתוני בדיקה והגנת prod) · `flaky-test-policy` (מה עושים עם טסט
 מתחלף) · `release-readiness` (מה חוסם שחרור) · `plan-test-work` (תכנון שנשמר בקובץ) ·
-`commit-and-pr` (הודעות קומיט ותיאורי MR)
+`commit-and-pr` (הודעות קומיט ותיאורי MR) · `run-report` (קריאת הדוח של הריצה האחרונה)
 
 **שבע פקודות**
 
@@ -218,7 +236,10 @@ make test        # טרמינל 2 — הרצת הבדיקות
 
 **הסוכנים לא כותבים לכרטיס בג׳ירה.** הם מנסחים ומציגים, ואדם שולח.
 
-## פתיחת באגים מריצה
+## דוחות ובאגים מריצה
+
+כל ריצה כותבת `reports/last-run.md`: ספירה לכל קבוצה, הכשלים עם השורה שגרמה להם, הדילוגים
+עם הסיבה שלהם, והבדיקות האיטיות ביותר. `make report` מציג אותו.
 
 ```bash
 pytest --file-bugs-dry-run
