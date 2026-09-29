@@ -71,7 +71,7 @@ start. When everything always runs, people stop running anything.
 | `coverage-mapper` | marks every endpoint proven, touched or untested, and ranks gaps by risk |
 | `env-doctor` | finds why a suite will not start, layer by layer |
 
-### Ten skills
+### Eleven skills
 
 | Skill | Covers |
 |---|---|
@@ -85,6 +85,7 @@ start. When everything always runs, people stop running anything.
 | `plan-test-work` | a plan written to a file, so it survives the conversation |
 | `commit-and-pr` | messages that say what changed and what was verified |
 | `run-report` | turns the last run into a verdict, not a wall of output |
+| `monitoring` | run history, and what each run left behind |
 
 ### Seven commands
 
@@ -95,10 +96,23 @@ start. When everything always runs, people stop running anything.
 
 ---
 
-## Reports and bugs from a run
+## Reports, monitoring and bugs
 
-Every run writes `reports/last-run.md`: counts per group, failures, slowest tests, and
-skips with their reasons.
+Every run writes three things, with no service to keep alive:
+
+| File | Holds |
+|---|---|
+| `reports/last-run.md` | this run: counts per group, failures, skips with reasons, slowest tests |
+| `reports/history.jsonl` | one line per run: when, environment, verdict, counts |
+| `reports/artifacts.jsonl` | every object a run created, with its id and the test that made it |
+
+```bash
+make dashboard    # one self-contained HTML page from both ledgers
+```
+
+Objects are recorded in `Base.create`, so a test opts into nothing and nothing is missed.
+That answers the question a shared environment always raises: what did that run leave
+behind, and which test made this record.
 
 ```bash
 pytest --file-bugs-dry-run    # shows exactly what it would file
@@ -221,13 +235,14 @@ make test        # טרמינל 2 — הרצת הבדיקות
 | `coverage-mapper` | מסמן כל אנדפוינט כמוכח, נגוע או לא נבדק, ומדרג לפי סיכון |
 | `env-doctor` | מאתר למה הסוויטה לא עולה, שכבה אחרי שכבה |
 
-**עשרה סקילים**
+**אחד עשר סקילים**
 
 `write-tests` (לאיזו קבוצה שייך הטסט ומה לבדוק) · `verify-before-claiming` (לא מדווחים על
 תוצאה שלא ראית) · `verify-story` (איך מאמתים כרטיס) · `write-bug` (איך כותבים באג) ·
 `test-data-strategy` (נתוני בדיקה והגנת prod) · `flaky-test-policy` (מה עושים עם טסט
 מתחלף) · `release-readiness` (מה חוסם שחרור) · `plan-test-work` (תכנון שנשמר בקובץ) ·
-`commit-and-pr` (הודעות קומיט ותיאורי MR) · `run-report` (קריאת הדוח של הריצה האחרונה)
+`commit-and-pr` (הודעות קומיט ותיאורי MR) · `run-report` (קריאת הדוח של הריצה האחרונה) ·
+`monitoring` (היסטוריית ריצות ומה כל ריצה יצרה)
 
 **שבע פקודות**
 
@@ -238,8 +253,17 @@ make test        # טרמינל 2 — הרצת הבדיקות
 
 ## דוחות ובאגים מריצה
 
-כל ריצה כותבת `reports/last-run.md`: ספירה לכל קבוצה, הכשלים עם השורה שגרמה להם, הדילוגים
-עם הסיבה שלהם, והבדיקות האיטיות ביותר. `make report` מציג אותו.
+כל ריצה כותבת שלושה קבצים, בלי שום שירות שצריך להחזיק חי:
+
+| קובץ | מה יש בו |
+|---|---|
+| `reports/last-run.md` | הריצה הנוכחית: ספירה לכל קבוצה, כשלים, דילוגים והבדיקות האיטיות |
+| `reports/history.jsonl` | שורה לכל ריצה: מתי, איזו סביבה, תוצאה |
+| `reports/artifacts.jsonl` | כל אובייקט שנוצר, עם ה-id והטסט שיצר אותו |
+
+`make dashboard` בונה מהם דף HTML אחד. הרישום קורה ב-`Base.create`, אז אף טסט לא צריך
+לעשות כלום ושום דבר לא נשכח. זה עונה על השאלה שתמיד עולה בסביבה משותפת: **מה הריצה
+הזאת השאירה אחריה, ואיזה טסט יצר את הרשומה הזאת.**
 
 ```bash
 pytest --file-bugs-dry-run

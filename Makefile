@@ -59,3 +59,6 @@ security:       ## access control and exposure checks
 
 report:         ## show the report from the last run
 	@cat reports/last-run.md
+
+dashboard:      ## build reports/dashboard.html from the run history and the artifact ledger
+	$(PY) scripts/dashboard.py

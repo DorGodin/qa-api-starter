@@ -32,6 +32,11 @@ def test_groups_keep_a_stable_order():
     assert list(report.by_group()) == ["suites", "unit", "llm"]
 
 
+def test_a_run_that_collected_nothing_is_not_a_pass():
+    """Zero tests with a zero exit code is how a suite stops protecting anything."""
+    assert RunReport(env="qa").verdict == "NO TESTS RAN"
+
+
 def test_the_verdict_distinguishes_a_clean_pass_from_one_with_skips():
     assert report_with(outcome("tests/suites/a.py::x")).verdict == "PASSED"
     assert report_with(outcome("tests/suites/a.py::x", "skipped")).verdict == "PASSED WITH SKIPS"
@@ -104,3 +109,4 @@ def test_an_empty_run_still_produces_a_readable_report():
 
     assert "0 passed" in text
     assert "None." in text
+    assert "NO TESTS RAN" in text, "the report must say so rather than look like a pass"

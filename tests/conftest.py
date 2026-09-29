@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 
@@ -8,6 +9,7 @@ import pytest
 from config.loader import load_env_config
 from obj import ApiClient, Assistant, Items, Orders
 from utils.bug_filing import Failure, JiraTracker, file_failures, format_report
+from utils.artifacts import ArtifactLog, set_current_test
 from utils.run_report import RunReport, TestOutcome
 
 GATED = {
@@ -75,13 +77,20 @@ def api(request, env_config):
 
 
 @pytest.fixture(scope="session")
-def items(api):
-    return Items(api)
+def artifact_log(request, env_config):
+    log = ArtifactLog(env=env_config["env"])
+    request.config._qa_artifact_log = log
+    return log
 
 
 @pytest.fixture(scope="session")
-def orders(api):
-    return Orders(api)
+def items(api, artifact_log):
+    return Items(api, log=artifact_log)
+
+
+@pytest.fixture(scope="session")
+def orders(api, artifact_log):
+    return Orders(api, log=artifact_log)
 
 
 @pytest.fixture(scope="session")
@@ -122,6 +131,11 @@ def ctx():
 
 _FAILURES: list[Failure] = []
 _REPORT = RunReport(env=os.getenv("ENV", "local"))
+_REPORTS_DIR = Path(__file__).resolve().parents[1] / "reports"
+
+
+def pytest_runtest_setup(item):
+    set_current_test(item.nodeid)
 
 
 @pytest.hookimpl(hookwrapper=True)
@@ -144,7 +158,9 @@ def pytest_runtest_makereport(item, call):
 
 def pytest_sessionfinish(session, exitstatus):
     config = session.config
-    written = _REPORT.write(Path(__file__).resolve().parents[1] / "reports")
+    written = _REPORT.write(_REPORTS_DIR)
+    _append_history(session)
+    _write_artifacts(session)
     reporter = config.pluginmanager.get_plugin("terminalreporter")
     if reporter is not None:
         reporter.write_line(f"run report: {written.relative_to(Path.cwd())}" if written.is_relative_to(Path.cwd()) else f"run report: {written}")
@@ -179,3 +195,30 @@ class _NullTracker:
 
     def comment(self, key, body):  # pragma: no cover - never reached in a dry run
         raise AssertionError("dry run must not comment")
+
+
+def _append_history(session) -> None:
+    """One line per run, so a dashboard can show a trend rather than a moment."""
+    counts = _REPORT.counts
+    entry = {
+        "started": _REPORT.started.isoformat(timespec="seconds"),
+        "env": _REPORT.env,
+        "verdict": _REPORT.verdict,
+        "duration": round(_REPORT.duration, 2),
+        "groups": _REPORT.by_group(),
+        **counts,
+    }
+    _REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    with (_REPORTS_DIR / "history.jsonl").open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(entry) + "\n")
+
+
+def _write_artifacts(session) -> None:
+    log = session.config._qa_artifact_log if hasattr(session.config, "_qa_artifact_log") else None
+    if log is None or not log.items:
+        return
+    log.append_to(_REPORTS_DIR / "artifacts.jsonl")
+    reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+    if reporter is not None:
+        created = ", ".join(f"{count} {resource}" for resource, count in log.summary().items())
+        reporter.write_line(f"created on {log.env}: {created}")

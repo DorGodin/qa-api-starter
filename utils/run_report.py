@@ -81,6 +81,13 @@ class RunReport:
 
     @property
     def verdict(self) -> str:
+        """A run that collected nothing is not a run that passed.
+
+        This is the quietest way a suite stops protecting anything: a wrong path,
+        a forgotten flag, a renamed folder, and the exit code is still zero.
+        """
+        if not self.outcomes:
+            return "NO TESTS RAN"
         if self.failures():
             return "FAILED"
         return "PASSED WITH SKIPS" if self.skips() else "PASSED"

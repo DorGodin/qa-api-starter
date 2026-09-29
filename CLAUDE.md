@@ -96,6 +96,19 @@ Two things the report is built to make visible, because both hide easily in term
 output: **a skip is a question the run did not answer**, and **fewer failures because fewer
 tests ran is not an improvement**. Read it with the `run-report` skill.
 
+## What a run leaves behind
+
+Every create goes through `Base.create`, which records the resource, the id, the
+environment, the persona and the test into `reports/artifacts.jsonl`. A test does nothing
+to opt in, and nothing can forget.
+
+`reports/history.jsonl` gets one line per run. `make dashboard` turns both into a single
+self-contained HTML page: recent runs with their environment and verdict, and every object
+created with its id and the test that made it.
+
+The ledger records what was **created**, not what still exists. Check the API before
+calling something leftover data.
+
 ## Bug Filing
 
 Bug filing is a **run level opt-in**, never an inline call in a test. A test asserts; the
@@ -138,6 +151,7 @@ Do not add per-assertion filing calls back into test files.
 | `plan-test-work` | a plan written to a file so it survives losing the conversation |
 | `commit-and-pr` | messages that say what changed, why, and what was verified |
 | `run-report` | turns `reports/last-run.md` into a verdict a person can act on |
+| `monitoring` | reads the run history and the ledger of objects the runs created |
 
 | Commands | |
 |---|---|
