@@ -11,7 +11,9 @@ from obj import ApiClient, Assistant, Items, Orders
 from utils.bug_filing import Failure, JiraTracker, file_failures, format_report
 from utils import http_trace
 from utils.artifacts import ArtifactLog, set_current_test
+from utils.notify import notify
 from utils.run_report import RunReport, TestOutcome
+from utils.trends import compare
 
 GATED = {
     "tests/unit": "--unit",
@@ -29,16 +31,26 @@ def pytest_addoption(parser):
     parser.addoption("--ui", action="store_true", default=False, help="collect tests/ui (browser)")
     parser.addoption("--llm", action="store_true", default=False, help="collect tests/llm (LLM evaluation)")
     parser.addoption("--security", action="store_true", default=False, help="collect tests/security")
+    parser.addoption("--notify", action="store_true", default=False, help="post a run summary to NOTIFY_WEBHOOK")
+    parser.addoption("--notify-dry-run", action="store_true", default=False, help="print the summary, send nothing")
     parser.addoption("--file-bugs", action="store_true", default=False, help="open a ticket per failed test")
     parser.addoption("--file-bugs-dry-run", action="store_true", default=False, help="print the payloads, create nothing")
 
 
 def pytest_ignore_collect(collection_path: Path, config):
+    """Ignore a gated folder unless its flag was passed.
+
+    Returns None for everything else. This hook is firstresult: answering False
+    means "definitely collect this", which silently overrides pytest's own
+    --ignore, --deselect and norecursedirs handling.
+    """
     rel = collection_path.as_posix()
     for folder, flag in GATED.items():
         if f"/{folder}/" in f"{rel}/" or rel.endswith(folder):
-            return not config.getoption(flag.lstrip("-").replace("-", "_"))
-    return False
+            if not config.getoption(flag.lstrip("-").replace("-", "_")):
+                return True
+            return None
+    return None
 
 
 def _only_unit(config) -> bool:
@@ -168,6 +180,7 @@ def pytest_sessionfinish(session, exitstatus):
     written = _REPORT.write(_REPORTS_DIR)
     _append_history(session)
     _write_artifacts(session)
+    _notify(session)
     reporter = config.pluginmanager.get_plugin("terminalreporter")
     if reporter is not None:
         reporter.write_line(f"run report: {written.relative_to(Path.cwd())}" if written.is_relative_to(Path.cwd()) else f"run report: {written}")
@@ -213,6 +226,8 @@ def _append_history(session) -> None:
         "verdict": _REPORT.verdict,
         "duration": round(_REPORT.duration, 2),
         "groups": _REPORT.by_group(),
+        # the ids, not just the count: a skip that appeared is the finding
+        "skipped_tests": [o.nodeid for o in _REPORT.skips()],
         **counts,
     }
     _REPORTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -229,3 +244,27 @@ def _write_artifacts(session) -> None:
     if reporter is not None:
         created = ", ".join(f"{count} {resource}" for resource, count in log.summary().items())
         reporter.write_line(f"created on {log.env}: {created}")
+
+
+def _notify(session) -> None:
+    config = session.config
+    dry_run = config.getoption("notify_dry_run")
+    if not (config.getoption("notify") or dry_run):
+        return
+
+    from utils.artifacts import load
+
+    findings = compare(load(_REPORTS_DIR / "history.jsonl"))
+    message = notify(
+        _REPORT,
+        webhook=os.getenv("NOTIFY_WEBHOOK"),
+        run_url=os.getenv("CI_RUN_URL"),
+        findings=findings,
+        dry_run=dry_run,
+    )
+    reporter = config.pluginmanager.get_plugin("terminalreporter")
+    if reporter is not None:
+        reporter.write_line("")
+        reporter.write_line("notification " + ("(dry run, nothing sent):" if dry_run else "sent:"))
+        for line in message.splitlines():
+            reporter.write_line("  " + line)

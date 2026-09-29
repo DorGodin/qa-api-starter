@@ -42,6 +42,9 @@ After a run:
 |---|---|
 | `make report` | the run that just finished: counts per group, failures, skips, slowest tests |
 | `make dashboard` | every run so far, and every object the runs created, as one HTML page |
+| `make trends` | what regressed against earlier runs: a shrunken group, a new skip, a new failure |
+| `make cleanup ENV=qa` | what the runs left on an environment. `YES=1` deletes it |
+| `make notify-dry` | the summary that would be posted to a channel |
 | `make perf-smoke` | k6 smoke test |
 | `make perf-load` | k6 load test |
 
@@ -220,6 +223,9 @@ make test        # טרמינל 2 — הרצת הבדיקות
 |---|---|
 | `make report` | הריצה שהסתיימה: ספירה לכל קבוצה, כשלים, דילוגים והבדיקות האיטיות |
 | `make dashboard` | כל הריצות וכל האובייקטים שנוצרו, בדף HTML אחד |
+| `make trends` | מה נסוג מול ריצות קודמות: קבוצה שהתכווצה, דילוג חדש, כשל חדש |
+| `make cleanup ENV=qa` | מה הריצות השאירו על הסביבה. `YES=1` מוחק |
+| `make notify-dry` | ההודעה שהייתה נשלחת לערוץ |
 | `make perf-smoke` / `make perf-load` | בדיקות עומס ב-k6 |
 
 **למה מפרידים.** מפתח שבודק שינוי קטן לא צריך לחכות שדפדפן יעלה. כשהכל רץ תמיד, אנשים

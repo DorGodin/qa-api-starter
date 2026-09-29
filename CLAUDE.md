@@ -113,6 +113,34 @@ calling something leftover data.
 to a local clock and names the zone, so daylight saving comes from the zone database rather
 than a hardcoded offset. `DASHBOARD_TZ` pins it when a team wants one shared clock.
 
+## Cleaning up after a run
+
+`make cleanup ENV=qa` lists what the runs created there; `YES=1` deletes it. Nothing is
+removed without that, production is refused before anything else happens, and an object
+that is already gone is counted rather than treated as an error, so re-running is safe.
+
+## Regression between runs
+
+`make trends` compares the last run against earlier ones **on the same environment with the
+same groups** — a targeted run is not a regression against a full one, and a check that
+cries wolf gets ignored. It reports a group that shrank, a test that newly became skipped,
+a new failure, and a duration that grew. `scripts/trends.py --check` exits non-zero on a
+blocking finding, which turns the history from a record into a gate.
+
+Speed is reported but never blocks. It is a conversation, not a gate.
+
+## Notifications
+
+`pytest --notify-dry-run` prints the summary it would post; `--notify` sends it to
+`NOTIFY_WEBHOOK`. Both are off by default. The message names the environment, the counts,
+the failing tests with their assertions, and any regression finding.
+
+## Secrets
+
+`gitleaks` runs in CI on every push and in the pre-commit hook (`make hooks`). Nothing
+secret belongs in the repo: credentials come from the environment, and
+`config/config.local.json` is gitignored.
+
 ## Bug Filing
 
 Bug filing is a **run level opt-in**, never an inline call in a test. A test asserts; the

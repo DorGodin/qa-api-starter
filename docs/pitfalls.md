@@ -118,3 +118,24 @@ nothing about what the product was asked to do.
 **Rule:** steps describe what a person does, in order. For an API defect that is the
 sequence of calls, which is already passing through `ApiClient.request` and can be recorded
 there. The command to rerun the test belongs at the end, as a convenience, not as the steps.
+
+## 2026-09-29 — The gating hook silently disabled --ignore and --deselect
+
+`pytest_ignore_collect` returned `False` for every path outside a gated folder. The hook is
+firstresult, so answering False means "definitely collect this" and stops pytest's own
+handling of `--ignore`, `--deselect` and `norecursedirs`. It surfaced only because a
+regression check failed to notice twelve tests disappearing — the tests had not disappeared,
+the flag had been swallowed.
+
+**Rule:** a firstresult hook returns `None` when it has no opinion. Answering with a value
+is an instruction, not a shrug, and it overrides everything downstream.
+
+## 2026-09-29 — A regression check that cried wolf on its first run
+
+The first version compared any run against the previous one, so running a single group on
+purpose was reported as "a group disappeared". A check that fires on normal behaviour is a
+check people learn to ignore.
+
+**Rule:** compare like with like. The baseline is the previous run on the same environment
+with the same groups, and a run with no comparable history says so instead of inventing a
+finding.

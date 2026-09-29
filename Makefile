@@ -62,3 +62,17 @@ report:         ## show the report from the last run
 
 dashboard:      ## build reports/dashboard.html from the run history and the artifact ledger
 	$(PY) scripts/dashboard.py
+
+trends:         ## compare the last run against the ones before it
+	$(PY) scripts/trends.py
+
+cleanup:        ## show what the runs created on ENV; add YES=1 to delete
+	$(PY) scripts/cleanup.py --env $(ENV) $(if $(YES),--yes,)
+
+hooks:          ## install the pre-commit hooks (secrets, lint, whitespace)
+	$(VENV)/bin/pip install -q pre-commit
+	$(VENV)/bin/pre-commit install
+	@echo "hooks installed. Run them on everything once with: $(VENV)/bin/pre-commit run --all-files"
+
+notify-dry:     ## show the run summary that would be posted
+	ENV=$(ENV) PYTHONPATH=. $(PY) -m pytest --notify-dry-run
