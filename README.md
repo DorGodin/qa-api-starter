@@ -175,6 +175,85 @@ filer, CI and the agents. That is the part you never have to build again.
 
 ---
 
+## Using it without Claude Code
+
+Everything outside `.claude/` is plain Python and pytest. The framework, the suites, the
+bug filer, the dashboard, cleanup, trends, notifications and CI all work with no AI
+involved at all.
+
+`.claude/` holds two things, and neither of them runs anything:
+
+| What | Without Claude Code |
+|---|---|
+| `CLAUDE.md` | read it as the contributing guide. It is the repo's rules, written for a person |
+| skills | read them as the team's QA handbook: how a ticket gets verified, how a bug is written, what to do with a flaky test |
+| agents and commands | read them as checklists. `/new-suite` describes exactly what to create, in order |
+
+**Using another assistant.** Point it at the same file. Cursor reads `.cursorrules`,
+Copilot reads `.github/copilot-instructions.md`, and most others take a path you configure.
+Symlink or copy `CLAUDE.md` and the rules apply unchanged:
+
+```bash
+ln -s CLAUDE.md .cursorrules
+```
+
+**Not using an assistant at all.** Delete `.claude/` and nothing breaks. Keep `CLAUDE.md`
+anyway — a new contributor reading it learns where payloads live and why `xfail` is banned,
+which is the same reason it exists for an agent.
+
+---
+
+## Adoption, step by step
+
+A realistic schedule for putting this on a real product. Each step ends with something that
+works, so you can stop at any point and still be ahead.
+
+### Day 1 — make it run against something real
+
+1. `make install`, then `make api` and `make test`. If the demo passes, your machine is fine
+   and any later failure is the product or the config, not the setup.
+2. Read `CLAUDE.md` once. It is fifteen minutes and it is the whole contract.
+3. Add a block for one real environment in `config/config.json`.
+4. Change `register_persona` in `obj/client.py` to the product's real login.
+5. Run `ENV=<yours> pytest -q`. It will fail — the demo's resources do not exist there.
+   That is expected; you have proved the client, the config and the credentials work.
+
+### Day 2 — the first real suite
+
+6. Pick the smallest resource in the product. Not the most important one.
+7. Copy `obj/resources/items.py`, rename it, set `resource`, keep the builder and the
+   action method.
+8. Register it in `obj/__init__.py` and add a fixture in `tests/conftest.py`.
+9. Write one happy path and one unhappy path. Assert values, not status codes.
+10. Delete `tests/suites/test_order_flow.py`, `test_items_crud.py` and the other demo suites
+    now that yours exists.
+
+### Week 1 — make it protect something
+
+11. Wire CI. The workflow in `.github/workflows/ci.yml` needs the environment name and the
+    credentials as secrets; the rest is unchanged.
+12. Check that `tests/unit` still passes. It tests the framework, not the product, so it
+    should be green from the first minute and stay that way.
+13. Point the bug filer at your tracker: `TRACKER_URL`, `TRACKER_EMAIL`, `TRACKER_TOKEN`,
+    `TRACKER_PROJECT`. Run `pytest --file-bugs-dry-run` and read what it would file before
+    letting it file anything.
+14. Set `NOTIFY_WEBHOOK` if the team wants a channel summary.
+
+### Week 2 — remove the scaffolding
+
+15. Delete `demo_api/`, and the demo UI and LLM suites if the product has no equivalent.
+16. Drop `fastapi`, `uvicorn`, and anything else you are not using, from
+    `requirements.txt`, then run `scripts/maintenance/relock.sh`.
+17. Rename the repo and update the first paragraph of this file.
+18. Add the environments you actually deploy to, and confirm `prod` is in the config only
+    so the guard can recognise and refuse it.
+
+### What to keep, always
+
+`tests/unit/`, the suite gating, the production guard, the bug filer, the ledgers, the
+Makefile and CI. None of it is product-specific, and it is the part that takes weeks to get
+right a second time.
+
 ## Rules
 
 `CLAUDE.md` holds what this repo enforces: where payloads live, when to assert the maths
@@ -355,6 +434,81 @@ pytest --notify              # שולח ל-NOTIFY_WEBHOOK
 4. **מוסיפים משאב אחד בכל פעם** לפי התבנית של `obj/resources/items.py`. הפקודה
    `/new-suite <resource>` כותבת את המחלקה, את ה-fixture ואת הסוויטה.
 5. **את כל השאר משאירים** — הגידור, הגנת prod, בדיקות היחידה, פוקדן הבאגים, ה-CI והסוכנים.
+
+## שימוש בלי Claude Code
+
+כל מה שמחוץ ל-`.claude/` הוא פייתון ו-pytest רגילים. התשתית, הסוויטות, פותח הבאגים,
+הדשבורד, הניקוי, הרגרסיה, ההתראות וה-CI — הכל עובד בלי שום AI.
+
+בתיקיית `.claude/` יש שני דברים, ואף אחד מהם לא מריץ כלום:
+
+| מה | בלי Claude Code |
+|---|---|
+| `CLAUDE.md` | קוראים אותו כמדריך לתורמים. אלה חוקי הריפו, כתובים לבן אדם |
+| הסקילים | ספר הנהלים של הצוות: איך מאמתים כרטיס, איך כותבים באג, מה עושים עם טסט מתחלף |
+| הסוכנים והפקודות | צ׳קליסטים. `/new-suite` מתאר בדיוק מה ליצור ובאיזה סדר |
+
+**עם עוזר אחר.** מפנים אותו לאותו קובץ. Cursor קורא `.cursorrules`, Copilot קורא
+`.github/copilot-instructions.md`, ורובם מקבלים נתיב שמגדירים:
+
+```bash
+ln -s CLAUDE.md .cursorrules
+```
+
+**בלי עוזר בכלל.** מוחקים את `.claude/` ושום דבר לא נשבר. את `CLAUDE.md` כדאי להשאיר —
+מי שמצטרף לצוות וקורא אותו לומד איפה יושבים הפיילואדים ולמה `xfail` אסור, וזו בדיוק הסיבה
+שהוא קיים גם בשביל סוכן.
+
+---
+
+## איך מטמיעים, שלב אחרי שלב
+
+לוח זמנים מציאותי להטמעה על מוצר אמיתי. כל שלב נגמר במשהו שעובד, אז אפשר לעצור בכל נקודה
+ועדיין להיות ברווח.
+
+### יום 1 — שיירוץ מול משהו אמיתי
+
+1. `make install`, ואז `make api` ו-`make test`. אם הדמו עובר, המחשב שלך תקין — וכל כשל
+   מאוחר יותר הוא המוצר או הקונפיג, לא ההתקנה.
+2. לקרוא את `CLAUDE.md` פעם אחת. רבע שעה, וזה כל החוזה.
+3. להוסיף בלוק לסביבה אמיתית אחת ב-`config/config.json`.
+4. לשנות את `register_persona` ב-`obj/client.py` לשיטת ההתחברות של המוצר.
+5. להריץ `ENV=<שלך> pytest -q`. זה ייכשל — המשאבים של הדמו לא קיימים שם. זה תקין: הוכחת
+   שהקליינט, הקונפיג והאישורים עובדים.
+
+### יום 2 — הסוויטה האמיתית הראשונה
+
+6. לבחור את המשאב **הכי קטן** במוצר. לא את הכי חשוב.
+7. להעתיק את `obj/resources/items.py`, לשנות שם, להגדיר `resource`, ולשמור על הבנאי ועל
+   מתודת הפעולה.
+8. לרשום אותו ב-`obj/__init__.py` ולהוסיף fixture ב-`tests/conftest.py`.
+9. לכתוב מסלול מוצלח אחד ומסלול כושל אחד. לבדוק ערכים, לא קודי סטטוס.
+10. למחוק את סוויטות הדמו ברגע שיש לך משלך.
+
+### שבוע 1 — שהתשתית תתחיל להגן
+
+11. לחבר CI. ה-workflow ב-`.github/workflows/ci.yml` צריך את שם הסביבה ואת האישורים
+    כ-secrets; השאר לא משתנה.
+12. לוודא ש-`tests/unit` עדיין עובר. הוא בודק את התשתית ולא את המוצר, אז הוא אמור להיות
+    ירוק מהדקה הראשונה ולהישאר כזה.
+13. לחבר את פותח הבאגים ל-tracker: `TRACKER_URL`, `TRACKER_EMAIL`, `TRACKER_TOKEN`,
+    `TRACKER_PROJECT`. **להריץ `pytest --file-bugs-dry-run` ולקרוא מה הוא היה פותח** לפני
+    שנותנים לו לפתוח משהו.
+14. להגדיר `NOTIFY_WEBHOOK` אם הצוות רוצה סיכום בערוץ.
+
+### שבוע 2 — להוריד את הפיגומים
+
+15. למחוק את `demo_api/`, ואת סוויטות ה-UI וה-LLM אם אין להן מקבילה במוצר.
+16. להוריד מ-`requirements.txt` את `fastapi`, `uvicorn` וכל מה שלא בשימוש, ואז להריץ
+    `scripts/maintenance/relock.sh`.
+17. לשנות את שם הריפו ואת הפסקה הראשונה בקובץ הזה.
+18. להוסיף את הסביבות האמיתיות, ולוודא ש-`prod` נמצא בקונפיג **רק** כדי שההגנה תזהה אותו
+    ותסרב.
+
+### מה שומרים תמיד
+
+`tests/unit/`, גידור הסוויטות, הגנת ה-prod, פותח הבאגים, הלדג׳רים, ה-Makefile וה-CI. שום
+דבר מזה לא תלוי במוצר, וזה החלק שלוקח שבועות לבנות נכון בפעם השנייה.
 
 ## הכללים
 
