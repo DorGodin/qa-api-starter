@@ -24,6 +24,7 @@ class Failure:
     nodeid: str
     message: str
     duration: float = 0.0
+    steps: tuple[str, ...] | list[str] = ()
 
     @property
     def test_name(self) -> str:
@@ -107,6 +108,22 @@ def command_for(failure: Failure, env: str | None = None) -> str:
     return f"ENV={env or '<env>'} pytest {flag + ' ' if flag else ''}{failure.nodeid}"
 
 
+def build_steps(failure: Failure, env: str | None = None) -> list[str]:
+    """The calls the failing test made, in order.
+
+    A browser test does its work in the page rather than through the client, so
+    there is nothing to list; say so instead of printing an empty section.
+    """
+    if failure.steps:
+        steps = [f"# {step}" for step in failure.steps]
+        steps.append(f"Reproduce the whole sequence: {command_for(failure, env)}")
+        return steps
+    return [
+        "# Not captured automatically for this suite - add the manual steps before sending.",
+        f"Reproduce the whole sequence: {command_for(failure, env)}",
+    ]
+
+
 def build_description(
     failure: Failure,
     run_url: str | None = None,
@@ -129,8 +146,7 @@ def build_description(
         f"The state the test builds for itself. See {failure.nodeid}.",
         "",
         "*Steps to reproduce:*",
-        f"# {command_for(failure, env)}",
-        "# The failure below reproduces from a clean state.",
+        *build_steps(failure, env),
         "",
         "*Actual result:*",
         assertion_line(failure.message),

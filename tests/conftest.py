@@ -9,6 +9,7 @@ import pytest
 from config.loader import load_env_config
 from obj import ApiClient, Assistant, Items, Orders
 from utils.bug_filing import Failure, JiraTracker, file_failures, format_report
+from utils import http_trace
 from utils.artifacts import ArtifactLog, set_current_test
 from utils.run_report import RunReport, TestOutcome
 
@@ -136,6 +137,7 @@ _REPORTS_DIR = Path(__file__).resolve().parents[1] / "reports"
 
 def pytest_runtest_setup(item):
     set_current_test(item.nodeid)
+    http_trace.reset(item.nodeid)
 
 
 @pytest.hookimpl(hookwrapper=True)
@@ -152,7 +154,12 @@ def pytest_runtest_makereport(item, call):
         )
     if report.when == "call" and report.failed:
         _FAILURES.append(
-            Failure(nodeid=report.nodeid, message=str(report.longrepr), duration=report.duration)
+            Failure(
+                nodeid=report.nodeid,
+                message=str(report.longrepr),
+                duration=report.duration,
+                steps=http_trace.steps_for(report.nodeid),
+            )
         )
 
 

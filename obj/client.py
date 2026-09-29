@@ -6,6 +6,7 @@ from typing import Any
 import requests
 
 from config.loader import load_env_config
+from utils import artifacts, http_trace
 
 DEFAULT_TIMEOUT = 20
 
@@ -96,4 +97,9 @@ class ApiClient:
                 raise KeyError(f"persona {name!r} not registered")
             headers.setdefault("Authorization", f"Bearer {token}")
         kwargs.setdefault("timeout", DEFAULT_TIMEOUT)
-        return Response(self._session.request(method, f"{self.base_url}{path}", headers=headers, **kwargs))
+        response = Response(self._session.request(method, f"{self.base_url}{path}", headers=headers, **kwargs))
+        http_trace.record(
+            artifacts.current_test(),
+            http_trace.Call(method=method.upper(), path=path, status=response.status_code, persona=name),
+        )
+        return response

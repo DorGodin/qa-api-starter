@@ -124,6 +124,12 @@ run reports.
 | `pytest --file-bugs-dry-run` | prints the exact payload it would send, creates nothing |
 | `pytest --file-bugs` | one ticket per failed test |
 
+Steps to reproduce are the calls the failing test actually made, in order, recorded in
+`ApiClient.request` and filtered so the harness's own calls — signing a persona in,
+resetting the environment — stay out of a report a developer is meant to follow. A suite
+that does its work in a browser records nothing there, and the section says so rather than
+looking empty.
+
 The description follows the team's bug template — ENV, Precondition, Steps to reproduce,
 Actual result, Expected result, Notes — filled with what the run actually knows. The prefix
 is derived (`tests/ui` is FE, everything else BE), the steps are the exact command that

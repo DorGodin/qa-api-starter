@@ -20,7 +20,9 @@ reader should know what is broken without opening it.
 
 1. **ENV(+mobile type)** — the environment, and the device or browser when it matters.
 2. **Precondition** — the state that must exist before the steps.
-3. **Steps to reproduce** — numbered, and short enough that someone else can follow them.
+3. **Steps to reproduce** — what a person does, in order, not how to run the test. For an
+   API defect that is the sequence of calls; the filer records these automatically and
+   leaves out sign-in and environment resets.
 4. **Actual result** — the one line that says what went wrong, then the full evidence in a
    code block. The line first, so a product reader sees the point before the trace.
 5. **Expected result** — the rule that should hold, in one sentence.

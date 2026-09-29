@@ -108,3 +108,13 @@ three hours; that breaks twice a year when daylight saving changes.
 **Rule:** store UTC, display local, and name the zone on screen. Conversion comes from the
 timezone database, never from a hardcoded offset. `DASHBOARD_TZ` pins one shared clock when
 a distributed team needs to agree on what "14:20" meant.
+
+## 2026-09-29 — "Steps to reproduce" that told a developer to run the test suite
+
+The filer put the pytest command in Steps to reproduce. That is not a step: it asks a
+developer to install and run the suite before they can look at the defect, and it says
+nothing about what the product was asked to do.
+
+**Rule:** steps describe what a person does, in order. For an API defect that is the
+sequence of calls, which is already passing through `ApiClient.request` and can be recorded
+there. The command to rerun the test belongs at the end, as a convenience, not as the steps.

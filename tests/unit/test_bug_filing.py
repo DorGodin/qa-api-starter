@@ -93,6 +93,28 @@ def test_the_expected_result_is_labelled_as_derived(failure):
     assert "derived from the test name" in body, "a machine guess must not read like a human wrote it"
 
 
+def test_steps_are_the_calls_the_test_made():
+    failure = Failure(
+        nodeid="tests/suites/test_x.py::test_y",
+        message="E   AssertionError: boom",
+        steps=["POST /items as admin -> 201", "POST /orders as member -> 201"],
+    )
+    body = build_description(failure, env="qa")
+    steps = body.split("*Steps to reproduce:*")[1].split("*Actual result:*")[0]
+
+    assert "# POST /items as admin -> 201" in steps
+    assert "# POST /orders as member -> 201" in steps
+    assert steps.index("POST /items") < steps.index("POST /orders"), "order is the whole point"
+    assert "pytest" in steps, "the command stays as a way to reproduce the whole sequence"
+
+
+def test_a_suite_with_no_recorded_calls_asks_for_manual_steps():
+    failure = Failure(nodeid="tests/ui/test_x.py::test_y", message="E   boom")
+    steps = build_description(failure, env="qa").split("*Steps to reproduce:*")[1]
+
+    assert "add the manual steps" in steps, "an empty section would look like there are none"
+
+
 def test_the_prefix_is_derived_from_where_the_test_lives():
     ui = Failure(nodeid="tests/ui/test_x.py::test_y", message="boom")
     api = Failure(nodeid="tests/suites/test_x.py::test_y", message="boom")
