@@ -37,3 +37,14 @@ product bugs; both were test bugs.
 
 **Rule:** UI tests reset state per test, not per module, and never select a row by position
 unless the order is part of the assertion. Target the row by its content or its id.
+
+## 2026-09-29 — A mutation survived because a branch was never exercised
+
+The assistant picks its wording from `len(question) % 2`. All three parametrised questions
+happened to be odd length, so one of the two phrasings was never produced by any test.
+Breaking that branch on purpose did not fail the suite — the tests looked thorough and were
+blind to half the feature.
+
+**Rule:** when a feature can emit more than one variant, enumerate the variants and cover
+each one. Then break each on purpose and confirm the suite goes red. A suite that stays
+green under a deliberate defect is not covering that code.

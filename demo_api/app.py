@@ -240,6 +240,50 @@ def approve_order(order_id: str, _: dict = Depends(admin_only)):
     return _view(order, {"lines"})
 
 
+class AssistantQuestion(BaseModel):
+    question: str = Field(min_length=1, max_length=300)
+
+
+@app.post("/assistant/answer")
+def assistant_answer(body: AssistantQuestion, user: dict = Depends(current_user)):
+    """A stand-in for an LLM feature.
+
+    It answers in varying phrasing, grounded in the caller's real data, and
+    refuses questions it has no data for. That is enough to exercise the shape
+    of an LLM evaluation: non-deterministic wording, facts that must survive,
+    and a refusal path.
+    """
+    question = body.question.lower()
+    budget = USERS[user["username"]]["budget"]
+    mine = [o for o in DB["orders"].values() if o["owner"] == user["username"]]
+    phrasing = len(question) % 2
+
+    if "budget" in question:
+        text = (
+            f"You have {budget:.2f} left in your budget."
+            if phrasing == 0
+            else f"Your remaining budget is {budget:.2f}."
+        )
+        return {"answer": text, "grounded_in": {"budget": budget}, "refused": False}
+
+    if "order" in question:
+        if not mine:
+            return {"answer": "You have no orders yet.", "grounded_in": {"orders": 0}, "refused": False}
+        total = _round(sum(o["total_amount"] for o in mine))
+        text = (
+            f"You have {len(mine)} order(s) totalling {total:.2f}."
+            if phrasing == 0
+            else f"Across {len(mine)} order(s) your total is {total:.2f}."
+        )
+        return {"answer": text, "grounded_in": {"order_count": len(mine), "total": total}, "refused": False}
+
+    return {
+        "answer": "I can only answer questions about your budget and your orders.",
+        "grounded_in": {},
+        "refused": True,
+    }
+
+
 @app.get("/me/budget")
 def my_budget(user: dict = Depends(current_user)):
     return {"username": user["username"], "budget": USERS[user["username"]]["budget"]}

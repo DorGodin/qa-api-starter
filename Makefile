@@ -38,3 +38,6 @@ perf-load:      ## concurrency on the read path; override VUS, RAMP, HOLD
 
 ui:             ## browser suite (needs: playwright install chromium)
 	ENV=$(ENV) PYTHONPATH=. $(PY) -m pytest --ui tests/ui
+
+llm:            ## LLM evaluation with DeepEval, deterministic metrics, no API key
+	ENV=$(ENV) PYTHONPATH=. $(PY) -m pytest --llm tests/llm

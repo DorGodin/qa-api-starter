@@ -40,6 +40,7 @@ and `obj/resources/` with the real product; everything else stays.
 | `pytest --unit` | + `tests/unit/` — the framework's own tests, mocks only, no API |
 | `pytest --edge-cases` | + `tests/edge-cases/` — validation edge cases |
 | `pytest --ui` | + `tests/ui/` — Playwright browser suite |
+| `pytest --llm` | + `tests/llm/` — LLM evaluation with DeepEval |
 
 Default `pytest` is product verification. `tests/unit/` must never need the network, so
 the environment check lives in the session fixture and not in `pytest_configure`.
@@ -91,6 +92,22 @@ sends it.
 - **Select by `data-testid`.** Never by CSS class or visible text that a copy change breaks.
 - **Assert what the user sees**, including the error message. A 402 the user never sees is
   a different defect from a 402 shown as "Not enough budget".
+
+## LLM features
+
+`tests/llm/` evaluates an assistant style feature with DeepEval, gated behind `--llm`.
+
+- **Grade deterministically by default.** A judge model costs money, needs a key and is
+  itself non-deterministic, which makes it a poor gate for every merge. The metrics in
+  `utils/llm_metrics.py` check that every grounded fact survived into the answer, that no
+  figure was invented, and that the feature refused what it has no data for. They run
+  offline in milliseconds.
+- **Cover every phrasing the feature can emit.** A defect in a wording no test happens to
+  trigger survives the whole suite. If the feature varies its output, parametrise until
+  every variant is exercised.
+- **Assert the fact, not the sentence.** The wording may change; the number may not.
+- Judged metrics are opt-in, live in their own test so a missing key skips only that test,
+  and never stand alone between a wrong number and a user.
 
 ## Performance
 

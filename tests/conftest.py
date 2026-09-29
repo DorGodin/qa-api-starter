@@ -6,13 +6,14 @@ from pathlib import Path
 import pytest
 
 from config.loader import load_env_config
-from obj import ApiClient, Items, Orders
+from obj import ApiClient, Assistant, Items, Orders
 from utils.bug_filing import Failure, JiraTracker, file_failures, format_report
 
 GATED = {
     "tests/unit": "--unit",
     "tests/edge-cases": "--edge-cases",
     "tests/ui": "--ui",
+    "tests/llm": "--llm",
 }
 PASSWORDS = {"admin": "admin-secret", "member": "member-secret"}
 
@@ -21,6 +22,7 @@ def pytest_addoption(parser):
     parser.addoption("--unit", action="store_true", default=False, help="collect tests/unit")
     parser.addoption("--edge-cases", action="store_true", default=False, help="collect tests/edge-cases")
     parser.addoption("--ui", action="store_true", default=False, help="collect tests/ui (browser)")
+    parser.addoption("--llm", action="store_true", default=False, help="collect tests/llm (LLM evaluation)")
     parser.addoption("--file-bugs", action="store_true", default=False, help="open a ticket per failed test")
     parser.addoption("--file-bugs-dry-run", action="store_true", default=False, help="print the payloads, create nothing")
 
@@ -77,6 +79,11 @@ def items(api):
 @pytest.fixture(scope="session")
 def orders(api):
     return Orders(api)
+
+
+@pytest.fixture(scope="session")
+def assistant(api):
+    return Assistant(api)
 
 
 @pytest.fixture(scope="module", autouse=True)
