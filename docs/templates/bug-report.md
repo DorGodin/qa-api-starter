@@ -1,30 +1,24 @@
-# <AREA> - <what is broken, in plain English>
+# <BE|FE> - <what broke, in words>: <the mismatch>
 
-## TL;DR for product
+*ENV(+mobile type):*
+<environment, and the device or browser when it matters>
 
-<Two lines. What the product does, and why it matters to a user. No jargon.>
+*Precondition:*
+<the state that must exist before the steps>
 
-## Evidence
+*Steps to reproduce:*
+# <step>
+# <step>
 
-| Sent | Expected | Got |
-|---|---|---|
-| `POST /orders {quantity: 3}` | `total_amount 75.00` | `total_amount 25.00` |
+*Actual result:*
+<the one line that says what went wrong>
+{code}
+<the full evidence: response, trace, console output>
+{code}
 
-```
-<request / response, or the failing assertion>
-```
+*Expected result:*
+<the rule that should hold, in one sentence>
 
-## Expected
-
-<One sentence, stated as the rule that should hold.>
-
-## Notes
-
-- Endpoint: `<method path>`
-- Field: `<field>`
-- Environment: `<env>`  ·  Reproducible on a clean state: yes / no
-- Caught by: `tests/suites/...::test_...`
-
-Verified as working:
-
-- <thing that is fine, so nobody re-checks it>
+*Notes:*
+Video\image\api\console error attached
+<anything a developer needs to locate the cause>

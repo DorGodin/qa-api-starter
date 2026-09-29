@@ -7,19 +7,24 @@ description: Use when writing a bug report, filing a defect, or drafting a ticke
 
 A bug ticket is read by product and support, not only by engineers.
 
-## The title names the defect
+## The title
 
-> Shipping fee override has no preview, and asking for a preview performs the change
+`<BE|FE> - <what broke, in words>: <the mismatch>`
 
-not *"Problem in shipping fees"*. A reader should know what is broken without opening it.
+> BE - Submitting draws from budget: AssertionError: assert 425.0 == 400.0
 
-## Structure
+The prefix routes the ticket and is derived from where the failure happened, not typed. A
+reader should know what is broken without opening it.
 
-1. **TL;DR for product** — two lines, plain words, no jargon where a normal word exists.
-2. **Evidence** — a table or a code block, never prose. `sent -> got` rows are read at a
-   glance; the same facts in a paragraph are not.
-3. **Expected** — one sentence, stated as the rule that should hold.
-4. **Notes** — only what a developer needs to locate the cause.
+## The sections, in this order
+
+1. **ENV(+mobile type)** — the environment, and the device or browser when it matters.
+2. **Precondition** — the state that must exist before the steps.
+3. **Steps to reproduce** — numbered, and short enough that someone else can follow them.
+4. **Actual result** — the one line that says what went wrong, then the full evidence in a
+   code block. The line first, so a product reader sees the point before the trace.
+5. **Expected result** — the rule that should hold, in one sentence.
+6. **Notes** — attachments, then only what a developer needs to locate the cause.
 
 Skeleton: `docs/templates/bug-report.md`
 

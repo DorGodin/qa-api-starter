@@ -36,6 +36,15 @@ No Python on your machine? `docker compose run --rm tests` runs everything in a 
 
 Only `make test` runs by default. The rest need a flag.
 
+After a run:
+
+| Command | Shows |
+|---|---|
+| `make report` | the run that just finished: counts per group, failures, skips, slowest tests |
+| `make dashboard` | every run so far, and every object the runs created, as one HTML page |
+| `make perf-smoke` | k6 smoke test |
+| `make perf-load` | k6 load test |
+
 **Why they are separate.** A developer checking one change should not wait for a browser to
 start. When everything always runs, people stop running anything.
 
@@ -204,6 +213,14 @@ make test        # טרמינל 2 — הרצת הבדיקות
 | `make llm` | שפיצ׳ר ה-AI לא ממציא נתונים | 41 |
 
 רק `make test` רצה כברירת מחדל. השאר דורשות דגל.
+
+אחרי ריצה:
+
+| פקודה | מה היא מציגה |
+|---|---|
+| `make report` | הריצה שהסתיימה: ספירה לכל קבוצה, כשלים, דילוגים והבדיקות האיטיות |
+| `make dashboard` | כל הריצות וכל האובייקטים שנוצרו, בדף HTML אחד |
+| `make perf-smoke` / `make perf-load` | בדיקות עומס ב-k6 |
 
 **למה מפרידים.** מפתח שבודק שינוי קטן לא צריך לחכות שדפדפן יעלה. כשהכל רץ תמיד, אנשים
 מפסיקים להריץ בכלל.

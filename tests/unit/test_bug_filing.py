@@ -3,6 +3,9 @@ import pytest
 from utils.bug_filing import (
     Action,
     Failure,
+    assertion_line,
+    humanise,
+    prefix_for,
     build_description,
     build_payload,
     build_title,
@@ -44,10 +47,12 @@ def test_area_comes_from_the_folder(failure):
     assert Failure(nodeid="tests/edge-cases/test_validation.py::test_x", message="").area == "edge-cases"
 
 
-def test_title_names_the_defect_not_the_area(failure):
+def test_title_says_what_broke_in_words_then_the_mismatch(failure):
     title = build_title(failure)
-    assert title.startswith("BE - test_totals:")
+
+    assert title.startswith("BE - Totals:"), title
     assert "75.0 != 80.0" in title
+    assert "test_" not in title, "a reader should not have to parse a function name"
     assert "\n" not in title
 
 
@@ -56,12 +61,76 @@ def test_title_is_capped_for_trackers_that_reject_long_summaries():
     assert len(build_title(long_failure)) <= 200
 
 
-def test_description_carries_the_marker_and_the_evidence(failure):
-    body = build_description(failure, run_url="https://ci.example/run/1")
+def test_description_follows_the_team_template_in_order(failure):
+    body = build_description(failure, run_url="https://ci.example/run/1", env="qa", platform="API")
+
+    sections = ["*ENV(+mobile type):*", "*Precondition:*", "*Steps to reproduce:*",
+                "*Actual result:*", "*Expected result:*", "*Notes:*"]
+    positions = [body.index(section) for section in sections]
+    assert positions == sorted(positions), "the sections must appear in the template's order"
+
+
+def test_description_carries_the_marker_the_evidence_and_the_environment(failure):
+    body = build_description(failure, run_url="https://ci.example/run/1", env="qa", platform="API")
+
     assert marker_for(failure.nodeid) in body
     assert "75.0 != 80.0" in body
     assert "https://ci.example/run/1" in body
-    assert body.index("TL;DR") < body.index("Evidence"), "plain language must come first"
+    assert "qa" in body
+
+
+def test_steps_give_the_exact_command_with_the_right_flag():
+    ui = Failure(nodeid="tests/ui/test_x.py::test_y", message="boom")
+    body = build_description(ui, env="staging")
+
+    assert "ENV=staging pytest --ui tests/ui/test_x.py::test_y" in body
+
+
+def test_the_expected_result_is_labelled_as_derived(failure):
+    body = build_description(failure, env="qa")
+
+    assert "Totals" in body
+    assert "derived from the test name" in body, "a machine guess must not read like a human wrote it"
+
+
+def test_the_prefix_is_derived_from_where_the_test_lives():
+    ui = Failure(nodeid="tests/ui/test_x.py::test_y", message="boom")
+    api = Failure(nodeid="tests/suites/test_x.py::test_y", message="boom")
+
+    assert prefix_for(ui) == "FE"
+    assert prefix_for(api) == "BE"
+    assert build_title(ui).startswith("FE - ")
+    assert build_title(api).startswith("BE - ")
+
+
+def test_an_explicit_prefix_still_wins(failure):
+    assert build_title(failure, prefix="OPS").startswith("OPS - ")
+
+
+def test_the_evidence_leads_with_the_assertion_then_keeps_the_full_trace(failure):
+    body = build_description(failure, env="qa")
+
+    actual = body.split("*Actual result:*")[1].split("*Expected result:*")[0]
+    assert actual.strip().startswith("AssertionError"), "a reader must see the point before the trace"
+    assert "{code}" in actual, "the full trace is still there for whoever needs it"
+
+
+def test_the_notes_keep_the_teams_standing_line(failure):
+    body = build_description(failure, env="qa")
+
+    notes = body.split("*Notes:*")[1]
+    assert notes.strip().splitlines()[0] == "Video\\image\\api\\console error attached"
+
+
+def test_the_assertion_is_taken_from_the_line_pytest_marked():
+    message = "    def test_x():\n>       assert a == b\nE       AssertionError: assert 1 == 2\n"
+    assert assertion_line(message) == "AssertionError: assert 1 == 2"
+    assert assertion_line("") == "assertion failed"
+
+
+def test_humanise_turns_a_test_name_into_a_sentence():
+    assert humanise("test_submitting_draws_from_budget") == "Submitting draws from budget"
+    assert humanise("test_") == ""
 
 
 def test_routing_falls_back_to_wildcard_then_to_nobody(failure):

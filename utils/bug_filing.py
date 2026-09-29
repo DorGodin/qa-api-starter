@@ -55,26 +55,96 @@ def marker_for(nodeid: str) -> str:
     return f"{MARKER_PREFIX}:{nodeid}"
 
 
-def build_title(failure: Failure, prefix: str = "BE") -> str:
-    """Name the defect, not the area. The reader should know what broke."""
-    first_line = failure.message.strip().splitlines()[0] if failure.message.strip() else "assertion failed"
-    return f"{prefix} - {failure.test_name}: {first_line}"[:200]
+def humanise(test_name: str) -> str:
+    """`test_submitting_draws_from_budget` -> `Submitting draws from budget`.
+
+    A test name is the closest thing to a stated expectation that a filer can
+    read without guessing, so it becomes the expected result, labelled as
+    derived rather than presented as if a person wrote it.
+    """
+    words = test_name.removeprefix("test_").replace("_", " ").strip()
+    return words[:1].upper() + words[1:] if words else ""
 
 
-def build_description(failure: Failure, run_url: str | None = None) -> str:
+FRONTEND_AREAS = {"ui"}
+
+
+def prefix_for(failure: Failure) -> str:
+    """A browser test failing is a front end finding; everything else is back end.
+
+    The prefix routes the ticket, so it is derived rather than typed.
+    """
+    return "FE" if failure.area in FRONTEND_AREAS else "BE"
+
+
+def assertion_line(message: str) -> str:
+    """The assertion pytest reported, without its `E` gutter marker."""
+    for line in (message or "").splitlines():
+        stripped = line.strip()
+        if stripped.startswith("E "):
+            return stripped[1:].strip()
+    for line in (message or "").splitlines():
+        if line.strip():
+            return line.strip()
+    return "assertion failed"
+
+
+def build_title(failure: Failure, prefix: str | None = None) -> str:
+    """Name the defect in words, then the mismatch.
+
+    `test_submitting_draws_from_budget` says more about what broke than the
+    traceback does, so it leads.
+    """
+    prefix = prefix or prefix_for(failure)
+    return f"{prefix} - {humanise(failure.test_name)}: {assertion_line(failure.message)}"[:200]
+
+
+def command_for(failure: Failure, env: str | None = None) -> str:
+    """The exact command that reproduces this one failure, flag and env included."""
+    flags = {"unit": "--unit", "edge-cases": "--edge-cases", "ui": "--ui",
+             "llm": "--llm", "security": "--security"}
+    flag = flags.get(failure.area)
+    return f"ENV={env or '<env>'} pytest {flag + ' ' if flag else ''}{failure.nodeid}"
+
+
+def build_description(
+    failure: Failure,
+    run_url: str | None = None,
+    env: str | None = None,
+    platform: str | None = None,
+) -> str:
+    """The team's bug template, filled with what the run actually knows.
+
+    Anything the run cannot know is marked for a person to complete, never
+    invented.
+    """
+    environment = " · ".join(part for part in (env, platform) if part) or "(env unknown)"
+    evidence = failure.message.strip() or "(no message captured)"
+
     lines = [
-        "*TL;DR for product / non-engineers*",
-        f"An automated check named {failure.test_name} failed. "
-        "The behaviour below is what the product did, not what it should do.",
+        "*ENV(+mobile type):*",
+        environment,
         "",
-        "*Evidence*",
+        "*Precondition:*",
+        f"The state the test builds for itself. See {failure.nodeid}.",
+        "",
+        "*Steps to reproduce:*",
+        f"# {command_for(failure, env)}",
+        "# The failure below reproduces from a clean state.",
+        "",
+        "*Actual result:*",
+        assertion_line(failure.message),
         "{code}",
-        failure.message.strip() or "(no message captured)",
+        evidence,
         "{code}",
         "",
-        "*Notes*",
+        "*Expected result:*",
+        f"{humanise(failure.test_name)} _(derived from the test name - confirm before sending)_",
+        "",
+        "*Notes:*",
+        "Video\\image\\api\\console error attached",
+        "Opened automatically from a failed run.",
         f"Test: {failure.nodeid}",
-        f"Area: {failure.area}",
     ]
     if run_url:
         lines.append(f"Run: {run_url}")
@@ -93,14 +163,16 @@ def build_payload(
     failure: Failure,
     project: str,
     routing: dict[str, str] | None = None,
-    title_prefix: str = "BE",
+    title_prefix: str | None = None,
     run_url: str | None = None,
+    env: str | None = None,
+    platform: str | None = None,
 ) -> dict[str, Any]:
     payload: dict[str, Any] = {
         "project": project,
         "issuetype": "Bug",
         "summary": build_title(failure, title_prefix),
-        "description": build_description(failure, run_url),
+        "description": build_description(failure, run_url, env=env, platform=platform),
     }
     assignee = route(failure, routing)
     if assignee:
@@ -113,8 +185,10 @@ def file_failures(
     tracker: Tracker,
     project: str,
     routing: dict[str, str] | None = None,
-    title_prefix: str = "BE",
+    title_prefix: str | None = None,
     run_url: str | None = None,
+    env: str | None = None,
+    platform: str | None = None,
     dry_run: bool = False,
 ) -> list[Action]:
     """One ticket per failing test, deduplicated on the test nodeid.
@@ -124,7 +198,7 @@ def file_failures(
     """
     actions: list[Action] = []
     for failure in failures:
-        payload = build_payload(failure, project, routing, title_prefix, run_url)
+        payload = build_payload(failure, project, routing, title_prefix, run_url, env, platform)
         existing = tracker.search(marker_for(failure.nodeid))
 
         if dry_run:

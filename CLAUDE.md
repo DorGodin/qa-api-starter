@@ -124,6 +124,12 @@ run reports.
 | `pytest --file-bugs-dry-run` | prints the exact payload it would send, creates nothing |
 | `pytest --file-bugs` | one ticket per failed test |
 
+The description follows the team's bug template — ENV, Precondition, Steps to reproduce,
+Actual result, Expected result, Notes — filled with what the run actually knows. The prefix
+is derived (`tests/ui` is FE, everything else BE), the steps are the exact command that
+reproduces the one failure, and the expected result comes from the test name and is
+**labelled as derived**, because a machine's guess must never read as if a person wrote it.
+
 The filer lives in `utils/bug_filing.py`. It deduplicates on the test nodeid embedded in
 the description, so a re-run comments on the open ticket instead of opening a second one,
 and it routes by the test's folder. Credentials come from `TRACKER_URL`, `TRACKER_EMAIL`,
