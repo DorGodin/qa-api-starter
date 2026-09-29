@@ -28,3 +28,33 @@ jobs:
           python -m uvicorn demo_api.app:app --host 127.0.0.1 --port 8000 &
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/health && break; sleep 0.5; done
       - run: ENV=ci PYTHONPATH=. pytest --edge-cases
+
+  ui:
+    name: browser suite (playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - run: pip install -r requirements.lock.txt
+      - run: python -m playwright install --with-deps chromium
+      - name: start demo API
+        run: |
+          python -m uvicorn demo_api.app:app --host 127.0.0.1 --port 8000 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/health && break; sleep 0.5; done
+      - run: ENV=ci PYTHONPATH=. pytest --ui tests/ui
+
+  perf:
+    name: perf smoke (k6)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - run: pip install -r requirements.lock.txt
+      - name: start demo API
+        run: |
+          python -m uvicorn demo_api.app:app --host 127.0.0.1 --port 8000 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/health && break; sleep 0.5; done
+      - uses: grafana/setup-k6-action@v1
+      - run: k6 run perf/smoke.js

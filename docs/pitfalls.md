@@ -28,3 +28,12 @@ prints the failure traceback after it.
 
 **Rule:** before concluding a feature does not work, check how you are reading its output.
 Re-run without the filter first.
+
+## 2026-09-29 — UI tests picked the wrong row
+
+Three browser tests failed because they targeted `.first` while new orders render last, and
+because state from earlier tests in the module was still on screen. The failures looked like
+product bugs; both were test bugs.
+
+**Rule:** UI tests reset state per test, not per module, and never select a row by position
+unless the order is part of the assertion. Target the row by its content or its id.

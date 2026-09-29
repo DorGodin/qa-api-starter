@@ -29,3 +29,12 @@ lock:
 
 clean:
 	rm -rf .pytest_cache **/__pycache__
+
+perf-smoke:     ## one user, seconds, gates every merge
+	k6 run perf/smoke.js
+
+perf-load:      ## concurrency on the read path; override VUS, RAMP, HOLD
+	k6 run -e VUS=$(or $(VUS),10) -e RAMP=$(or $(RAMP),10s) -e HOLD=$(or $(HOLD),20s) perf/load.js
+
+ui:             ## browser suite (needs: playwright install chromium)
+	ENV=$(ENV) PYTHONPATH=. $(PY) -m pytest --ui tests/ui

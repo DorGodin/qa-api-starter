@@ -15,6 +15,8 @@ make api              # terminal 1: the demo API on :8000
 make test             # terminal 2: product suites
 make unit             # the framework's own tests - no API, no network
 make all              # everything, including validation edge cases
+make ui               # browser suite (Playwright)
+make perf-smoke       # k6 smoke, thresholds as the gate
 ```
 
 ## What is in here
@@ -29,7 +31,9 @@ make all              # everything, including validation edge cases
 | `utils/helpers.py` | UTC-aware datetimes, `cached_lookup`, `assert_not_prod` |
 | `config/` | one block per environment, no if/elif ladder, local overrides gitignored |
 | `utils/bug_filing.py` | run level bug filing: one ticket per failed test, deduplicated on the nodeid, routed by area, off unless asked |
-| `.claude/` | conventions, a test reviewer and a ticket verifier agent, and commands for sweeping the QA queue, scaffolding suites and filing bugs |
+| `tests/ui/` | Playwright suite driving a real browser, gated behind `--ui` |
+| `perf/` | k6 smoke and load scripts whose thresholds fail the pipeline, not a dashboard |
+| `.claude/` | conventions, a test reviewer and a ticket verifier agent, skills for verifying a story and writing a bug, and commands for the QA queue, scaffolding and bug filing |
 
 ## Filing bugs from a run
 

@@ -4,6 +4,7 @@ pytest==8.3.4
 pytest-dependency==0.6.0
 requests==2.32.3
 Faker==33.1.0
+pytest-playwright==0.6.2
 
 # demo target only - drop these when you point the framework at a real API
 fastapi==0.115.6

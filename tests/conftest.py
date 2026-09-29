@@ -12,6 +12,7 @@ from utils.bug_filing import Failure, JiraTracker, file_failures, format_report
 GATED = {
     "tests/unit": "--unit",
     "tests/edge-cases": "--edge-cases",
+    "tests/ui": "--ui",
 }
 PASSWORDS = {"admin": "admin-secret", "member": "member-secret"}
 
@@ -19,6 +20,7 @@ PASSWORDS = {"admin": "admin-secret", "member": "member-secret"}
 def pytest_addoption(parser):
     parser.addoption("--unit", action="store_true", default=False, help="collect tests/unit")
     parser.addoption("--edge-cases", action="store_true", default=False, help="collect tests/edge-cases")
+    parser.addoption("--ui", action="store_true", default=False, help="collect tests/ui (browser)")
     parser.addoption("--file-bugs", action="store_true", default=False, help="open a ticket per failed test")
     parser.addoption("--file-bugs-dry-run", action="store_true", default=False, help="print the payloads, create nothing")
 

@@ -39,6 +39,7 @@ and `obj/resources/` with the real product; everything else stays.
 | `pytest` | product behaviour suites only |
 | `pytest --unit` | + `tests/unit/` — the framework's own tests, mocks only, no API |
 | `pytest --edge-cases` | + `tests/edge-cases/` — validation edge cases |
+| `pytest --ui` | + `tests/ui/` — Playwright browser suite |
 
 Default `pytest` is product verification. `tests/unit/` must never need the network, so
 the environment check lives in the session fixture and not in `pytest_configure`.
@@ -73,9 +74,32 @@ Do not add per-assertion filing calls back into test files.
 | `/new-suite` | scaffolds an obj class, fixture and suite for one resource |
 | `/explore-api` | reads the product source and reports exactly what the tests must send |
 | `/file-bugs` | dry run first, then file, after an explicit yes |
+| `verify-story` skill | derives criteria, verifies each one with evidence, assigns PASS / FAIL / UNCERTAIN |
+| `write-bug` skill | how a bug report is written so product, support and engineering can all act on it |
 
 Every agent is read-only against the tracker. A comment is drafted and shown; a human
 sends it.
+
+## UI tests
+
+`tests/ui/` drives a real browser with Playwright and is gated behind `--ui`.
+
+- **Sign in through the form.** A UI suite that injects a token stops covering the login.
+- **Reset state per test.** A browser test reads whatever is on screen, so a leftover row
+  from an earlier test changes what `.first` and `.last` point at. This is a function
+  scoped fixture here, unlike the module scoped reset the API suites use.
+- **Select by `data-testid`.** Never by CSS class or visible text that a copy change breaks.
+- **Assert what the user sees**, including the error message. A 402 the user never sees is
+  a different defect from a 402 shown as "Not enough budget".
+
+## Performance
+
+`perf/` holds k6 scripts. `smoke.js` answers "does it work under one user" in seconds and
+gates every merge; `load.js` puts concurrency on the read path.
+
+Thresholds in `options.thresholds` are the release gate: a breach exits non-zero and fails
+the pipeline. They are not numbers somebody eyeballs in a dashboard. When a threshold
+moves, say why in the commit message.
 
 ## Environments
 

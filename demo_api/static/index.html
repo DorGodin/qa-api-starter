@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Starter Demo</title>
+<style>
+ body{font-family:system-ui,sans-serif;margin:0;background:#f8fafc;color:#0f172a}
+ header{background:#0e5c63;color:#fff;padding:14px 22px;display:flex;justify-content:space-between;align-items:center}
+ main{max-width:860px;margin:22px auto;padding:0 18px}
+ section{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:16px 18px;margin-bottom:16px}
+ h2{font-size:15px;text-transform:uppercase;letter-spacing:1px;color:#0e5c63;margin:0 0 10px}
+ input,select,button{font:inherit;padding:7px 9px;border:1px solid #cbd5e1;border-radius:6px}
+ button{background:#0e5c63;color:#fff;border:0;cursor:pointer}
+ button:disabled{background:#94a3b8;cursor:not-allowed}
+ table{width:100%;border-collapse:collapse;font-size:14px}
+ th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #e2e8f0}
+ .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+ .muted{color:#64748b}
+ .err{color:#b91c1c}
+ .ok{color:#047857}
+ [hidden]{display:none !important}
+</style>
+</head>
+<body>
+<header>
+  <strong>Starter Demo</strong>
+  <span data-testid="whoami" class="muted">not signed in</span>
+</header>
+
+<main>
+  <section id="login-panel">
+    <h2>Sign in</h2>
+    <div class="row">
+      <input data-testid="username" placeholder="username" autocomplete="username">
+      <input data-testid="password" type="password" placeholder="password" autocomplete="current-password">
+      <button data-testid="login">Sign in</button>
+      <span data-testid="login-error" class="err" hidden>Invalid credentials</span>
+    </div>
+  </section>
+
+  <section id="app" hidden>
+    <h2>Budget</h2>
+    <p>Remaining: <strong data-testid="budget">–</strong></p>
+  </section>
+
+  <section id="catalogue" hidden>
+    <h2>Catalogue</h2>
+    <table>
+      <thead><tr><th>Item</th><th>Price</th><th>Quantity</th><th></th></tr></thead>
+      <tbody data-testid="items"></tbody>
+    </table>
+    <p data-testid="empty-catalogue" class="muted" hidden>No items yet.</p>
+  </section>
+
+  <section id="orders" hidden>
+    <h2>My orders</h2>
+    <table>
+      <thead><tr><th>Order</th><th>Total</th><th>Status</th><th></th></tr></thead>
+      <tbody data-testid="orders"></tbody>
+    </table>
+    <p data-testid="order-error" class="err" hidden></p>
+  </section>
+</main>
+
+<script>
+const $ = (sel) => document.querySelector(`[data-testid="${sel}"]`);
+let token = null, role = null;
+
+async function call(method, path, body) {
+  const headers = {"Content-Type": "application/json"};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const resp = await fetch(path, {method, headers, body: body ? JSON.stringify(body) : undefined});
+  return {status: resp.status, body: resp.status === 204 ? {} : await resp.json().catch(() => ({}))};
+}
+
+$("login").addEventListener("click", async () => {
+  const r = await call("POST", "/auth/token", {username: $("username").value, password: $("password").value});
+  if (r.status !== 200) { $("login-error").hidden = false; return; }
+  $("login-error").hidden = true;
+  token = r.body.access_token; role = r.body.role;
+  $("whoami").textContent = `${$("username").value} (${role})`;
+  document.getElementById("login-panel").hidden = true;
+  for (const id of ["app", "catalogue", "orders"]) document.getElementById(id).hidden = false;
+  await refresh();
+});
+
+async function refresh() {
+  const budget = await call("GET", "/me/budget");
+  $("budget").textContent = budget.body.budget?.toFixed(2) ?? "–";
+
+  const items = await call("GET", "/items?active=true");
+  const rows = items.body.content ?? [];
+  $("empty-catalogue").hidden = rows.length > 0;
+  $("items").innerHTML = rows.map((i) => `
+    <tr data-testid="item-row" data-item="${i.id}">
+      <td data-testid="item-name">${i.name}</td>
+      <td data-testid="item-price">${i.price.toFixed(2)}</td>
+      <td><input data-testid="qty" type="number" min="1" value="1" style="width:70px"></td>
+      <td><button data-testid="order">Order</button></td>
+    </tr>`).join("");
+
+  const orders = await call("GET", "/orders?expand=lines");
+  $("orders").innerHTML = (orders.body.content ?? []).map((o) => `
+    <tr data-testid="order-row" data-order="${o.id}">
+      <td>${o.id}</td>
+      <td data-testid="order-total">${o.total_amount.toFixed(2)}</td>
+      <td data-testid="order-status">${o.status}</td>
+      <td>${o.status === "draft" ? '<button data-testid="submit">Submit</button>' : ""}</td>
+    </tr>`).join("");
+}
+
+document.addEventListener("click", async (event) => {
+  const testid = event.target.dataset.testid;
+  if (testid === "order") {
+    const row = event.target.closest("[data-testid=item-row]");
+    const qty = Number(row.querySelector("[data-testid=qty]").value);
+    await call("POST", "/orders", {lines: [{item_id: row.dataset.item, quantity: qty}]});
+    await refresh();
+  }
+  if (testid === "submit") {
+    const row = event.target.closest("[data-testid=order-row]");
+    const r = await call("POST", `/orders/${row.dataset.order}/submit`);
+    const err = $("order-error");
+    if (r.status === 402) { err.textContent = "Not enough budget for this order."; err.hidden = false; }
+    else if (r.status >= 400) { err.textContent = r.body.detail ?? "Something went wrong."; err.hidden = false; }
+    else { err.hidden = true; }
+    await refresh();
+  }
+});
+</script>
+</body>
+</html>

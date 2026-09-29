@@ -8,9 +8,11 @@ from __future__ import annotations
 
 import itertools
 import uuid
+from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 app = FastAPI(title="Starter Demo API", version="1.0.0")
@@ -72,6 +74,12 @@ def issue_token(body: TokenRequest):
     token = uuid.uuid4().hex
     TOKENS[token] = body.username
     return {"access_token": token, "token_type": "bearer", "role": user["role"]}
+
+
+@app.get("/", include_in_schema=False)
+def ui():
+    """A small page so the UI suites have something real to drive."""
+    return FileResponse(Path(__file__).parent / "static" / "index.html")
 
 
 @app.get("/health")
