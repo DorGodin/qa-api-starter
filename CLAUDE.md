@@ -109,6 +109,10 @@ created with its id and the test that made it.
 The ledger records what was **created**, not what still exists. Check the API before
 calling something leftover data.
 
+**Store UTC, display local.** Both ledgers hold UTC timestamps. The dashboard converts them
+to a local clock and names the zone, so daylight saving comes from the zone database rather
+than a hardcoded offset. `DASHBOARD_TZ` pins it when a team wants one shared clock.
+
 ## Bug Filing
 
 Bug filing is a **run level opt-in**, never an inline call in a test. A test asserts; the

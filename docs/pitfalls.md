@@ -99,3 +99,12 @@ with `E`.
 
 **Rule:** when a helper parses output from another tool, test it with that tool's real
 output, pasted verbatim, not with a cleaned-up version of what you assume it looks like.
+
+## 2026-09-29 — A dashboard showing UTC to people who do not work in UTC
+
+Every time on the dashboard was UTC, three hours behind the readers. The instinct is to add
+three hours; that breaks twice a year when daylight saving changes.
+
+**Rule:** store UTC, display local, and name the zone on screen. Conversion comes from the
+timezone database, never from a hardcoded offset. `DASHBOARD_TZ` pins one shared clock when
+a distributed team needs to agree on what "14:20" meant.

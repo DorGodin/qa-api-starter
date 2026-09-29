@@ -59,6 +59,36 @@ def test_values_are_escaped_so_a_payload_cannot_inject_markup():
     assert "&lt;script&gt;" in html
 
 
+def test_times_are_shown_in_a_local_clock_with_the_zone_named():
+    """The ledgers store UTC. The screen must not, or 14:20 means nothing."""
+    rendered = dashboard.local_time("2026-09-29T14:24:00+00:00")
+
+    assert "2026-09-29" in rendered
+    assert rendered != "2026-09-29 14:24", "the time was not converted from UTC"
+    assert rendered.split()[-1], "the timezone must be named so the reading is unambiguous"
+
+
+def test_an_unparseable_timestamp_degrades_instead_of_crashing():
+    assert dashboard.local_time("not-a-date") == "not-a-date"
+
+
+def test_headings_carry_a_hebrew_translation():
+    html_out = dashboard.heading("Runs")
+
+    assert "Runs" in html_out
+    assert "ריצות" in html_out
+    assert 'dir="rtl"' in html_out, "without isolation the parentheses render on the wrong side"
+
+
+def test_an_untranslated_heading_is_left_alone():
+    assert dashboard.heading("Something new") == "<h2>Something new</h2>"
+
+
+def test_column_headers_carry_a_translation_too():
+    assert "מתי" in dashboard.column("When")
+    assert dashboard.column("Unknown") == "<th>Unknown</th>"
+
+
 def test_the_page_is_written_and_self_contained(tmp_path: Path):
     (tmp_path / "history.jsonl").write_text('{"started":"2026-09-29T12:00:00+00:00","env":"qa","verdict":"PASSED","duration":1.0,"groups":{},"passed":3,"failed":0,"skipped":0}\n')
     out = dashboard.build(reports_dir=tmp_path)

@@ -14,8 +14,13 @@ Three files, appended by every run, no service to keep alive:
 | `reports/artifacts.jsonl` | every entity a run created, with its id and the test that made it |
 
 ```bash
-make dashboard    # builds reports/dashboard.html from both ledgers
+make dashboard                              # this machine's clock
+DASHBOARD_TZ=Asia/Jerusalem make dashboard  # a fixed zone
 ```
+
+The ledgers store UTC, which is the only sane thing to store. The dashboard converts to a
+local clock and names the zone, so a time on screen is never ambiguous and daylight saving
+is handled by the zone database rather than by a hardcoded offset.
 
 ## Reading the history
 
