@@ -177,6 +177,10 @@ def pytest_runtest_makereport(item, call):
 
 def pytest_sessionfinish(session, exitstatus):
     config = session.config
+    if config.getoption("collectonly", False):
+        # collecting is not running. Recording it would put a NO TESTS RAN row in
+        # the history for every --collect-only, and poison the trend it feeds.
+        return
     written = _REPORT.write(_REPORTS_DIR)
     _append_history(session)
     _write_artifacts(session)
@@ -226,8 +230,10 @@ def _append_history(session) -> None:
         "verdict": _REPORT.verdict,
         "duration": round(_REPORT.duration, 2),
         "groups": _REPORT.by_group(),
-        # the ids, not just the count: a skip that appeared is the finding
+        # the ids, not just the count: a skip that appeared is the finding,
+        # and a test that fails in some runs and not others is the flaky one
         "skipped_tests": [o.nodeid for o in _REPORT.skips()],
+        "failed_tests": [o.nodeid for o in _REPORT.failures()],
         **counts,
     }
     _REPORTS_DIR.mkdir(parents=True, exist_ok=True)

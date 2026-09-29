@@ -3,7 +3,7 @@
 A ready-to-use API test framework in Python and pytest.
 Clone it, run it, then point it at your own product.
 
-It ships with a small demo API, so the tests work the moment you clone. **287 tests across six groups**, all running in CI on every push.
+It ships with a small demo API, so the tests work the moment you clone. **297 tests across six groups**, all running in CI on every push.
 
 The point: arrive at a new job and not rebuild what takes weeks — the object layer,
 environments, personas, suite gating, the production guard, bug filing and CI.
@@ -28,7 +28,7 @@ browser suite in a container. `docker compose run --rm ui` runs that one.
 | Command | What it checks | Tests |
 |---|---|---|
 | `make test` | the product behaves | 64 |
-| `make unit` | the framework itself is correct. No API, no network | 120 |
+| `make unit` | the framework itself is correct. No API, no network | 130 |
 | `make edge` | what happens on bad input | 20 |
 | `make security` | nobody reaches what is not theirs | 22 |
 | `make ui` | what the user sees in a browser | 20 |
@@ -149,8 +149,17 @@ make cleanup ENV=qa YES=1    # remove it
 And when somebody asks where a record came from, you search its id in the file and see
 which test made it.
 
-**`make dashboard`** turns all of it into one HTML page: every run with its environment and
-verdict, and every object created. Open it in a browser or attach it to a message.
+**`make dashboard`** turns all of it into one HTML page, with no network calls and nothing
+to install:
+
+| Panel | Answers |
+|---|---|
+| Regression | did anything get worse since the comparable earlier runs |
+| Pass rate | the shape over time, on an axis that makes a one-test dip visible |
+| The last run, by group | which group carried the failures |
+| Tests that fail most often | the ones nobody has pinned down |
+| What is left on each environment | how much test data is there, and the command that clears it |
+| Runs, and objects created | the full detail behind all of the above |
 
 ---
 
@@ -297,7 +306,7 @@ every helper that writes data must guard production. Claude Code reads it automa
 ## מה זה
 
 תשתית מוכנה לבדיקות API בפייתון ו-pytest. היא מגיעה עם API קטן לדוגמה, אז הבדיקות רצות
-מהרגע שמשכפלים את הריפו. **287 בדיקות בשש קבוצות**, וכולן רצות ב-CI בכל דחיפה.
+מהרגע שמשכפלים את הריפו. **297 בדיקות בשש קבוצות**, וכולן רצות ב-CI בכל דחיפה.
 
 המטרה: להגיע למקום עבודה חדש ולא לבנות מאפס את מה שלוקח שבועות — שכבת האובייקטים, ניהול
 הסביבות, הפרסונות, הגידור של הסוויטות, ההגנה על פרודקשן, פתיחת הבאגים וה-CI.
@@ -318,7 +327,7 @@ make test        # טרמינל 2 — הרצת הבדיקות
 | פקודה | מה היא בודקת | כמות |
 |---|---|---|
 | `make test` | שהמוצר מתנהג נכון | 64 |
-| `make unit` | שהתשתית עצמה תקינה. בלי API ובלי רשת | 120 |
+| `make unit` | שהתשתית עצמה תקינה. בלי API ובלי רשת | 130 |
 | `make edge` | מה קורה כשהקלט שבור | 20 |
 | `make security` | שאי אפשר להגיע למה שלא שלך | 22 |
 | `make ui` | מה המשתמש רואה בדפדפן | 20 |
@@ -421,8 +430,16 @@ make cleanup ENV=qa YES=1    # למחוק את זה
 
 ואם מישהו שואל "מאיפה הגיעה ההזמנה הזאת" — מחפשים את ה-id בקובץ ורואים איזה טסט יצר אותה.
 
-**`make dashboard`** מרכז את הכל לדף HTML אחד: כל ההרצות עם הסביבה והתוצאה, וכל האובייקטים
-שנוצרו. אפשר לפתוח אותו בדפדפן או לצרף אותו להודעה.
+**`make dashboard`** מרכז את הכל לדף HTML אחד, בלי שום קריאת רשת ובלי להתקין כלום:
+
+| חלק | על מה הוא עונה |
+|---|---|
+| רגרסיה | האם משהו הורע מול הריצות הדומות הקודמות |
+| Pass rate | המגמה לאורך זמן, על סקאלה שמראה גם צניחה של בדיקה אחת |
+| הריצה האחרונה לפי קבוצה | איזו קבוצה נשאה את הכשלים |
+| הבדיקות שנכשלות הכי הרבה | אלה שאף אחד עוד לא סגר |
+| מה נשאר על כל סביבה | כמה נתוני בדיקה יושבים שם, והפקודה שמנקה |
+| ריצות ואובייקטים | כל הפירוט שמאחורי הנ״ל |
 
 ## פתיחת באגים אוטומטית
 

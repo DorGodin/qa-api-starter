@@ -74,6 +74,11 @@ code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#f3f4f6;
 .card b{display:block;font-size:22px}
 .card span{color:var(--mut);font-size:12px}
 .empty{color:var(--mut);font-style:italic}
+.hint{color:var(--mut);font-size:12px;margin:4px 0 0}
+.ok-note{color:var(--ok);margin:0}
+.findings{margin:0;padding-left:18px}
+.findings li{margin:3px 0;font-size:13px}
+.findings span{font-weight:600;margin-right:6px}
 """
 
 
@@ -130,6 +135,117 @@ def artifacts_table(items: list[dict], limit: int = 200) -> str:
     return f"<table><tr>{header}</tr>" + "".join(rows) + "</table>"
 
 
+def instability(runs: list[dict], limit: int = 8) -> list[tuple[str, int]]:
+    """Tests ranked by how many recorded runs they failed in.
+
+    A test that fails every time is broken and somebody already knows. A test
+    that fails in three runs out of twenty is the one nobody has pinned down,
+    and it is the reason people re-run a pipeline instead of reading it.
+    """
+    failures: Counter = Counter()
+    for run in runs:
+        for nodeid in set(run.get("failed_tests", [])):
+            failures[nodeid] += 1
+    return failures.most_common(limit)
+
+
+def group_rows(run: dict) -> list[tuple[str, int, int, int]]:
+    rows = []
+    for name, counts in (run.get("groups") or {}).items():
+        rows.append((name, counts.get("passed", 0), counts.get("failed", 0), counts.get("skipped", 0)))
+    return rows
+
+
+def artifacts_by_env(items: list[dict]) -> list[tuple[str, int, str]]:
+    """What is still recorded per environment, so cleanup has a target."""
+    by_env: dict[str, Counter] = {}
+    for item in items:
+        by_env.setdefault(item["env"], Counter())[item["resource"]] += 1
+    return [
+        (env, sum(counts.values()), ", ".join(f"{n} {r}" for r, n in sorted(counts.items())))
+        for env, counts in sorted(by_env.items())
+    ]
+
+
+def sparkline(runs: list[dict], width: int = 560, height: int = 44) -> str:
+    """Pass rate per run, drawn inline. No chart library, no CDN, no network."""
+    if len(runs) < 2:
+        return '<p class="empty">Two runs are needed before a trend means anything.</p>'
+
+    rates = []
+    for run in runs:
+        total = run.get("passed", 0) + run.get("failed", 0)
+        rates.append(run["passed"] / total if total else 0.0)
+
+    # One failure in sixty is 98%, which against a 0-100 axis is a flat line. Scale
+    # to the observed range so the dip is visible, and label it so nobody reads
+    # the shape as a bigger drop than it was.
+    low = min(rates)
+    span = max(1.0 - low, 0.02)
+
+    def y(rate: float) -> float:
+        return height - ((rate - low) / span) * (height - 8) - 4
+
+    step = width / (len(rates) - 1)
+    points = " ".join(f"{i * step:.1f},{y(rate):.1f}" for i, rate in enumerate(rates))
+    dots = "".join(
+        f'<circle cx="{i * step:.1f}" cy="{y(rate):.1f}" r="2.5" '
+        f'fill="{"#b4232c" if rate < 1 else "#0e7c66"}"/>'
+        for i, rate in enumerate(rates)
+    )
+    return (
+        f'<svg viewBox="0 0 {width} {height}" width="100%" height="{height}" role="img" '
+        f'aria-label="pass rate per run">'
+        f'<polyline points="{points}" fill="none" stroke="#0e5c63" stroke-width="2"/>{dots}</svg>'
+        f'<p class="hint">Pass rate across the last {len(rates)} runs, oldest on the left. '
+        f'The axis covers {low:.0%} to 100%, so a small dip is still visible.</p>'
+    )
+
+
+def instability_table(ranked: list[tuple[str, int]], total_runs: int = 0) -> str:
+    if not ranked:
+        return '<p class="empty">No test has failed in the recorded runs.</p>'
+    rows = "".join(
+        f"<tr><td><code>{html.escape(nodeid)}</code></td><td>{failures}</td></tr>"
+        for nodeid, failures in ranked
+    )
+    suffix = f" of {total_runs}" if total_runs else ""
+    return f"<table><tr><th>Test</th><th>Runs it failed in{suffix}</th></tr>{rows}</table>"
+
+
+def groups_table(run: dict | None) -> str:
+    if not run or not group_rows(run):
+        return '<p class="empty">No group data for the last run.</p>'
+    rows = "".join(
+        f"<tr><td><code>{html.escape(name)}</code></td><td>{p}</td><td>{f}</td><td>{s}</td>"
+        f"<td>{bar(p, f, s)}</td></tr>"
+        for name, p, f, s in group_rows(run)
+    )
+    return f"<table><tr><th>Group</th><th>Passed</th><th>Failed</th><th>Skipped</th><th></th></tr>{rows}</table>"
+
+
+def env_table(rows: list[tuple[str, int, str]]) -> str:
+    if not rows:
+        return '<p class="empty">Nothing recorded yet.</p>'
+    body = "".join(
+        f"<tr><td><code>{html.escape(env)}</code></td><td>{total}</td><td>{html.escape(detail)}</td>"
+        f"<td><code>make cleanup ENV={html.escape(env)}</code></td></tr>"
+        for env, total, detail in rows
+    )
+    return f"<table><tr><th>Environment</th><th>Objects</th><th>What</th><th>Remove with</th></tr>{body}</table>"
+
+
+def findings_list(findings: list) -> str:
+    if not findings:
+        return '<p class="ok-note">No regression against the earlier runs.</p>'
+    items = "".join(
+        f'<li><span class="{"bad" if f.blocking else "warn"}">{html.escape(f.kind)}</span> '
+        f"{html.escape(f.message)}</li>"
+        for f in findings
+    )
+    return f"<ul class='findings'>{items}</ul>"
+
+
 def cards(runs: list[dict], items: list[dict]) -> str:
     by_resource = Counter(item["resource"] for item in items)
     latest = runs[-1] if runs else None
@@ -148,9 +264,17 @@ def cards(runs: list[dict], items: list[dict]) -> str:
 
 
 def build(reports_dir: Path = REPORTS, run_limit: int = 25) -> Path:
-    runs = tail(load(reports_dir / "history.jsonl"), run_limit)
+    all_runs = load(reports_dir / "history.jsonl")
+    runs = tail(all_runs, run_limit)
     items = load(reports_dir / "artifacts.jsonl")
     latest = runs[-1] if runs else None
+
+    try:
+        from utils.trends import compare
+
+        findings = compare(all_runs)
+    except Exception:  # a dashboard must render even when the analysis cannot
+        findings = []
     subtitle = (
         f"Last run {local_time(latest['started'])} on {latest['env']}"
         if latest
@@ -162,6 +286,11 @@ def build(reports_dir: Path = REPORTS, run_limit: int = 25) -> Path:
 <header><h1>QA DASHBOARD</h1><p>{html.escape(subtitle)}</p></header>
 <main>
 <section>{heading("At a glance")}{cards(runs, items)}</section>
+<section>{heading("Regression against earlier runs")}{findings_list(findings)}</section>
+<section>{heading("Pass rate")}{sparkline(runs)}</section>
+<section>{heading("The last run, by group")}{groups_table(latest)}</section>
+<section>{heading("Tests that fail most often")}{instability_table(instability(all_runs), len(all_runs))}</section>
+<section>{heading("What is left on each environment")}{env_table(artifacts_by_env(items))}</section>
 <section>{heading("Runs")}{runs_table(runs)}</section>
 <section>{heading("Objects created by the tests")}{artifacts_table(items)}</section>
 </main></body></html>"""

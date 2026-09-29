@@ -31,6 +31,20 @@ is handled by the zone database rather than by a hardcoded offset.
 - **Watch the duration trend**, not one number. A suite that doubles is a problem long
   before it is a timeout.
 
+## What the dashboard shows
+
+| Panel | Answers |
+|---|---|
+| Regression | did anything get worse since the comparable earlier runs |
+| Pass rate | the shape over time. The axis covers the observed range, so a one-test dip is visible |
+| The last run, by group | which group carried the failures |
+| Tests that fail most often | the ones nobody has pinned down — the reason people re-run a pipeline |
+| What is left on each environment | how much test data is sitting there, and the command that removes it |
+
+**A test failing in three runs out of twenty matters more than one failing in twenty of
+twenty.** The second is broken and somebody knows; the first is why people stop trusting
+the suite.
+
 ## Reading the artifact ledger
 
 Every create goes through `Base.create`, so the ledger records the resource, the id, the

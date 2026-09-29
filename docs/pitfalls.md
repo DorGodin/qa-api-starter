@@ -139,3 +139,13 @@ check people learn to ignore.
 **Rule:** compare like with like. The baseline is the previous run on the same environment
 with the same groups, and a run with no comparable history says so instead of inventing a
 finding.
+
+## 2026-09-29 — Every --collect-only run was recorded as a run that found nothing
+
+The dashboard showed six rows of NO TESTS RAN in a row. Nothing had broken: they were the
+`--collect-only` commands used while auditing the README. Collecting is not running, so the
+report had no outcomes and the verdict was, correctly, that nothing ran — and every one of
+those rows then polluted the trend the history feeds.
+
+**Rule:** a session that did not execute tests does not belong in the run history. Check
+`config.getoption("collectonly")` before recording anything.

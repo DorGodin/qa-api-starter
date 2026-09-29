@@ -102,7 +102,10 @@ Every create goes through `Base.create`, which records the resource, the id, the
 environment, the persona and the test into `reports/artifacts.jsonl`. A test does nothing
 to opt in, and nothing can forget.
 
-`reports/history.jsonl` gets one line per run. `make dashboard` turns both into a single
+`reports/history.jsonl` gets one line per run, including which tests failed and which were
+skipped, so instability can be ranked across runs rather than guessed at. A `--collect-only`
+run records nothing — collecting is not running, and recording it would poison every trend
+it feeds. `make dashboard` turns both into a single
 self-contained HTML page: recent runs with their environment and verdict, and every object
 created with its id and the test that made it.
 
