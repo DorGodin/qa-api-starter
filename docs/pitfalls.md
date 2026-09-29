@@ -19,3 +19,12 @@ test ran first. Earlier tests in the module had already spent from the same budg
 
 **Rule:** when a resource is shared across a module, assert the *delta*, not the absolute
 value. Capture the value before the action and compare against it.
+
+## 2026-09-29 — A dry run that looked like it did nothing
+
+`pytest --file-bugs-dry-run` appeared to print no report. The hook had run correctly; the
+report was simply scrolled off because the command was piped through `tail -6` and pytest
+prints the failure traceback after it.
+
+**Rule:** before concluding a feature does not work, check how you are reading its output.
+Re-run without the filter first.

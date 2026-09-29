@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
 
 from config.loader import load_env_config
 from obj import ApiClient, Items, Orders
+from utils.bug_filing import Failure, JiraTracker, file_failures, format_report
 
 GATED = {
     "tests/unit": "--unit",
@@ -17,6 +19,8 @@ PASSWORDS = {"admin": "admin-secret", "member": "member-secret"}
 def pytest_addoption(parser):
     parser.addoption("--unit", action="store_true", default=False, help="collect tests/unit")
     parser.addoption("--edge-cases", action="store_true", default=False, help="collect tests/edge-cases")
+    parser.addoption("--file-bugs", action="store_true", default=False, help="open a ticket per failed test")
+    parser.addoption("--file-bugs-dry-run", action="store_true", default=False, help="print the payloads, create nothing")
 
 
 def pytest_ignore_collect(collection_path: Path, config):
@@ -86,3 +90,53 @@ def _clean_state(request):
 def ctx():
     """Shared state for ordered tests inside one module."""
     return {}
+
+
+# --- run level bug filing -------------------------------------------------
+# A test asserts, the run reports. Both flags are off by default, so a normal
+# run and CI file nothing.
+
+_FAILURES: list[Failure] = []
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    report = (yield).get_result()
+    if report.when == "call" and report.failed:
+        _FAILURES.append(
+            Failure(nodeid=report.nodeid, message=str(report.longrepr), duration=report.duration)
+        )
+
+
+def pytest_sessionfinish(session, exitstatus):
+    config = session.config
+    dry_run = config.getoption("file_bugs_dry_run")
+    if not (config.getoption("file_bugs") or dry_run) or not _FAILURES:
+        return
+
+    project = os.getenv("TRACKER_PROJECT", "QA")
+    routing = {"suites": os.getenv("TRACKER_ASSIGNEE_SUITES", ""), "edge-cases": os.getenv("TRACKER_ASSIGNEE_EDGE", "")}
+    routing = {k: v for k, v in routing.items() if v}
+
+    if dry_run:
+        actions = file_failures(_FAILURES, _NullTracker(), project, routing, dry_run=True)
+    else:
+        actions = file_failures(_FAILURES, JiraTracker(), project, routing, run_url=os.getenv("CI_RUN_URL"))
+
+    reporter = config.pluginmanager.get_plugin("terminalreporter")
+    if reporter is not None:
+        reporter.write_line("")
+        reporter.write_line(format_report(actions))
+
+
+class _NullTracker:
+    """Dry run only: answers as if nothing had ever been filed."""
+
+    def search(self, marker):
+        return []
+
+    def create(self, payload):  # pragma: no cover - never reached in a dry run
+        raise AssertionError("dry run must not create")
+
+    def comment(self, key, body):  # pragma: no cover - never reached in a dry run
+        raise AssertionError("dry run must not comment")

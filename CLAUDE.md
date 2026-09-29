@@ -43,6 +43,40 @@ and `obj/resources/` with the real product; everything else stays.
 Default `pytest` is product verification. `tests/unit/` must never need the network, so
 the environment check lives in the session fixture and not in `pytest_configure`.
 
+## Bug Filing
+
+Bug filing is a **run level opt-in**, never an inline call in a test. A test asserts; the
+run reports.
+
+| Command | Effect |
+|---|---|
+| `pytest` | files nothing |
+| `pytest --file-bugs-dry-run` | prints the exact payload it would send, creates nothing |
+| `pytest --file-bugs` | one ticket per failed test |
+
+The filer lives in `utils/bug_filing.py`. It deduplicates on the test nodeid embedded in
+the description, so a re-run comments on the open ticket instead of opening a second one,
+and it routes by the test's folder. Credentials come from `TRACKER_URL`, `TRACKER_EMAIL`,
+`TRACKER_TOKEN` and `TRACKER_PROJECT` — never from a tracked file.
+
+Do not add per-assertion filing calls back into test files.
+
+## Agents and commands
+
+`.claude/` carries the workflow, not just the conventions:
+
+| | |
+|---|---|
+| `test-reviewer` agent | reviews a diff against this file and asks whether each test would fail if the product broke |
+| `ticket-verifier` agent | verifies one ticket: distills the criteria, maps them to coverage, writes and runs the missing tests, drafts a report |
+| `/qa-sweep` | sweeps the tickets waiting for QA and reports where coverage is missing |
+| `/new-suite` | scaffolds an obj class, fixture and suite for one resource |
+| `/explore-api` | reads the product source and reports exactly what the tests must send |
+| `/file-bugs` | dry run first, then file, after an explicit yes |
+
+Every agent is read-only against the tracker. A comment is drafted and shown; a human
+sends it.
+
 ## Environments
 
 Every environment is one block in `config/config.json` carrying `url`, `admin_user` and

@@ -28,7 +28,20 @@ make all              # everything, including validation edge cases
 | `tests/unit/` | tests for the framework itself, including an AST check that every data-creating helper guards production |
 | `utils/helpers.py` | UTC-aware datetimes, `cached_lookup`, `assert_not_prod` |
 | `config/` | one block per environment, no if/elif ladder, local overrides gitignored |
-| `.claude/` | conventions, a test reviewer agent and commands that scaffold suites and explore an API |
+| `utils/bug_filing.py` | run level bug filing: one ticket per failed test, deduplicated on the nodeid, routed by area, off unless asked |
+| `.claude/` | conventions, a test reviewer and a ticket verifier agent, and commands for sweeping the QA queue, scaffolding suites and filing bugs |
+
+## Filing bugs from a run
+
+```bash
+pytest --file-bugs-dry-run     # prints the payloads, creates nothing
+pytest --file-bugs             # one ticket per failed test
+```
+
+A test asserts, the run reports. Re-running a known failure comments on the open ticket
+instead of opening a duplicate. Credentials come from the environment
+(`TRACKER_URL`, `TRACKER_EMAIL`, `TRACKER_TOKEN`, `TRACKER_PROJECT`), never from a file
+in the repo.
 
 ## Adopting it on a new product
 
