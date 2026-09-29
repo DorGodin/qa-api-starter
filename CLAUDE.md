@@ -119,11 +119,15 @@ Do not add per-assertion filing calls back into test files.
 
 | Skills | |
 |---|---|
+| `write-tests` | which group a test belongs in, what to assert, what makes it worthless |
+| `verify-before-claiming` | never report a result you did not observe |
 | `verify-story` | evidence per criterion, and a verdict of PASS, FAIL or UNCERTAIN |
 | `write-bug` | how a report is written so product, support and engineering can all act on it |
 | `test-data-strategy` | resolve-or-seed, idempotency, isolation scope, the production guard |
 | `flaky-test-policy` | what is allowed with a flaky test, and what is banned |
 | `release-readiness` | which suites block a release, and why a skip is not a pass |
+| `plan-test-work` | a plan written to a file so it survives losing the conversation |
+| `commit-and-pr` | messages that say what changed, why, and what was verified |
 
 | Commands | |
 |---|---|
