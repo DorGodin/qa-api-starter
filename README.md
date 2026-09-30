@@ -242,6 +242,34 @@ which is the same reason it exists for an agent.
 
 ---
 
+## A second product: the barbershop
+
+The demo lives in this repository, so passing against it proves less than it seems — a
+framework can quietly lean on a product it grew up next to. So there is a second one:
+[barber-booking-api](https://github.com/DorGodin/barber-booking-api), a real appointment
+booking API in its own repository. It shares no code with this one and has **no test hooks**
+— no reset, no back door. The suites in `tests/barber/` know it only through its URL.
+
+```bash
+# in barber-booking-api:   cp .env.example .env && make install && make run
+make env-check ENV=barber
+ENV=barber pytest
+```
+
+With `ENV=barber` only the barbershop's suites are collected, and the demo's are not.
+
+What they cover: many customers racing for one slot (exactly one 201, every other a 409,
+zero 5xx), overlaps and back-to-back, closing time to the quarter hour, a customer in two
+chairs, the booking window, days off, late cancellation, a double tap with an
+`Idempotency-Key`, a price change that must not reach back into bookings, who can see and do
+what — and daylight saving, on whichever transition falls inside the booking window.
+
+**Every rule was broken on purpose in the product, one at a time, and each break was
+caught.** Two were not the first time: one assertion compared `…00Z` with `…00.000Z` and so
+passed whatever the product did, and nothing checked that the listing offers the slot right
+after a booking. Both are fixed, and the result is 11 of 11. CI starts the barbershop and
+runs these suites on every push.
+
 ## Adoption, step by step
 
 A realistic schedule for putting this on a real product. Each step ends with something that
@@ -258,15 +286,20 @@ works, so you can stop at any point and still be ahead.
    ```json
    "qa": {
      "url": "https://qa.yourproduct.com/api",
+     "product": "yourproduct",
      "personas": { "owner": "qa-owner", "customer": "qa-customer" },
+     "admin_persona": "owner",
      "auth": { "type": "password_token", "path": "/auth/login" },
      "health_path": "/health",
      "test_hooks": false
    }
    ```
 
+   - **`product`** — which suites belong to this environment. Suites are grouped by product
+     (`PRODUCT_FOLDERS` in `tests/conftest.py`); another product's suites are not collected.
    - **`personas`** — the roles your tests act as, and the username for each. Name them
      after the product's roles, not the demo's.
+   - **`admin_persona`** — the persona with full rights, used for housekeeping (cleanup).
    - **`auth`** — how they log in. Three types are built in: `password_token` (JSON login,
      bearer token), `oauth_password` (Keycloak, Auth0) and `cookie_token` (a session
      cookie). The options for each are at the top of its function in `obj/auth.py`. A
@@ -577,6 +610,32 @@ ln -s CLAUDE.md .cursorrules
 
 ---
 
+## מוצר שני: המספרה
+
+הדמו נמצא בתוך הריפו הזה, ולכן זה שהבדיקות עוברות מולו מוכיח פחות ממה שנראה. תשתית יכולה
+להישען בשקט על מוצר שגדל לידה. לכן יש מוצר שני:
+[barber-booking-api](https://github.com/DorGodin/barber-booking-api), API אמיתי לקביעת תורים
+בריפו נפרד. אין לו אף שורת קוד משותפת עם הריפו הזה, ו**אין בו שום "קיצור" לבדיקות**: אין
+איפוס ואין דלת אחורית. הסוויטות ב-`tests/barber/` מכירות אותו רק דרך הכתובת שלו.
+
+```bash
+# ב-barber-booking-api:   cp .env.example .env && make install && make run
+make env-check ENV=barber
+ENV=barber pytest
+```
+
+עם `ENV=barber` נאספות רק הסוויטות של המספרה, ושל הדמו לא.
+
+מה הן בודקות: הרבה לקוחות שמתחרים על אותו תור (בדיוק 201 אחד, כל השאר 409, אפס 5xx), חפיפות
+ותורים צמודים, שעת סגירה ברמת רבע השעה, לקוח בשני כיסאות, חלון ההזמנה, ימי חופש, ביטול מאוחר,
+לחיצה כפולה עם `Idempotency-Key`, שינוי מחיר שאסור לו לשנות הזמנות קיימות, מי רואה ומי מורשה
+לעשות מה — ושעון קיץ, על המעבר שנופל בתוך חלון ההזמנה, יהיה אשר יהיה.
+
+**כל חוק נשבר בכוונה במוצר, אחד אחרי השני, וכל שבירה נתפסה.** שתיים לא נתפסו בפעם הראשונה:
+בדיקה אחת השוותה `…00Z` ל-`…00.000Z` ולכן עברה בלי קשר למה שהמוצר עשה, ושום בדיקה לא וידאה
+שהרשימה מציעה את התור שמיד אחרי הזמנה. שתיהן תוקנו, והתוצאה 11 מתוך 11. ה-CI מרים את המספרה
+ומריץ את הסוויטות האלה בכל push.
+
 ## איך מטמיעים, שלב אחרי שלב
 
 לוח זמנים מציאותי להטמעה על מוצר אמיתי. כל שלב נגמר במשהו שעובד, אז אפשר לעצור בכל נקודה
@@ -593,15 +652,20 @@ ln -s CLAUDE.md .cursorrules
    ```json
    "qa": {
      "url": "https://qa.yourproduct.com/api",
+     "product": "yourproduct",
      "personas": { "owner": "qa-owner", "customer": "qa-customer" },
+     "admin_persona": "owner",
      "auth": { "type": "password_token", "path": "/auth/login" },
      "health_path": "/health",
      "test_hooks": false
    }
    ```
 
+   - **`product`** — אילו סוויטות שייכות לסביבה הזו. הסוויטות מחולקות לפי מוצר
+     (`PRODUCT_FOLDERS` ב-`tests/conftest.py`), וסוויטות של מוצר אחר לא נאספות.
    - **`personas`** — התפקידים שהבדיקות פועלות בשמם, ושם המשתמש של כל אחד. לקרוא להם לפי
      התפקידים במוצר, לא לפי הדמו.
+   - **`admin_persona`** — התפקיד עם ההרשאות המלאות, שמשמש לתחזוקה (ניקוי).
    - **`auth`** — איך הם מתחברים. יש שלושה סוגים מובנים: `password_token` (התחברות ב-JSON
      וטוקן), `oauth_password` (Keycloak, Auth0) ו-`cookie_token` (עוגיית סשן). האפשרויות של
      כל סוג כתובות בראש הפונקציה שלו ב-`obj/auth.py`. סוג רביעי זו פונקציה אחת שם.

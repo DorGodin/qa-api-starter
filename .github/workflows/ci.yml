@@ -118,6 +118,37 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
 
+  barber:
+    name: barbershop - a second product, in its own repository
+    # The same framework, pointed at a product it shares no code with, through
+    # config alone. It tests the barbershop's main as it is today: when that
+    # product changes a rule, this job is meant to go red until someone decides
+    # which of the two is right.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { repository: DorGodin/barber-booking-api, path: barber-booking-api }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - name: start the barbershop, two workers, no test hooks
+        working-directory: barber-booking-api
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -q -r requirements.lock.txt
+          cp .env.example .env
+          set -a; . ./.env; set +a
+          .venv/bin/python -m uvicorn app.main:create_app --factory --port 8100 --workers 2 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8100/health && exit 0; sleep 1; done
+          echo "the barbershop never became healthy"; exit 1
+      - run: pip install -r requirements.lock.txt
+      - name: prove the environment first
+        env: { ENV: barber }
+        run: python scripts/env_check.py
+      - name: the barbershop suites
+        env: { ENV: barber }
+        run: python -m pytest -q
+
   llm:
     name: llm evaluation (deepeval)
     runs-on: ubuntu-latest

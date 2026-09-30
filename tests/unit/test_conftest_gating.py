@@ -7,13 +7,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def collect(*args: str) -> int:
+def collect(*args: str, env: str = "local") -> int:
     result = subprocess.run(
         [sys.executable, "-m", "pytest", "--collect-only", "-q", *args],
         cwd=ROOT,
         capture_output=True,
         text=True,
-        env={"PATH": "/usr/bin:/bin", "ENV": "local", "PYTHONPATH": "."},
+        env={"PATH": "/usr/bin:/bin", "ENV": env, "PYTHONPATH": "."},
     )
     last = [line for line in result.stdout.splitlines() if "collected" in line or "no tests" in line]
     if not last:
@@ -50,3 +50,25 @@ def test_deselect_is_honoured_too():
     )
 
     assert fewer == everything - 1
+
+
+def test_another_products_suites_are_not_collected():
+    assert collect("tests/barber", env="local") == 0
+    assert collect("tests/suites", env="barber") == 0
+
+
+def test_a_products_own_suites_are_collected():
+    assert collect("tests/barber", env="barber") > 0
+    assert collect("tests/suites", env="local") > 0
+
+
+def test_the_other_products_gated_folders_stay_out_even_with_their_flag():
+    assert collect("--edge-cases", "tests/edge-cases", env="barber") == 0
+
+
+def test_the_frameworks_own_tests_run_whatever_the_product():
+    assert collect("--unit", "tests/unit", env="barber") == collect("--unit", "tests/unit", env="local") > 0
+
+
+def test_a_broken_env_does_not_break_collection_of_the_unit_tests():
+    assert collect("--unit", "tests/unit", env="no-such-env") > 0

@@ -20,14 +20,22 @@ class FakeApi:
 def test_an_environment_with_hooks_is_reset_between_modules():
     api = FakeApi()
 
-    assert reset_between_modules(api, {"env": "local", "test_hooks": True})
+    assert reset_between_modules(api, {"env": "local", "test_hooks": True, "admin_persona": "admin"})
     assert api.calls == [("POST", "/_test/reset", "admin")]
+
+
+def test_the_reset_is_sent_as_the_environments_admin_persona_not_a_hardcoded_one():
+    api = FakeApi()
+
+    reset_between_modules(api, {"env": "shop", "test_hooks": True, "admin_persona": "owner"})
+
+    assert api.calls == [("POST", "/_test/reset", "owner")]
 
 
 def test_a_real_product_is_never_sent_a_reset_it_does_not_have():
     api = FakeApi()
 
-    assert not reset_between_modules(api, {"env": "qa", "test_hooks": False})
+    assert not reset_between_modules(api, {"env": "qa", "test_hooks": False, "admin_persona": "admin"})
     assert api.calls == []
 
 
@@ -35,5 +43,5 @@ def test_a_test_that_needs_a_clean_slate_is_skipped_with_the_reason_on_a_shared_
     api = FakeApi()
 
     with pytest.raises(pytest.skip.Exception, match="ENV=qa declares test_hooks=false"):
-        reset_for_one_test(api, {"env": "qa", "test_hooks": False})
+        reset_for_one_test(api, {"env": "qa", "test_hooks": False, "admin_persona": "admin"})
     assert api.calls == []

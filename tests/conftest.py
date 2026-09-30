@@ -25,6 +25,36 @@ GATED = {
 }
 
 
+# Which product each suite folder tests. With ENV pointing at one product, the
+# other product's suites are not collected at all: the demo's order suites mean
+# nothing against the barbershop, and would only fail with "persona 'admin' not
+# registered". tests/unit belongs to no product - it tests this framework.
+PRODUCT_FOLDERS = {
+    "tests/suites": "demo",
+    "tests/edge-cases": "demo",
+    "tests/security": "demo",
+    "tests/ui": "demo",
+    "tests/llm": "demo",
+    "tests/barber": "barber-booking",
+}
+
+
+def _env_product(config) -> str | None:
+    """The product ENV points at, read once. None when the config cannot load -
+    collection then carries on, and the fixtures raise the config error with its
+    real message instead of collection failing with a confusing one."""
+    if not hasattr(config, "_qa_product"):
+        try:
+            config._qa_product = load_env_config()["product"]
+        except (KeyError, TypeError, ValueError):
+            config._qa_product = None
+    return config._qa_product
+
+
+def _under(rel: str, folder: str) -> bool:
+    return f"/{folder}/" in f"{rel}/" or rel.endswith(folder)
+
+
 def pytest_addoption(parser):
     parser.addoption("--unit", action="store_true", default=False, help="collect tests/unit")
     parser.addoption("--edge-cases", action="store_true", default=False, help="collect tests/edge-cases")
@@ -51,8 +81,14 @@ def pytest_ignore_collect(collection_path: Path, config):
     --ignore, --deselect and norecursedirs handling.
     """
     rel = collection_path.as_posix()
+    for folder, product in PRODUCT_FOLDERS.items():
+        if _under(rel, folder):
+            current = _env_product(config)
+            if current is not None and current != product:
+                return True
+            break
     for folder, flag in GATED.items():
-        if f"/{folder}/" in f"{rel}/" or rel.endswith(folder):
+        if _under(rel, folder):
             if not config.getoption(flag.lstrip("-").replace("-", "_")):
                 return True
             return None
@@ -164,7 +200,7 @@ def reset_between_modules(api, env_config) -> bool:
     """
     if not env_config["test_hooks"]:
         return False
-    api.request("POST", "/_test/reset", persona="admin").assert_ok(204)
+    api.request("POST", "/_test/reset", persona=env_config["admin_persona"]).assert_ok(204)
     return True
 
 
@@ -174,7 +210,7 @@ def reset_for_one_test(api, env_config) -> None:
     shared environment it has nothing honest to assert."""
     if not env_config["test_hooks"]:
         pytest.skip(NEEDS_RESET.format(env=env_config["env"]))
-    api.request("POST", "/_test/reset", persona="admin").assert_ok(204)
+    api.request("POST", "/_test/reset", persona=env_config["admin_persona"]).assert_ok(204)
 
 
 @pytest.fixture(scope="module", autouse=True)

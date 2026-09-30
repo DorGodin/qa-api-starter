@@ -25,6 +25,8 @@ class FakeResponse:
 
 
 class FakeClient:
+    config = {"admin_persona": "admin"}
+
     def __init__(self, statuses=None):
         self.statuses = statuses or {}
         self.deleted = []
@@ -70,7 +72,12 @@ def test_every_outcome_is_counted_rather_than_assumed(monkeypatch):
 
     outcome = cleanup.delete_all(client, records)
 
-    assert outcome == {"deleted": 1, "already gone": 1, "refused": 1, "failed": 1}
+    assert {k: v for k, v in outcome.items() if v} == {
+        "deleted": 1,
+        "not found": 1,
+        "refused": 1,
+        "failed": 1,
+    }
 
 
 def test_cleanup_refuses_to_run_against_production(monkeypatch):
@@ -82,3 +89,33 @@ def test_cleanup_refuses_to_run_against_production(monkeypatch):
 def test_the_summary_reads_as_a_sentence():
     assert cleanup.summarise([record(), record(resource="orders")]) == "1 items, 1 orders"
     assert cleanup.summarise([]) == "nothing"
+
+
+def test_a_resource_with_no_delete_endpoint_is_reported_and_never_called(monkeypatch):
+    monkeypatch.setenv("ENV", "qa")
+    client = FakeClient()
+    records = [record(resource="customers", entity_id="c-1"), record(resource="items", entity_id="i-1")]
+
+    outcome = cleanup.delete_all(client, records, deletable={"items"})
+
+    assert outcome["no delete endpoint"] == 1 and outcome["deleted"] == 1
+    assert client.deleted == [("DELETE", "/items/i-1")], "a DELETE that cannot exist was sent"
+
+
+def test_a_404_is_gone_only_when_the_product_says_it_can_delete(monkeypatch):
+    monkeypatch.setenv("ENV", "qa")
+    client = FakeClient(statuses={"/items/i-1": 404})
+
+    assert cleanup.delete_all(client, [record(entity_id="i-1")], deletable={"items"})["already gone"] == 1
+    assert cleanup.delete_all(client, [record(entity_id="i-1")], deletable=None)["not found"] == 1
+
+
+def test_the_delete_endpoints_are_read_from_the_openapi_operations():
+    operations = (
+        ("DELETE", "/items/{item_id}"),
+        ("GET", "/customers/{customer_id}"),
+        ("DELETE", "/barbers/{barber_id}/time-off/{day}"),
+        ("POST", "/orders"),
+    )
+
+    assert cleanup.deletable_resources(operations) == {"items"}, "a nested DELETE does not delete the parent"

@@ -1,7 +1,9 @@
 {
   "local": {
     "url": "http://127.0.0.1:8000",
+    "product": "demo",
     "personas": { "admin": "admin", "member": "member" },
+    "admin_persona": "admin",
     "passwords": { "admin": "admin-secret", "member": "member-secret" },
     "auth": { "type": "password_token", "path": "/auth/token" },
     "health_path": "/health",
@@ -9,7 +11,9 @@
   },
   "ci": {
     "url": "http://127.0.0.1:8000",
+    "product": "demo",
     "personas": { "admin": "admin", "member": "member" },
+    "admin_persona": "admin",
     "passwords": { "admin": "admin-secret", "member": "member-secret" },
     "auth": { "type": "password_token", "path": "/auth/token" },
     "health_path": "/health",
@@ -17,7 +21,9 @@
   },
   "docker": {
     "url": "http://api:8000",
+    "product": "demo",
     "personas": { "admin": "admin", "member": "member" },
+    "admin_persona": "admin",
     "passwords": { "admin": "admin-secret", "member": "member-secret" },
     "auth": { "type": "password_token", "path": "/auth/token" },
     "health_path": "/health",
@@ -25,16 +31,31 @@
   },
   "staging": {
     "url": "https://staging.example.invalid",
+    "product": "demo",
     "personas": { "admin": "qa-admin", "member": "qa-member" },
+    "admin_persona": "admin",
     "auth": { "type": "password_token", "path": "/auth/token" },
     "health_path": "/health",
     "test_hooks": false
   },
   "prod": {
     "url": "https://api.example.invalid",
+    "product": "demo",
     "personas": { "admin": "qa-admin", "member": "qa-member" },
+    "admin_persona": "admin",
     "auth": { "type": "password_token", "path": "/auth/token" },
     "health_path": "/health",
     "test_hooks": false
+  },
+  "barber": {
+    "url": "http://127.0.0.1:8100",
+    "product": "barber-booking",
+    "personas": { "owner": "owner", "barber": "barber", "customer": "customer" },
+    "admin_persona": "owner",
+    "passwords": { "owner": "dev-owner-password", "barber": "dev-barber-password", "customer": "dev-customer-password" },
+    "auth": { "type": "password_token", "path": "/auth/token" },
+    "health_path": "/health",
+    "test_hooks": false,
+    "shop_tz": "Asia/Jerusalem"
   }
 }

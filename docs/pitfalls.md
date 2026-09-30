@@ -342,3 +342,46 @@ anyone remembering — provided the remote is added before the first commit, sin
 then the repository matches nothing and falls back to the global identity. The history
 was rewritten with only author and committer changed; content and dates were verified
 identical before the force push.
+
+## 2026-09-30 — An assertion that compared two date formats, and so could never fail
+
+`assert build_booking_payload(...)["start"] not in offered` checked that a clashing slot was
+not offered. The helper writes `…T09:15:00.000Z`; the product writes `…T09:15:00Z`. The two
+strings never match, so the assertion held whatever the product did. It passed its first
+run, and every run after — until the product was broken on purpose and this test did not
+notice.
+
+**Rule:** compare instants, never their spelling — parse both sides first. A "not in"
+assertion also needs its positive twin: prove the value IS offered to someone for whom it
+should be, or the negative check may be vacuous.
+
+## 2026-09-30 — 38 of 38 passed on the first run, and two of them tested nothing useful
+
+The barbershop suites were green the first time they ran. Breaking the product one rule at
+a time showed two rules the suites could not see: the vacuous assertion above, and back-to-
+back slots vanishing from the listing — which no test looked for, because every test checked
+the booking and none checked what the listing offered next to one.
+
+**Rule:** a suite's first green run is a hypothesis. Break the product, rule by rule, and
+see each break go red before calling the suite done. A rule no mutant can break is a rule the
+suite does not test.
+
+## 2026-09-30 — cleanup reported 2300 objects removed from a product that cannot delete
+
+`make cleanup ENV=barber` answered "2300 already gone". Nothing was deleted: the barbershop
+has no delete endpoints, `DELETE /customers/{id}` is an unknown path, and an unknown path is
+a 404 — which cleanup counted as "already gone".
+
+**Rule:** a 404 does not mean deleted. cleanup reads the product's OpenAPI document, reports
+a resource with no `DELETE /{resource}/{id}` as `no delete endpoint` without calling it, and
+without a document reports a 404 as `not found`, never as a deletion.
+
+## 2026-09-30 — A unit test broken by an edit, unnoticed until the full run
+
+Changing cleanup to act as `client.config["admin_persona"]` broke its unit test's fake
+client, which had no `config`. Only the barbershop suites were being run after that edit, so
+the break sat there until the full run surfaced it — along with seven loader tests whose fake
+blocks predated the two new required keys.
+
+**Rule:** after changing anything under `utils/`, `scripts/`, `obj/` or `config/`, run
+`pytest --unit` before calling the change done — not only the suite the change was for.

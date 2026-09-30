@@ -13,6 +13,7 @@ reports what it could not remove.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from collections import Counter
 from pathlib import Path
@@ -23,6 +24,7 @@ from obj import ApiClient  # noqa: E402
 from obj.base import Base  # noqa: E402
 from utils.artifacts import load  # noqa: E402
 from utils.helpers import assert_not_prod  # noqa: E402
+from utils.openapi import documented_operations  # noqa: E402
 
 REPORTS = Path(__file__).resolve().parents[1] / "reports"
 
@@ -58,18 +60,46 @@ class _Resource(Base):
         super().__init__(client)
 
 
-def delete_all(client: ApiClient, records: list[dict]) -> dict[str, int]:
-    """Delete each recorded entity, counting what happened to it."""
+def deletable_resources(operations: tuple[tuple[str, str], ...]) -> set[str]:
+    """Resources whose OpenAPI document has DELETE /{resource}/{id}."""
+    found = set()
+    for method, path in operations:
+        match = re.fullmatch(r"/([^/{}]+)/\{[^/]+\}", path)
+        if method == "DELETE" and match:
+            found.add(match.group(1))
+    return found
+
+
+def delete_all(client: ApiClient, records: list[dict], deletable: set[str] | None = None) -> dict[str, int]:
+    """Delete each recorded entity, counting what happened to it.
+
+    A 404 answers two different questions with one number: "that entity is
+    gone" and "there is no DELETE here at all". Counting every 404 as gone once
+    reported 2300 objects removed from a product that cannot delete anything.
+    With the product's OpenAPI document (`deletable`), a resource that has no
+    delete endpoint is reported as such and never called. Without it, a 404 is
+    reported as what it is - not found - and not as a deletion.
+    """
     assert_not_prod("cleanup")
 
-    result = {"deleted": 0, "already gone": 0, "refused": 0, "failed": 0}
+    result = {
+        "deleted": 0,
+        "already gone": 0,
+        "no delete endpoint": 0,
+        "not found": 0,
+        "refused": 0,
+        "failed": 0,
+    }
     for record in records:
+        if deletable is not None and record["resource"] not in deletable:
+            result["no delete endpoint"] += 1
+            continue
         handle = _Resource(client, record["resource"])
-        status = handle.delete_by_id(record["entity_id"], persona="admin").status_code
+        status = handle.delete_by_id(record["entity_id"], persona=client.config["admin_persona"]).status_code
         if status in (200, 202, 204):
             result["deleted"] += 1
         elif status == 404:
-            result["already gone"] += 1
+            result["already gone" if deletable is not None else "not found"] += 1
         elif status in (401, 403, 405):
             result["refused"] += 1
         else:
@@ -104,9 +134,19 @@ def main() -> int:
         return 0
 
     client = ApiClient(env=args.env).login_personas()
+    try:
+        deletable = deletable_resources(documented_operations(client.base_url))
+    except Exception:  # noqa: BLE001 - no spec is a normal product, not a crash
+        deletable = None
+        print("  (no OpenAPI document: a 404 cannot be told apart from a missing delete endpoint)")
 
-    outcome = delete_all(client, records)
+    outcome = delete_all(client, records, deletable)
     print("  " + " · ".join(f"{count} {label}" for label, count in outcome.items() if count))
+    if outcome["no delete endpoint"]:
+        print(
+            f"  {outcome['no delete endpoint']} object(s) cannot be removed through this product's API. "
+            "They stay until the environment is reset some other way."
+        )
     return 1 if outcome["failed"] else 0
 
 

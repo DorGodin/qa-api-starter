@@ -287,7 +287,9 @@ Every environment is one block in `config/config.json`, and every key is require
 | Key | What it declares |
 |---|---|
 | `url` | where the product is |
+| `product` | which suites belong here. `PRODUCT_FOLDERS` in `tests/conftest.py` maps each suite folder to its product; the others are not collected |
 | `personas` | persona name -> username. Tests name personas, never usernames |
+| `admin_persona` | the persona with full rights - the reset and `make cleanup` act as it. Must be one of `personas` |
 | `auth` | how a persona logs in: `{"type": ...}` plus that type's options, see `obj/auth.py` |
 | `health_path` | a path that answers any 2xx when the product is up, or `null` for none |
 | `test_hooks` | `true` only for a product with `/_test/reset` — the demo. A real product is `false` |
@@ -310,6 +312,12 @@ A session keeps every cookie a server sets and sends it on every later request; 
 personas share one, so a session cookie from the owner's login would ride along on the
 customer's calls and a permission test would pass for the wrong persona. Identity travels
 only in each persona's own headers. `tests/unit/test_client_isolation.py` proves it.
+
+**Two products, one framework.** The demo lives in this repository; the barbershop lives in
+its own and shares no code with this one — the barbershop suites know it only through its
+URL and its documented contract (`obj/barber/__init__.py`). `ENV=barber` points at it. It
+is the standing proof that the framework is portable: CI checks the barbershop out, starts
+it, and runs its suites on every push.
 
 **With `test_hooks: false` there is no reset.** Isolation comes from each test creating its
 own data, and `make cleanup` removes what the run left. A test that needs a pristine
@@ -337,15 +345,19 @@ Names describe what something does, not the case that triggered it.
 
 ```
 obj/            API object layer
-  client.py     session, base url, persona tokens, Response wrapper
+  client.py     session, base url, persona credentials, Response wrapper
+  auth.py       one login strategy per auth.type
   base.py       standard CRUD every resource inherits
-  resources/    one module per resource  <- replace these
+  resources/    the demo product, one module per resource  <- replace these
+  barber/       the barbershop product (github.com/DorGodin/barber-booking-api)
 tests/
-  conftest.py   env config, session client, personas, gated collection
-  suites/       product behaviour tests
-  unit/         framework's own tests (--unit)
+  conftest.py   env config, session client, personas, product- and flag-gated collection
+  suites/       demo product behaviour tests
+  barber/       barbershop product tests - collected only when ENV's product is barber-booking
+  unit/         framework's own tests (--unit), whatever the product
   edge-cases/   validation edge cases (--edge-cases)
-utils/          helpers.py, functions/ (prod-guarded data seeding)
+utils/          helpers.py, functions/ (prod-guarded data seeding), concurrency.py (at_once),
+                local_time.py (a product's own clock, DST-safe), assertions.py
 config/         config.json per environment + loader
 demo_api/       the FastAPI target this repo tests  <- replace with the real product
 docs/           api-endpoints.md, test-plans/, pitfalls.md

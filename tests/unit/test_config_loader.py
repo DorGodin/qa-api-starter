@@ -10,7 +10,9 @@ from config.loader import is_local_host, load_env_config, password_env_var, pass
 def block(url="http://127.0.0.1:8000", **extra):
     return {
         "url": url,
+        "product": "demo",
         "personas": {"admin": "admin-user", "member": "member-user"},
+        "admin_persona": "admin",
         "auth": {"type": "password_token", "path": "/auth/token"},
         "health_path": "/health",
         "test_hooks": True,
@@ -46,7 +48,9 @@ def test_unknown_env_names_the_known_ones(configs):
         load_env_config("does-not-exist")
 
 
-@pytest.mark.parametrize("key", ["url", "personas", "auth", "health_path", "test_hooks"])
+@pytest.mark.parametrize(
+    "key", ["url", "product", "personas", "admin_persona", "auth", "health_path", "test_hooks"]
+)
 def test_every_required_key_is_named_when_it_is_missing(configs, key):
     incomplete = block()
     del incomplete[key]
@@ -124,3 +128,10 @@ def test_a_persona_name_becomes_a_valid_variable_name():
 )
 def test_only_this_machine_and_container_names_count_as_local(url, local):
     assert is_local_host(url) is local
+
+
+def test_the_admin_persona_must_be_one_of_the_declared_personas(configs):
+    configs({"qa": block(admin_persona="root")})
+
+    with pytest.raises(ValueError, match="admin_persona 'root' is not one of its personas"):
+        load_env_config("qa")

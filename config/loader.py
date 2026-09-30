@@ -18,7 +18,7 @@ from urllib.parse import urlsplit
 
 from utils.helpers import current_env
 
-REQUIRED_KEYS = ("url", "personas", "auth", "health_path", "test_hooks")
+REQUIRED_KEYS = ("url", "product", "personas", "admin_persona", "auth", "health_path", "test_hooks")
 _CONFIG_PATH = Path(__file__).with_name("config.json")
 _LOCAL_OVERRIDE = Path(__file__).with_name("config.local.json")
 
@@ -71,6 +71,11 @@ def load_env_config(env: str | None = None) -> dict:
         raise TypeError(f"environment {env!r}: test_hooks must be true or false, got {block['test_hooks']!r}")
     if not isinstance(block["personas"], dict) or not block["personas"]:
         raise ValueError(f"environment {env!r}: personas must map at least one persona to a username")
+    if block["admin_persona"] not in block["personas"]:
+        raise ValueError(
+            f"environment {env!r}: admin_persona {block['admin_persona']!r} is not one of its personas "
+            f"({', '.join(block['personas'])})"
+        )
     if not isinstance(block["auth"], dict) or "type" not in block["auth"]:
         raise ValueError(f"environment {env!r}: auth must be an object with a type")
 

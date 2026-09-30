@@ -59,6 +59,11 @@ def main() -> int:
     base_url = config["url"].rstrip("/")
     if "prod" in base_url:
         raise SystemExit(f"refusing to load test {base_url}: the URL names prod")
+    if config["product"] != "demo":
+        raise SystemExit(
+            f"the scripts in perf/ exercise the demo product's endpoints; ENV={config['env']} is "
+            f"{config['product']!r}. Write that product's own k6 script before load testing it."
+        )
     if config["auth"]["type"] != "password_token":
         raise SystemExit(
             f"perf/lib/session.js logs in with password_token; ENV={config['env']} uses "

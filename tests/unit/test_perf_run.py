@@ -97,11 +97,13 @@ def test_prod_is_refused_before_k6_is_ever_started(harness, monkeypatch):
     assert fake.command is None
 
 
-def config_for(url: str) -> dict:
+def config_for(url: str, product: str = "demo") -> dict:
     return {
         "env": "qa",
         "url": url,
+        "product": product,
         "personas": {"admin": "a"},
+        "admin_persona": "admin",
         "auth": {"type": "password_token", "path": "/auth/token"},
         "health_path": "/health",
         "test_hooks": False,
@@ -137,3 +139,14 @@ def test_passwords_reach_k6_through_its_environment_and_never_its_arguments(harn
         fake.env["QA_ADMIN_PASSWORD"] in arg for arg in fake.command
     ), "a password in argv is readable by anyone who can list processes"
     assert fake.env["BASE_URL"] == "http://127.0.0.1:8000" and fake.env["TEST_HOOKS"] == "true"
+
+
+def test_another_products_environment_is_refused_because_the_scripts_are_the_demos(harness, monkeypatch):
+    monkeypatch.setattr(
+        perf_run, "load_env_config", lambda: config_for("http://127.0.0.1:8100", product="barber-booking")
+    )
+    fake = FakeK6(k6_export(), exit_code=0)
+
+    with pytest.raises(SystemExit, match="demo product's endpoints"):
+        harness(fake)
+    assert fake.command is None
