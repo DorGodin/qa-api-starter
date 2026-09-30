@@ -45,8 +45,10 @@ After a run:
 | `make trends` | what regressed against earlier runs: a shrunken group, a new skip, a new failure |
 | `make cleanup ENV=qa` | what the runs left on an environment. `YES=1` deletes it |
 | `make notify-dry` | the summary that would be posted to a channel |
-| `make perf-smoke` | k6 smoke test |
-| `make perf-load` | k6 load test |
+| `make perf-smoke` | one user, seconds: does the API work at all |
+| `make perf-load` | the read path under concurrency |
+| `make perf-write` | the write path under concurrency, with the money math asserted |
+| `make perf-spike` / `perf-soak` / `perf-stress` | a sudden 5x, a long hold, a ramp past capacity |
 
 **Why they are separate.** A developer checking one change should not wait for a browser to
 start. When everything always runs, people stop running anything.
@@ -64,7 +66,7 @@ start. When everything always runs, people stop running anything.
 | `tests/security/` | access control, credential handling, exposure |
 | `tests/ui/` | Playwright: the flow, resilience when the API fails, accessibility |
 | `tests/llm/` | DeepEval: grounded facts, prompt injection, data isolation |
-| `perf/` | k6 scripts whose thresholds fail the pipeline |
+| `perf/` | k6: read path, write path, and four load shapes. Thresholds fail the pipeline |
 | `config/` | one block per environment |
 | `data/scenarios/` | cases as CSV and JSON, so a non-engineer can add one |
 | `.claude/` | the AI workflow: agents, skills, commands |
@@ -344,7 +346,10 @@ make test        # טרמינל 2 — הרצת הבדיקות
 | `make trends` | מה נסוג מול ריצות קודמות: קבוצה שהתכווצה, דילוג חדש, כשל חדש |
 | `make cleanup ENV=qa` | מה הריצות השאירו על הסביבה. `YES=1` מוחק |
 | `make notify-dry` | ההודעה שהייתה נשלחת לערוץ |
-| `make perf-smoke` / `make perf-load` | בדיקות עומס ב-k6 |
+| `make perf-smoke` | משתמש אחד, שניות: האם ה-API עובד בכלל |
+| `make perf-load` | מסלול הקריאה תחת עומס מקבילי |
+| `make perf-write` | מסלול הכתיבה תחת עומס, כולל בדיקת חישוב הכספים |
+| `make perf-spike` / `perf-soak` / `perf-stress` | זינוק פתאומי, החזקה ארוכה, ועלייה מעל הקיבולת |
 
 **למה מפרידים.** מפתח שבודק שינוי קטן לא צריך לחכות שדפדפן יעלה. כשהכל רץ תמיד, אנשים
 מפסיקים להריץ בכלל.
@@ -361,6 +366,12 @@ make test        # טרמינל 2 — הרצת הבדיקות
 ל-`assert_not_prod` בשורה הראשונה, ויש בדיקה שסורקת את הקוד ונכשלת אם שכחת.
 
 **`perf/`** — סקריפטים של k6. הספים שם הם שער שחרור: חריגה מפילה את הפייפליין.
+
+שני דברים שכדאי להכיר. ראשית, יש סקריפט נפרד למסלול הכתיבה, לא רק לקריאה — קריאות אין מה
+לקלקל בהן, ולכן בדיקת עומס שרק קוראת לא תמצא את הבאגים שכן כואבים. הסקריפט הזה בודק שוב את
+אותו חישוב כספים שהטסטים הרגילים בודקים, בכל איטרציה ובכל רמת עומס: זמן תגובה טוב בזמן
+שהסכומים חוזרים שגויים הוא לא הצלחה. שנית, `PROFILE` קובע את צורת העומס — `load`, `spike`,
+`soak`, `stress` — כך שאותו סקריפט עונה על ארבע שאלות שונות בלי לגעת בו.
 
 **`data/scenarios/`** — מקרי בדיקה בקבצי CSV ו-JSON. אפשר להוסיף מקרה בלי לכתוב קוד.
 

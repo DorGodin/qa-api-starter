@@ -33,8 +33,27 @@ clean:
 perf-smoke:     ## one user, seconds, gates every merge
 	k6 run perf/smoke.js
 
-perf-load:      ## concurrency on the read path; override VUS, RAMP, HOLD
-	k6 run -e VUS=$(or $(VUS),10) -e RAMP=$(or $(RAMP),10s) -e HOLD=$(or $(HOLD),20s) perf/load.js
+# Each perf target names its own PROFILE so none of them depends on k6 flag
+# order. PROFILE= on the command line still overrides perf-load and perf-write.
+K6FLAGS = -e VUS=$(or $(VUS),10) -e RAMP=$(or $(RAMP),10s) -e HOLD=$(or $(HOLD),20s)
+
+perf-load:      ## read path under concurrency; override VUS, RAMP, HOLD, PROFILE
+	k6 run $(K6FLAGS) -e PROFILE=$(or $(PROFILE),load) perf/load.js
+
+perf-write:     ## write path under concurrency - create + submit, money math asserted
+	k6 run $(K6FLAGS) -e PROFILE=$(or $(PROFILE),load) perf/write_path.js
+
+perf-spike:     ## sudden 5x jump on the write path, then recovery
+	k6 run $(K6FLAGS) -e PROFILE=spike perf/write_path.js
+
+perf-soak:      ## long hold, looking for leaks; override HOLD (default 10m)
+	k6 run $(K6FLAGS) -e PROFILE=soak perf/write_path.js
+
+perf-stress:    ## ramp past capacity to find the ceiling; only 5xx fails the run
+	k6 run $(K6FLAGS) -e PROFILE=stress perf/write_path.js
+
+perf:           ## everything except soak and stress - the pre-release set
+	$(MAKE) perf-smoke && $(MAKE) perf-load && $(MAKE) perf-write
 
 ui:             ## browser suite (needs: playwright install chromium)
 	ENV=$(ENV) PYTHONPATH=. $(PY) -m pytest --ui tests/ui

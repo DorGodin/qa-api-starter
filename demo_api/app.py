@@ -60,6 +60,10 @@ class OrderLineIn(BaseModel):
     quantity: int = Field(gt=0, le=99)
 
 
+class BudgetIn(BaseModel):
+    amount: float = Field(ge=0)
+
+
 class OrderIn(BaseModel):
     lines: list[OrderLineIn] = Field(min_length=1)
     note: str | None = None
@@ -110,6 +114,16 @@ def reset(_: dict = Depends(admin_only)):
     DB["items"].clear()
     DB["orders"].clear()
     USERS["member"]["budget"] = 500.0
+    return None
+
+
+@app.post("/_test/budget", status_code=204)
+def set_budget(body: BudgetIn, _: dict = Depends(admin_only)):
+    """Provision a member balance. A load test on a money path needs enough
+    balance to last its whole run - without this the write path runs dry after
+    a few seconds and every later submit is a 402, which looks like a product
+    failure and is not one."""
+    USERS["member"]["budget"] = _round(body.amount)
     return None
 
 

@@ -149,3 +149,63 @@ those rows then polluted the trend the history feeds.
 
 **Rule:** a session that did not execute tests does not belong in the run history. Check
 `config.getoption("collectonly")` before recording anything.
+
+## 2026-09-30 — The load test only read, so it could not have found a money bug
+
+`load.js` hammered `GET /items` and `GET /orders` and nothing else, and it was described as
+"does the API hold up under concurrency". It could not answer that question. Reads have no
+state to corrupt; everything that actually breaks under concurrent traffic — server side
+money math, a status transition, a balance being decremented — lives on the write path,
+which no load script touched.
+
+**Rule:** a load test on a product that takes money exercises the write path, and asserts
+correctness there, not only latency. `write_path.js` re-checks the same arithmetic the
+functional suites check, on every iteration, at every load level. A p95 that looks fine
+while totals come back wrong is not a pass. Proven by inflating `line_total` by 1% in the
+demo API: the run went red on `wrong_totals=12688` and exited 99.
+
+## 2026-09-30 — The perf smoke test passed because CI always starts with an empty catalogue
+
+`smoke.js` created an item priced 10.0, then ordered whatever `GET /items?limit=1` returned
+and asserted the total was 10.0. Those are two different items the moment anything else has
+written to the catalogue. It passed in CI only because the API there is fresh, and it failed
+the first time it ran locally after another perf script had left items behind — a leftover
+priced 2.5 turned "the server computes totals correctly" into "the first row in the
+catalogue happens to cost 10".
+
+**Rule:** a perf script is a test and the same state rules apply. Assert against the id you
+just created, never against whatever a list endpoint returns first, and check a new script
+against a dirty environment before believing it.
+
+## 2026-09-30 — Stress thresholds that are red by design train people to ignore the run
+
+Reusing the load gates (`http_req_failed < 1%`, `p95 < 400ms`) for a stress profile makes
+every stress run fail, because the whole point of the profile is to push past capacity.
+Queueing and 429s are the correct answer to too much traffic, not defects.
+
+**Rule:** the profile decides which thresholds apply. Under `stress` the only gates left are
+the correctness ones — no 5xx, no wrong totals, no unexpected budget rejections. What is a
+defect at any load level stays a gate; what is expected at overload does not.
+
+## 2026-09-30 — A load test on a money path has to provision its own balance
+
+The first write-path run reported 3,275 budget rejections and failed. Nothing was broken:
+the member balance is 500.0, each order cost 0.06, and this API answers about 1,100 orders a
+second, so the balance was spent seven seconds in. Every later submit was a correct 402, and
+the run looked like a product failure.
+
+**Rule:** provision the test data for the whole duration in `setup()` — here a
+`POST /_test/budget` hook sized for the run. Once provisioning is explicit,
+`budget_rejections > 0` stops meaning "we ran out" and starts meaning "the product charged
+more than it should have", which is worth failing on. Also: name the constraint in its own
+metric. Had budget exhaustion only shown up inside `http_req_failed`, it would have read as
+a mysterious 14% error rate instead of pointing straight at the cause.
+
+## 2026-09-30 — Only the Makefile could run the tests
+
+`pytest.ini` had no `pythonpath`, and every Makefile target exported `PYTHONPATH=.` by hand.
+So `make test` worked and a bare `pytest` — what anyone does in a fresh clone, and what an
+IDE's test runner does — died on `ModuleNotFoundError: No module named 'config'`.
+
+**Rule:** the plain tool has to work. `pythonpath = .` belongs in `pytest.ini`, where pytest,
+the IDE and CI all read it, not in a wrapper that only one entry point goes through.
