@@ -23,13 +23,14 @@ def test_the_password_field_is_masked(page, ui_base_url):
     assert page.get_by_test_id("password").get_attribute("type") == "password"
 
 
-def test_the_whole_sign_in_works_from_the_keyboard_alone(page, ui_base_url):
+def test_the_whole_sign_in_works_from_the_keyboard_alone(page, ui_base_url, credentials):
+    username, password = credentials("member")
     page.goto(ui_base_url)
 
     page.get_by_test_id("username").focus()
-    page.keyboard.type("member")
+    page.keyboard.type(username)
     page.keyboard.press("Tab")
-    page.keyboard.type("member-secret")
+    page.keyboard.type(password)
     page.keyboard.press("Tab")
     page.keyboard.press("Enter")
 

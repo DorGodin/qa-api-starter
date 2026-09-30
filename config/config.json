@@ -1,27 +1,40 @@
 {
   "local": {
     "url": "http://127.0.0.1:8000",
-    "admin_user": "admin",
-    "member_user": "member"
+    "personas": { "admin": "admin", "member": "member" },
+    "passwords": { "admin": "admin-secret", "member": "member-secret" },
+    "auth": { "type": "password_token", "path": "/auth/token" },
+    "health_path": "/health",
+    "test_hooks": true
   },
   "ci": {
     "url": "http://127.0.0.1:8000",
-    "admin_user": "admin",
-    "member_user": "member"
-  },
-  "staging": {
-    "url": "https://staging.example.invalid",
-    "admin_user": "admin",
-    "member_user": "member"
-  },
-  "prod": {
-    "url": "https://api.example.invalid",
-    "admin_user": "admin",
-    "member_user": "member"
+    "personas": { "admin": "admin", "member": "member" },
+    "passwords": { "admin": "admin-secret", "member": "member-secret" },
+    "auth": { "type": "password_token", "path": "/auth/token" },
+    "health_path": "/health",
+    "test_hooks": true
   },
   "docker": {
     "url": "http://api:8000",
-    "admin_user": "admin",
-    "member_user": "member"
+    "personas": { "admin": "admin", "member": "member" },
+    "passwords": { "admin": "admin-secret", "member": "member-secret" },
+    "auth": { "type": "password_token", "path": "/auth/token" },
+    "health_path": "/health",
+    "test_hooks": true
+  },
+  "staging": {
+    "url": "https://staging.example.invalid",
+    "personas": { "admin": "qa-admin", "member": "qa-member" },
+    "auth": { "type": "password_token", "path": "/auth/token" },
+    "health_path": "/health",
+    "test_hooks": false
+  },
+  "prod": {
+    "url": "https://api.example.invalid",
+    "personas": { "admin": "qa-admin", "member": "qa-member" },
+    "auth": { "type": "password_token", "path": "/auth/token" },
+    "health_path": "/health",
+    "test_hooks": false
   }
 }

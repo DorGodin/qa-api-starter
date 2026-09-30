@@ -33,6 +33,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from config.loader import is_local_host, load_env_config, password_env_var, password_for  # noqa: E402
 from utils.helpers import assert_not_prod  # noqa: E402
 from utils.perf_history import TREND_STATS, append, normalise  # noqa: E402
 
@@ -54,9 +55,34 @@ def main() -> int:
     # A load test generates thousands of real orders. Pointing one at prod is
     # the worst thing in this repo, so it is refused rather than documented.
     assert_not_prod("perf_run.py")
-    base_url = os.getenv("BASE_URL", "http://127.0.0.1:8000")
+    config = load_env_config()
+    base_url = config["url"].rstrip("/")
     if "prod" in base_url:
         raise SystemExit(f"refusing to load test {base_url}: the URL names prod")
+    if config["auth"]["type"] != "password_token":
+        raise SystemExit(
+            f"perf/lib/session.js logs in with password_token; ENV={config['env']} uses "
+            f"{config['auth']['type']!r}. Add that login to session.js before load testing this environment."
+        )
+    if not (is_local_host(base_url) or os.getenv("PERF_REMOTE_OK") == "1"):
+        # Thousands of requests a second is an attack when it is somebody else's
+        # server. A remote target has to be claimed on purpose.
+        raise SystemExit(
+            f"refusing to load test {base_url}: it is not on this machine. If it is your own "
+            "environment, set PERF_REMOTE_OK=1."
+        )
+
+    # Handed to k6 through its environment, not as -e flags: arguments are
+    # visible to anyone who can list processes, and these include passwords.
+    k6_env = {
+        **os.environ,
+        "BASE_URL": base_url,
+        "TEST_HOOKS": "true" if config["test_hooks"] else "false",
+        "AUTH_PATH": config["auth"]["path"],
+    }
+    for persona, username in config["personas"].items():
+        k6_env[password_env_var(persona).replace("_PASSWORD", "_USER")] = username
+        k6_env[password_env_var(persona)] = password_for(persona, config["env"])
 
     script = Path(args.script)
     if not script.is_file():
@@ -77,7 +103,7 @@ def main() -> int:
     started = datetime.now(UTC)
     clock = time.monotonic()
     try:
-        exit_code = subprocess.run(command, cwd=ROOT).returncode
+        exit_code = subprocess.run(command, cwd=ROOT, env=k6_env).returncode
     except FileNotFoundError:
         export.unlink(missing_ok=True)
         raise SystemExit("k6 is not installed. See perf/README.md.") from None
@@ -95,7 +121,7 @@ def main() -> int:
         summary,
         scenario=script.stem,
         profile=args.profile,
-        env=os.getenv("ENV", "local"),
+        env=config["env"],
         base_url=base_url,
         started=started.isoformat(timespec="seconds"),
         duration=duration,

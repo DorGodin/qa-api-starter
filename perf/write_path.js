@@ -11,7 +11,7 @@
 import http from "k6/http";
 import { check } from "k6";
 import { Counter, Trend } from "k6/metrics";
-import { BASE_URL, authHeaders, login } from "./lib/session.js";
+import { BASE_URL, TEST_HOOKS, authHeaders, login } from "./lib/session.js";
 import { stages, thresholds, track } from "./lib/profiles.js";
 
 const LINES = Number(__ENV.LINES || 3);
@@ -45,6 +45,16 @@ export const options = {
 };
 
 export function setup() {
+  // Provisioning goes through the demo product's test hooks. A product without
+  // them needs its own way to give the member a balance for the whole run -
+  // running without one would end in a wall of 402s that look like a defect.
+  if (!TEST_HOOKS) {
+    throw new Error(
+      "write_path.js provisions the member balance through /_test/reset and /_test/budget, and this " +
+        "environment declares test_hooks=false. Give setup() the product's own way to provision a " +
+        "balance before load testing its write path.",
+    );
+  }
   const admin = login("admin");
   http.post(`${BASE_URL}/_test/reset`, null, authHeaders(admin, "POST /_test/reset"));
   const provisioned = http.post(

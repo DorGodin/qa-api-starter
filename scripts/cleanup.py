@@ -25,7 +25,6 @@ from utils.artifacts import load  # noqa: E402
 from utils.helpers import assert_not_prod  # noqa: E402
 
 REPORTS = Path(__file__).resolve().parents[1] / "reports"
-PASSWORDS = {"admin": "admin-secret", "member": "member-secret"}
 
 
 def select(
@@ -104,9 +103,7 @@ def main() -> int:
         print("\nnothing was deleted. Re-run with --yes to remove them.")
         return 0
 
-    client = ApiClient(env=args.env)
-    for persona in ("admin", "member"):
-        client.register_persona(persona, client.config[f"{persona}_user"], PASSWORDS[persona])
+    client = ApiClient(env=args.env).login_personas()
 
     outcome = delete_all(client, records)
     print("  " + " · ".join(f"{count} {label}" for label, count in outcome.items() if count))

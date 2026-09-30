@@ -45,6 +45,7 @@ After a run:
 | `make trends` | what regressed against earlier runs: a shrunken group, a new skip, a new failure |
 | `make cleanup ENV=qa` | what the runs left on an environment. `YES=1` deletes it |
 | `make notify-dry` | the summary that would be posted to a channel |
+| `make env-check ENV=qa` | whether an environment is usable: config, health, a login per persona |
 | `make perf-smoke` | one user, seconds: does the API work at all |
 | `make perf-load` | the read path under concurrency |
 | `make perf-write` | the write path under concurrency, with the money math asserted |
@@ -251,16 +252,48 @@ works, so you can stop at any point and still be ahead.
 1. `make install`, then `make api` and `make test`. If the demo passes, your machine is fine
    and any later failure is the product or the config, not the setup.
 2. Read `CLAUDE.md` once. It is fifteen minutes and it is the whole contract.
-3. Add a block for one real environment in `config/config.json`:
+3. Add a block for one real environment in `config/config.json`. Every key is required —
+   nothing is guessed:
 
    ```json
-   { "qa": { "url": "https://qa.yourproduct.com/api", "admin_user": "...", "member_user": "..." } }
+   "qa": {
+     "url": "https://qa.yourproduct.com/api",
+     "personas": { "owner": "qa-owner", "customer": "qa-customer" },
+     "auth": { "type": "password_token", "path": "/auth/login" },
+     "health_path": "/health",
+     "test_hooks": false
+   }
    ```
 
-   An unknown `ENV` fails at once and lists the names that do exist.
-4. Change `register_persona` in `obj/client.py` to the product's real login.
-5. Run `ENV=<yours> pytest -q`. It will fail — the demo's resources do not exist there.
-   That is expected; you have proved the client, the config and the credentials work.
+   - **`personas`** — the roles your tests act as, and the username for each. Name them
+     after the product's roles, not the demo's.
+   - **`auth`** — how they log in. Three types are built in: `password_token` (JSON login,
+     bearer token), `oauth_password` (Keycloak, Auth0) and `cookie_token` (a session
+     cookie). The options for each are at the top of its function in `obj/auth.py`. A
+     fourth is one function there.
+   - **`health_path`** — any path that answers 2xx when the product is up, or `null`.
+   - **`test_hooks`** — **`false` for a real product.** `true` means the product has
+     `/_test/reset`, which only the demo does.
+
+4. **Passwords do not go in that file.** Put them in `config/config.local.json`, which git
+   ignores, or in environment variables — which is also what CI uses:
+
+   ```bash
+   export QA_OWNER_PASSWORD=...
+   export QA_CUSTOMER_PASSWORD=...
+   ```
+
+   The loader refuses a password in `config/config.json` for anything but this machine.
+
+5. Prove it before writing a single test:
+
+   ```bash
+   make env-check ENV=qa
+   ```
+
+   It checks the config, the health path and a login for every persona, and says where
+   each password came from without printing it. When it says `ready`, the client, the
+   config and the credentials work. It logs in and creates nothing, so it is safe anywhere.
 
 ### Day 2 — the first real suite
 
@@ -284,8 +317,17 @@ works, so you can stop at any point and still be ahead.
 
 ### Week 1 — make it protect something
 
-11. Wire CI. The workflow in `.github/workflows/ci.yml` needs the environment name and the
-    credentials as secrets; the rest is unchanged.
+11. Wire CI. Add one repository secret per persona, named exactly as the loader looks for
+    them — `QA_OWNER_PASSWORD`, `QA_CUSTOMER_PASSWORD` — and set `ENV` on the job:
+
+    ```yaml
+    env:
+      ENV: qa
+      QA_OWNER_PASSWORD: ${{ secrets.QA_OWNER_PASSWORD }}
+    ```
+
+    Run `make env-check` as the job's first step, so a wrong secret fails in one line
+    instead of as a wall of errors.
 12. Check that `tests/unit` still passes. It tests the framework, not the product, so it
     should be green from the first minute and stay that way.
 13. Point the bug filer at your tracker: `TRACKER_URL`, `TRACKER_EMAIL`, `TRACKER_TOKEN`,
@@ -360,6 +402,7 @@ make test        # טרמינל 2 — הרצת הבדיקות
 | `make trends` | מה נסוג מול ריצות קודמות: קבוצה שהתכווצה, דילוג חדש, כשל חדש |
 | `make cleanup ENV=qa` | מה הריצות השאירו על הסביבה. `YES=1` מוחק |
 | `make notify-dry` | ההודעה שהייתה נשלחת לערוץ |
+| `make env-check ENV=qa` | האם סביבה מוכנה: קונפיג, health, והתחברות של כל תפקיד |
 | `make perf-smoke` | משתמש אחד, שניות: האם ה-API עובד בכלל |
 | `make perf-load` | מסלול הקריאה תחת עומס מקבילי |
 | `make perf-write` | מסלול הכתיבה תחת עומס, כולל בדיקת חישוב הכספים |
@@ -544,16 +587,47 @@ ln -s CLAUDE.md .cursorrules
 1. `make install`, ואז `make api` ו-`make test`. אם הדמו עובר, המחשב שלך תקין — וכל כשל
    מאוחר יותר הוא המוצר או הקונפיג, לא ההתקנה.
 2. לקרוא את `CLAUDE.md` פעם אחת. רבע שעה, וזה כל החוזה.
-3. להוסיף בלוק לסביבה אמיתית אחת ב-`config/config.json`:
+3. להוסיף בלוק לסביבה אמיתית אחת ב-`config/config.json`. כל המפתחות חובה — שום דבר לא
+   מנוחש:
 
    ```json
-   { "qa": { "url": "https://qa.yourproduct.com/api", "admin_user": "...", "member_user": "..." } }
+   "qa": {
+     "url": "https://qa.yourproduct.com/api",
+     "personas": { "owner": "qa-owner", "customer": "qa-customer" },
+     "auth": { "type": "password_token", "path": "/auth/login" },
+     "health_path": "/health",
+     "test_hooks": false
+   }
    ```
 
-   שם סביבה שלא קיים נכשל מיד ומדפיס אילו סביבות כן קיימות.
-4. לשנות את `register_persona` ב-`obj/client.py` לשיטת ההתחברות של המוצר.
-5. להריץ `ENV=<שלך> pytest -q`. זה ייכשל — המשאבים של הדמו לא קיימים שם. זה תקין: הוכחת
-   שהקליינט, הקונפיג והאישורים עובדים.
+   - **`personas`** — התפקידים שהבדיקות פועלות בשמם, ושם המשתמש של כל אחד. לקרוא להם לפי
+     התפקידים במוצר, לא לפי הדמו.
+   - **`auth`** — איך הם מתחברים. יש שלושה סוגים מובנים: `password_token` (התחברות ב-JSON
+     וטוקן), `oauth_password` (Keycloak, Auth0) ו-`cookie_token` (עוגיית סשן). האפשרויות של
+     כל סוג כתובות בראש הפונקציה שלו ב-`obj/auth.py`. סוג רביעי זו פונקציה אחת שם.
+   - **`health_path`** — כתובת שעונה 2xx כשהמוצר למעלה, או `null`.
+   - **`test_hooks`** — **`false` במוצר אמיתי.** `true` אומר שיש למוצר `/_test/reset`,
+     ורק לדמו יש.
+
+4. **סיסמאות לא נכנסות לקובץ הזה.** שמים אותן ב-`config/config.local.json`, ש-git מתעלם
+   ממנו, או במשתני סביבה — וזה גם מה שה-CI משתמש בו:
+
+   ```bash
+   export QA_OWNER_PASSWORD=...
+   export QA_CUSTOMER_PASSWORD=...
+   ```
+
+   הטוען מסרב לסיסמה ב-`config/config.json` לכל כתובת שהיא לא המחשב הזה.
+
+5. להוכיח שזה עובד, לפני שכותבים טסט אחד:
+
+   ```bash
+   make env-check ENV=qa
+   ```
+
+   הפקודה בודקת את הקונפיג, את כתובת ה-health, והתחברות של כל תפקיד — ואומרת מאיפה כל
+   סיסמה הגיעה, בלי להדפיס אותה. כשהיא אומרת `ready`, הקליינט, הקונפיג והאישורים עובדים.
+   היא רק מתחברת ולא יוצרת כלום, אז אפשר להריץ אותה בכל סביבה.
 
 ### יום 2 — הסוויטה האמיתית הראשונה
 
@@ -576,8 +650,17 @@ ln -s CLAUDE.md .cursorrules
 
 ### שבוע 1 — שהתשתית תתחיל להגן
 
-11. לחבר CI. ה-workflow ב-`.github/workflows/ci.yml` צריך את שם הסביבה ואת האישורים
-    כ-secrets; השאר לא משתנה.
+11. לחבר CI. להוסיף secret אחד לכל תפקיד, בשם המדויק שהטוען מחפש — `QA_OWNER_PASSWORD`,
+    `QA_CUSTOMER_PASSWORD` — ולהגדיר `ENV` ב-job:
+
+    ```yaml
+    env:
+      ENV: qa
+      QA_OWNER_PASSWORD: ${{ secrets.QA_OWNER_PASSWORD }}
+    ```
+
+    להריץ `make env-check` כצעד הראשון ב-job, כדי ש-secret שגוי ייכשל בשורה אחת ולא בקיר
+    של שגיאות.
 12. לוודא ש-`tests/unit` עדיין עובר. הוא בודק את התשתית ולא את המוצר, אז הוא אמור להיות
     ירוק מהדקה הראשונה ולהישאר כזה.
 13. לחבר את פותח הבאגים ל-tracker: `TRACKER_URL`, `TRACKER_EMAIL`, `TRACKER_TOKEN`,

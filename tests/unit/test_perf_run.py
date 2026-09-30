@@ -20,8 +20,9 @@ class FakeK6:
         self.exit_code = exit_code
         self.command: list[str] | None = None
 
-    def __call__(self, command, cwd=None):
+    def __call__(self, command, cwd=None, env=None):
         self.command = command
+        self.env = env
         target = next(arg.split("=", 1)[1] for arg in command if arg.startswith("--summary-export="))
         if self.export is not None:
             Path(target).write_text(json.dumps(self.export))
@@ -32,7 +33,7 @@ class FakeK6:
 def harness(tmp_path, monkeypatch):
     monkeypatch.setattr(perf_run, "REPORTS", tmp_path)
     monkeypatch.setenv("ENV", "local")
-    monkeypatch.delenv("BASE_URL", raising=False)
+    monkeypatch.delenv("PERF_REMOTE_OK", raising=False)
 
     def start(fake, *args):
         monkeypatch.setattr(perf_run.subprocess, "run", fake)
@@ -96,10 +97,43 @@ def test_prod_is_refused_before_k6_is_ever_started(harness, monkeypatch):
     assert fake.command is None
 
 
-def test_a_base_url_that_names_prod_is_refused(harness, monkeypatch):
-    monkeypatch.setenv("BASE_URL", "https://api.prod.example.com")
+def config_for(url: str) -> dict:
+    return {
+        "env": "qa",
+        "url": url,
+        "personas": {"admin": "a"},
+        "auth": {"type": "password_token", "path": "/auth/token"},
+        "health_path": "/health",
+        "test_hooks": False,
+    }
+
+
+def test_a_url_that_names_prod_is_refused(harness, monkeypatch):
+    monkeypatch.setattr(perf_run, "load_env_config", lambda: config_for("https://api.prod.example.com"))
     fake = FakeK6(k6_export(), exit_code=0)
 
     with pytest.raises(SystemExit, match="names prod"):
         harness(fake)
     assert fake.command is None
+
+
+def test_somebody_elses_server_is_not_load_tested_unless_claimed_on_purpose(harness, monkeypatch):
+    monkeypatch.setattr(perf_run, "load_env_config", lambda: config_for("https://restful-booker.example.com"))
+    fake = FakeK6(k6_export(), exit_code=0)
+
+    with pytest.raises(SystemExit, match="PERF_REMOTE_OK"):
+        harness(fake)
+    assert fake.command is None
+
+
+def test_passwords_reach_k6_through_its_environment_and_never_its_arguments(harness):
+    fake = FakeK6(k6_export(), exit_code=0)
+
+    harness(fake)
+
+    assert fake.env["QA_ADMIN_PASSWORD"], "k6 needs the password"
+    assert fake.env["QA_ADMIN_USER"] == "admin"
+    assert not any(
+        fake.env["QA_ADMIN_PASSWORD"] in arg for arg in fake.command
+    ), "a password in argv is readable by anyone who can list processes"
+    assert fake.env["BASE_URL"] == "http://127.0.0.1:8000" and fake.env["TEST_HOOKS"] == "true"

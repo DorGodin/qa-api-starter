@@ -6,8 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from config.loader import load_env_config
+from config.loader import load_env_config, password_for
 from obj import ApiClient, Assistant, Items, Orders
+from obj.auth import LoginFailed
 from utils import http_trace
 from utils.artifacts import ArtifactLog, set_current_test
 from utils.bug_filing import Failure, JiraTracker, file_failures, format_report
@@ -22,7 +23,6 @@ GATED = {
     "tests/llm": "--llm",
     "tests/security": "--security",
 }
-PASSWORDS = {"admin": "admin-secret", "member": "member-secret"}
 
 
 def pytest_addoption(parser):
@@ -80,19 +80,51 @@ def api(request, env_config):
         pytest.skip("unit-only run does not need the API")
 
     client = ApiClient()
-    try:
-        health = client.request("GET", "/health", persona=None)
-    except Exception as exc:  # noqa: BLE001
-        raise RuntimeError(
-            f"cannot reach {client.base_url} (ENV={env_config['env']}). "
-            "Start it with `make api` or point ENV at a running environment."
-        ) from exc
-    if health.status_code != 200:
-        raise RuntimeError(f"health check on {client.base_url} returned {health.status_code}")
+    env = env_config["env"]
+    health_path = env_config["health_path"]
+    if health_path is not None:
+        try:
+            health = client.request("GET", health_path, persona=None)
+        except Exception as exc:  # noqa: BLE001
+            raise RuntimeError(
+                f"cannot reach {client.base_url} (ENV={env}). "
+                "Start it with `make api` or point ENV at a running environment."
+            ) from exc
+        # Any 2xx. Health endpoints disagree on what "healthy" returns -
+        # Restful-Booker's /ping answers 201 - and none of them is wrong.
+        if not 200 <= health.status_code < 300:
+            raise RuntimeError(
+                f"health check GET {client.base_url}{health_path} returned {health.status_code} (ENV={env}). "
+                "If the product has no health endpoint, set health_path to null for this environment."
+            )
 
-    for persona in ("admin", "member"):
-        client.register_persona(persona, env_config[f"{persona}_user"], PASSWORDS[persona])
+    try:
+        client.login_personas()
+    except LoginFailed as exc:
+        raise RuntimeError(
+            f"ENV={env}: {exc}. Check the personas and the auth block in config/config.json, "
+            "and the password each persona resolves to."
+        ) from exc
     return client
+
+
+@pytest.fixture(scope="session")
+def credentials(env_config):
+    """(username, password) for a persona on this environment.
+
+    For the tests that have to type a login themselves - a UI form, a negative
+    auth case. Everything else logs in through `api` and never sees a password.
+    """
+
+    def _for(persona: str) -> tuple[str, str]:
+        personas = env_config["personas"]
+        if persona not in personas:
+            raise KeyError(
+                f"persona {persona!r} is not declared for ENV={env_config['env']}. Declared: {', '.join(personas)}"
+            )
+        return personas[persona], password_for(persona, env_config["env"])
+
+    return _for
 
 
 @pytest.fixture(scope="session")
@@ -117,17 +149,45 @@ def assistant(api):
     return Assistant(api)
 
 
+NEEDS_RESET = (
+    "needs a resettable environment: ENV={env} declares test_hooks=false, so there is no "
+    "/_test/reset to start this test from a known state"
+)
+
+
+def reset_between_modules(api, env_config) -> bool:
+    """Reset once per module, when the environment offers a way to.
+
+    A real product has no reset endpoint. There, isolation comes from each test
+    creating its own data, and leftovers are removed by `make cleanup`. Calling
+    a reset that does not exist would error every module before it ran.
+    """
+    if not env_config["test_hooks"]:
+        return False
+    api.request("POST", "/_test/reset", persona="admin").assert_ok(204)
+    return True
+
+
+def reset_for_one_test(api, env_config) -> None:
+    """A pristine environment for one test, or a named skip where there cannot
+    be one. A skip, not a pass: the test asserts an absolute value, and on a
+    shared environment it has nothing honest to assert."""
+    if not env_config["test_hooks"]:
+        pytest.skip(NEEDS_RESET.format(env=env_config["env"]))
+    api.request("POST", "/_test/reset", persona="admin").assert_ok(204)
+
+
 @pytest.fixture(scope="module", autouse=True)
 def _clean_state(request):
     """Reset once per module so an ordered flow keeps its state, and modules
     never leak into each other."""
     if "api" not in getattr(request, "fixturenames", []):
         return
-    request.getfixturevalue("api").request("POST", "/_test/reset", persona="admin").assert_ok(204)
+    reset_between_modules(request.getfixturevalue("api"), request.getfixturevalue("env_config"))
 
 
 @pytest.fixture
-def fresh_state(api):
+def fresh_state(api, env_config):
     """Opt in to a pristine environment for one test.
 
     The module scoped reset above keeps an ordered flow's state alive, which is
@@ -135,7 +195,7 @@ def fresh_state(api):
     tolerate. A module whose tests each need a clean slate declares
     `pytestmark = pytest.mark.usefixtures("fresh_state")`.
     """
-    api.request("POST", "/_test/reset", persona="admin").assert_ok(204)
+    reset_for_one_test(api, env_config)
 
 
 @pytest.fixture(scope="module")

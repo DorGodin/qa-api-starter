@@ -1,12 +1,13 @@
 import pytest
 
 
-def test_token_is_issued_for_valid_credentials(api, env_config):
+def test_token_is_issued_for_valid_credentials(api, credentials):
+    username, password = credentials("admin")
     resp = api.request(
         "POST",
         "/auth/token",
         persona=None,
-        json={"username": env_config["admin_user"], "password": "admin-secret"},
+        json={"username": username, "password": password},
     ).assert_ok(200)
 
     body = resp.as_dict
@@ -15,12 +16,20 @@ def test_token_is_issued_for_valid_credentials(api, env_config):
     assert body["access_token"]
 
 
+# ADMIN is resolved inside the test, not at collection: collection must not
+# need a password, and a password must never become part of a test id.
+ADMIN = object()
+
+
 @pytest.mark.parametrize(
     "username, password",
-    [("admin", "wrong"), ("nobody", "admin-secret"), ("", "")],
+    [(ADMIN, "wrong"), ("nobody", ADMIN), ("", "")],
     ids=["wrong-password", "unknown-user", "empty"],
 )
-def test_bad_credentials_are_rejected(api, username, password):
+def test_bad_credentials_are_rejected(api, credentials, username, password):
+    admin_user, admin_password = credentials("admin")
+    username = admin_user if username is ADMIN else username
+    password = admin_password if password is ADMIN else password
     resp = api.request("POST", "/auth/token", persona=None, json={"username": username, "password": password})
     assert resp.status_code == 401
 
@@ -40,7 +49,7 @@ def test_member_cannot_reach_admin_only_endpoints(items):
 
 
 def test_admin_and_member_get_different_tokens(api):
-    assert api._tokens["admin"] != api._tokens["member"]
+    assert api.auth_headers("admin") != api.auth_headers("member")
 
 
 def test_switching_persona_switches_identity(api, orders):

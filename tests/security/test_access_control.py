@@ -45,7 +45,7 @@ def test_malformed_credentials_are_rejected_the_same_way(api, items, header):
 
 
 def test_a_token_is_not_accepted_in_a_query_parameter(api, items):
-    token = api._tokens["member"]
+    token = api.auth_headers("member")["Authorization"].split(" ", 1)[1]
     resp = api.request("GET", f"{items.path}?access_token={token}", persona=None)
 
     assert resp.status_code == 401, "tokens in URLs end up in logs and browser history"

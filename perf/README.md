@@ -55,7 +55,7 @@ make perf-stress VUS=50                  # find the ceiling
 make perf                                # smoke + load + write, the pre-release set
 
 make perf-write VUS=25 HOLD=60s          # heavier, longer
-BASE_URL=https://staging.example make perf-smoke
+ENV=staging PERF_REMOTE_OK=1 make perf-smoke   # your own remote environment
 ```
 
 Knobs: `VUS`, `RAMP`, `HOLD`, `PROFILE`, and for the write path `LINES`,
@@ -118,4 +118,21 @@ in `options.thresholds`, and when a threshold moves, say why in the commit messa
 The shared gates live in `lib/profiles.js`; per-endpoint latency gates live in each
 script, next to the call they describe.
 
-Never point these at production.
+## Where they point
+
+The target, the personas and their passwords come from the same config the pytest suites
+use, resolved by `scripts/perf_run.py` and handed to k6 through its environment — never as
+`-e` flags, which anyone who can list processes can read. The scripts hold no URL and no
+password.
+
+Three refusals, each before k6 starts:
+
+| Refused | Why |
+|---|---|
+| `ENV=prod`, or a URL that names prod | a load test creates thousands of real orders |
+| any host that is not this machine, unless `PERF_REMOTE_OK=1` | thousands of requests a second against somebody else's server is an attack. A public practice API is somebody else's server |
+| an `auth.type` other than `password_token` | `lib/session.js` implements that one login; add yours there first |
+
+`write_path.js` also stops in `setup()` on an environment with `test_hooks: false`: it
+provisions the balance through the demo's test hooks, and a real product needs its own way
+to do that before its write path can be load tested.

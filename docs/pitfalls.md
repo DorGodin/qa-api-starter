@@ -271,3 +271,58 @@ failed on four ruff findings and four reformatted files.
 **Rule:** `git add` new files before running the hooks as a pre-flight check, or run them on
 the staged set the commit will actually contain. A green hook run means nothing about a file
 it never saw.
+
+## 2026-09-30 — The adoption guide had never been run against anything but the demo
+
+Pointed at a stand-in product with a login and no test hooks, the framework errored in 62
+of 62 modules: `_clean_state` called `/_test/reset` before every module, and only the demo
+has that endpoint. Step 5 of the guide said this failure "proves the client, the config
+and the credentials work". It proved nothing — the reset failed before any of them was
+reached, and hid everything behind it.
+
+**Rule:** an adoption path is verified by walking it against something that is not the
+demo. Whether a product exposes test hooks is declared per environment (`test_hooks`,
+required, a real boolean), and "it works" is proven by `make env-check`, which logs every
+persona in and reports ready — not by reading a failure as a success.
+
+## 2026-09-30 — Seven copies of the demo passwords, and none of them in the config
+
+The config held usernames; the passwords were literals in `tests/conftest.py`,
+`tests/ui/conftest.py`, two UI tests, `test_auth_and_roles.py`, `scripts/cleanup.py` and
+`perf/lib/session.js`. Using the framework on a real product meant editing code to hold a
+real password, one `git add` away from a leaked credential. The guide said "credentials as
+secrets"; nothing read a secret.
+
+**Rule:** one resolver — `password_for()` in `config/loader.py` — in a fixed order:
+`QA_<PERSONA>_PASSWORD`, then the gitignored `config.local.json`, then `config.json` for
+local hosts only, which the loader enforces. Passwords never travel in the config dict,
+never become part of a test id, and reach k6 through its environment rather than its argv.
+
+## 2026-09-30 — One requests.Session for every persona leaks cookies between them
+
+A `requests.Session` stores every cookie a server sets and sends it on every later request.
+All personas shared one. Demonstrated: after the owner's login set `session=...`, a request
+made as the customer went out carrying the owner's cookie. On a cookie-session product that
+makes a permission test pass for the wrong persona.
+
+**Rule:** the shared session refuses all cookies, each login runs on a throwaway session,
+and identity travels only in each persona's own headers. `test_client_isolation.py` proves
+both layers; removing both makes it fail.
+
+## 2026-09-30 — The health check accepted only 200
+
+Restful-Booker's health endpoint answers `201 Created`. A check for exactly 200 declares a
+healthy product down.
+
+**Rule:** a health check accepts any 2xx, and a product with no health endpoint declares
+`health_path: null` instead of being given a fake one.
+
+## 2026-09-30 — zsh does not split a command held in a variable (again)
+
+`PT=".venv/bin/pytest -c pytest.ini ..."; $PT` ran nothing: zsh treats `$PT` as one word, a
+file by that whole name. Three probe runs printed nothing, and one of them was first
+misread as a server that had not started yet. This is the fourth time this shell behaviour
+has produced a false "nothing happened".
+
+**Rule:** in zsh, never keep a command in a variable. Use a shell function, or write the
+command inline. When a run prints nothing, look at the raw output before explaining it.

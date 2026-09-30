@@ -8,14 +8,15 @@ even when the API is fixed the same day.
 from playwright.sync_api import expect
 
 
-def test_a_failing_catalogue_does_not_leave_a_blank_page(page, ui_base_url, signed_in, items):
+def test_a_failing_catalogue_does_not_leave_a_blank_page(page, ui_base_url, signed_in, items, credentials):
     items.create_fake_item(name="Lamp", price=20.0)
     page = signed_in("member")
 
     page.route("**/items*", lambda route: route.fulfill(status=500, json={"detail": "boom"}))
     page.reload()
-    page.get_by_test_id("username").fill("member")
-    page.get_by_test_id("password").fill("member-secret")
+    username, password = credentials("member")
+    page.get_by_test_id("username").fill(username)
+    page.get_by_test_id("password").fill(password)
     page.get_by_test_id("login").click()
 
     expect(page.get_by_test_id("budget")).to_be_visible()

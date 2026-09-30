@@ -282,11 +282,39 @@ the image and runs the compose suite on every push, so the Dockerfile cannot rot
 
 ## Environments
 
-Every environment is one block in `config/config.json` carrying `url`, `admin_user` and
-`member_user`. `config/loader.py` reads all of them — there is no if/elif ladder and no
-computed default. An unknown `ENV` raises and names the known environments; a block
-missing a key raises and names the key. To add an environment, add a block.
-`config/config.local.json` is gitignored and overrides blocks locally.
+Every environment is one block in `config/config.json`, and every key is required:
+
+| Key | What it declares |
+|---|---|
+| `url` | where the product is |
+| `personas` | persona name -> username. Tests name personas, never usernames |
+| `auth` | how a persona logs in: `{"type": ...}` plus that type's options, see `obj/auth.py` |
+| `health_path` | a path that answers any 2xx when the product is up, or `null` for none |
+| `test_hooks` | `true` only for a product with `/_test/reset` — the demo. A real product is `false` |
+
+`config/loader.py` reads the block — there is no if/elif ladder and no computed default,
+because a default is a guess, and guessing `test_hooks` is how a suite ends up calling a
+reset that does not exist. An unknown `ENV` raises and names the known environments; a
+missing key raises and names the key; `test_hooks` must be a real boolean, since `"false"`
+is truthy. To add an environment, add a block. `config/config.local.json` is gitignored
+and overrides blocks locally.
+
+**Passwords never live in code and never travel in the config dict.** `password_for()` in
+`config/loader.py` is the only place one is resolved, in this order: `QA_<PERSONA>_PASSWORD`
+(what CI sets from secrets), then `passwords` in `config.local.json`, then `passwords` in
+`config.json` — and the loader refuses the last unless the URL is this machine or a dotless
+container name. A test that must type a password itself uses the `credentials` fixture.
+
+**Each persona logs in on a session of its own, and the shared session refuses cookies.**
+A session keeps every cookie a server sets and sends it on every later request; the
+personas share one, so a session cookie from the owner's login would ride along on the
+customer's calls and a permission test would pass for the wrong persona. Identity travels
+only in each persona's own headers. `tests/unit/test_client_isolation.py` proves it.
+
+**With `test_hooks: false` there is no reset.** Isolation comes from each test creating its
+own data, and `make cleanup` removes what the run left. A test that needs a pristine
+environment declares `fresh_state`, and on such an environment it is skipped with the
+reason — it has nothing honest to assert on shared data.
 
 ## DateTime
 

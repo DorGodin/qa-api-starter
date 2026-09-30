@@ -19,17 +19,17 @@ def _reset_between_ui_tests(fresh_state):
 
 
 @pytest.fixture
-def signed_in(page, ui_base_url, env_config):
+def signed_in(page, ui_base_url, credentials):
     """Sign in through the real form, not by injecting a token.
 
     A UI suite that fakes the login stops covering the login.
     """
 
     def _sign_in(persona: str = "member"):
-        passwords = {"admin": "admin-secret", "member": "member-secret"}
+        username, password = credentials(persona)
         page.goto(ui_base_url)
-        page.get_by_test_id("username").fill(env_config[f"{persona}_user"])
-        page.get_by_test_id("password").fill(passwords[persona])
+        page.get_by_test_id("username").fill(username)
+        page.get_by_test_id("password").fill(password)
         page.get_by_test_id("login").click()
         page.get_by_test_id("budget").wait_for()
         return page

@@ -30,6 +30,9 @@ lock:
 clean:
 	rm -rf .pytest_cache **/__pycache__
 
+env-check:      ## prove ENV is usable: config, health, a login per persona. Read-only
+	ENV=$(ENV) $(PY) scripts/env_check.py
+
 # Every perf target goes through scripts/perf_run.py: k6's own output is shown
 # unchanged, and the result is appended to reports/perf.jsonl even when a
 # threshold is crossed - those are the runs worth having in the history.
