@@ -4,6 +4,7 @@ Most of these are not exotic. They are the ones that actually happen: an id
 guessed from a URL, a token used for the wrong account, an error message that
 says more than it should.
 """
+
 import pytest
 
 pytestmark = pytest.mark.usefixtures("fresh_state")
@@ -28,7 +29,9 @@ def test_a_member_cannot_perform_an_admin_action_even_with_a_valid_token(items):
 
 def test_an_admin_action_refuses_an_anonymous_caller_before_it_validates_the_body(items):
     resp = items.create({"name": "", "price": -5}, persona=None)
-    assert resp.status_code == 401, "authentication is checked before the payload, or the 422 leaks that the route exists"
+    assert (
+        resp.status_code == 401
+    ), "authentication is checked before the payload, or the 422 leaks that the route exists"
 
 
 @pytest.mark.parametrize(

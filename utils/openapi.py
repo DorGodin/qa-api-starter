@@ -5,6 +5,7 @@ It does not notice a field that quietly changed type somewhere else. The spec
 already describes every response, so use it: one helper covers drift across the
 whole surface.
 """
+
 from __future__ import annotations
 
 from functools import lru_cache

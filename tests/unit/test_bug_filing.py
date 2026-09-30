@@ -4,14 +4,14 @@ from utils.bug_filing import (
     Action,
     Failure,
     assertion_line,
-    humanise,
-    prefix_for,
     build_description,
     build_payload,
     build_title,
     file_failures,
     format_report,
+    humanise,
     marker_for,
+    prefix_for,
     route,
 )
 
@@ -64,8 +64,14 @@ def test_title_is_capped_for_trackers_that_reject_long_summaries():
 def test_description_follows_the_team_template_in_order(failure):
     body = build_description(failure, run_url="https://ci.example/run/1", env="qa", platform="API")
 
-    sections = ["*ENV(+mobile type):*", "*Precondition:*", "*Steps to reproduce:*",
-                "*Actual result:*", "*Expected result:*", "*Notes:*"]
+    sections = [
+        "*ENV(+mobile type):*",
+        "*Precondition:*",
+        "*Steps to reproduce:*",
+        "*Actual result:*",
+        "*Expected result:*",
+        "*Notes:*",
+    ]
     positions = [body.index(section) for section in sections]
     assert positions == sorted(positions), "the sections must appear in the template's order"
 
@@ -195,9 +201,7 @@ def test_dry_run_creates_and_comments_nothing(failure):
 
 
 def test_each_failing_test_gets_its_own_ticket():
-    failures = [
-        Failure(nodeid=f"tests/suites/test_a.py::test_{i}", message=f"boom {i}") for i in range(3)
-    ]
+    failures = [Failure(nodeid=f"tests/suites/test_a.py::test_{i}", message=f"boom {i}") for i in range(3)]
     tracker = FakeTracker()
     actions = file_failures(failures, tracker, "QA")
 

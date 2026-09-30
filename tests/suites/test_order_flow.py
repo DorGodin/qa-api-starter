@@ -6,7 +6,9 @@ pytestmark = pytest.mark.usefixtures("api")
 def assert_summary_math(order: dict) -> None:
     for line in order["lines"]:
         assert line["line_total"] == pytest.approx(line["unit_price"] * line["quantity"], abs=0.01), line
-    assert order["total_amount"] == pytest.approx(sum(l["line_total"] for l in order["lines"]), abs=0.01)
+    assert order["total_amount"] == pytest.approx(
+        sum(line["line_total"] for line in order["lines"]), abs=0.01
+    )
 
 
 @pytest.mark.dependency()
@@ -67,7 +69,9 @@ def test_lines_are_hidden_unless_expanded(items, orders):
     plain = orders.get_by_id(order["id"], persona="member").assert_ok(200).as_dict
     assert plain["lines"] == [] and plain["line_count"] == 1
 
-    expanded = orders.get_by_id(order["id"], params={"expand": "lines"}, persona="member").assert_ok(200).as_dict
+    expanded = (
+        orders.get_by_id(order["id"], params={"expand": "lines"}, persona="member").assert_ok(200).as_dict
+    )
     assert_summary_math(expanded)
 
 

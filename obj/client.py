@@ -38,7 +38,7 @@ class Response:
     def content(self) -> list[dict[str, Any]]:
         return self.as_dict.get("content", [])
 
-    def assert_ok(self, expected: int | tuple[int, ...] = (200, 201, 204)) -> "Response":
+    def assert_ok(self, expected: int | tuple[int, ...] = (200, 201, 204)) -> Response:
         expected = (expected,) if isinstance(expected, int) else expected
         if self.status_code not in expected:
             raise AssertionError(
@@ -74,7 +74,9 @@ class ApiClient:
         return dict(self._config)
 
     def register_persona(self, name: str, username: str, password: str) -> str:
-        resp = self.request("POST", "/auth/token", persona=None, json={"username": username, "password": password})
+        resp = self.request(
+            "POST", "/auth/token", persona=None, json={"username": username, "password": password}
+        )
         resp.assert_ok(200)
         token = resp.as_dict["access_token"]
         self._tokens[name] = token
@@ -82,7 +84,7 @@ class ApiClient:
             self._active = name
         return token
 
-    def use(self, persona: str) -> "ApiClient":
+    def use(self, persona: str) -> ApiClient:
         if persona not in self._tokens:
             raise KeyError(f"persona {persona!r} not registered. Known: {sorted(self._tokens)}")
         self._active = persona
@@ -97,7 +99,9 @@ class ApiClient:
                 raise KeyError(f"persona {name!r} not registered")
             headers.setdefault("Authorization", f"Bearer {token}")
         kwargs.setdefault("timeout", DEFAULT_TIMEOUT)
-        response = Response(self._session.request(method, f"{self.base_url}{path}", headers=headers, **kwargs))
+        response = Response(
+            self._session.request(method, f"{self.base_url}{path}", headers=headers, **kwargs)
+        )
         http_trace.record(
             artifacts.current_test(),
             http_trace.Call(method=method.upper(), path=path, status=response.status_code, persona=name),

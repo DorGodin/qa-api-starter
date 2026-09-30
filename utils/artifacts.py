@@ -4,13 +4,15 @@ After a run against a shared environment, the question nobody can usually answer
 is "what did that leave behind". Every create goes through `Base.create`, so
 recording there costs the tests nothing and misses nothing.
 """
+
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 _current_test: str = "unknown"
 
@@ -31,7 +33,7 @@ class Artifact:
     env: str
     test: str
     persona: str | None = None
-    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"))
+    created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat(timespec="seconds"))
 
 
 class ArtifactLog:
@@ -46,8 +48,13 @@ class ArtifactLog:
         if not entity_id:
             return
         self._items.append(
-            Artifact(resource=resource, entity_id=str(entity_id), env=self.env,
-                     test=current_test(), persona=persona)
+            Artifact(
+                resource=resource,
+                entity_id=str(entity_id),
+                env=self.env,
+                test=current_test(),
+                persona=persona,
+            )
         )
 
     @property

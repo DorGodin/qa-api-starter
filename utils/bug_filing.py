@@ -6,12 +6,14 @@ nothing files anything unless the run was started with --file-bugs.
 The tracker is a protocol so the suite never depends on one vendor, and so the
 unit tests can exercise every path without a network.
 """
+
 from __future__ import annotations
 
 import os
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Protocol
+from typing import Any, Protocol
 
 MARKER_PREFIX = "qa-autofile"
 MARKER_RE = re.compile(rf"{MARKER_PREFIX}:(?P<nodeid>\S+)")
@@ -102,8 +104,13 @@ def build_title(failure: Failure, prefix: str | None = None) -> str:
 
 def command_for(failure: Failure, env: str | None = None) -> str:
     """The exact command that reproduces this one failure, flag and env included."""
-    flags = {"unit": "--unit", "edge-cases": "--edge-cases", "ui": "--ui",
-             "llm": "--llm", "security": "--security"}
+    flags = {
+        "unit": "--unit",
+        "edge-cases": "--edge-cases",
+        "ui": "--ui",
+        "llm": "--llm",
+        "security": "--security",
+    }
     flag = flags.get(failure.area)
     return f"ENV={env or '<env>'} pytest {flag + ' ' if flag else ''}{failure.nodeid}"
 
@@ -229,7 +236,9 @@ def file_failures(
             actions.append(Action(kind="comment", nodeid=failure.nodeid, key=key))
         else:
             created = tracker.create(payload)
-            actions.append(Action(kind="create", nodeid=failure.nodeid, key=created.get("key"), payload=payload))
+            actions.append(
+                Action(kind="create", nodeid=failure.nodeid, key=created.get("key"), payload=payload)
+            )
     return actions
 
 

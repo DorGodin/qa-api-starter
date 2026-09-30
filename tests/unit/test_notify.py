@@ -24,9 +24,13 @@ def test_a_clean_run_reads_in_one_line():
 
 
 def test_failures_are_named_with_the_assertion():
-    message = build_message(report(outcomes=[
-        outcome("tests/suites/a.py::x", "failed", "E   AssertionError: 75.0 != 80.0"),
-    ]))
+    message = build_message(
+        report(
+            outcomes=[
+                outcome("tests/suites/a.py::x", "failed", "E   AssertionError: 75.0 != 80.0"),
+            ]
+        )
+    )
 
     assert "tests/suites/a.py::x" in message
     assert "75.0 != 80.0" in message
@@ -46,8 +50,9 @@ def test_skips_are_described_as_unanswered_questions():
 
 
 def test_regression_findings_ride_along():
-    message = build_message(report(outcomes=[outcome("a::b")]),
-                            findings=[Finding("group-shrank", "unit went from 10 to 7")])
+    message = build_message(
+        report(outcomes=[outcome("a::b")]), findings=[Finding("group-shrank", "unit went from 10 to 7")]
+    )
     assert "group-shrank" in message and "10 to 7" in message
 
 
@@ -58,8 +63,12 @@ def test_a_run_url_goes_last():
 
 def test_a_dry_run_sends_nothing_and_needs_no_webhook():
     sent = []
-    message = notify(report(outcomes=[outcome("a::b")]), webhook=None, dry_run=True,
-                     sender=lambda url, text: sent.append((url, text)))
+    message = notify(
+        report(outcomes=[outcome("a::b")]),
+        webhook=None,
+        dry_run=True,
+        sender=lambda url, text: sent.append((url, text)),
+    )
 
     assert sent == []
     assert "PASSED" in message
@@ -72,8 +81,11 @@ def test_sending_without_a_webhook_fails_loudly():
 
 def test_the_message_reaches_the_sender_unchanged():
     sent = []
-    message = notify(report(outcomes=[outcome("a::b")]), webhook="https://hooks.example/x",
-                     sender=lambda url, text: sent.append((url, text)) or 200)
+    message = notify(
+        report(outcomes=[outcome("a::b")]),
+        webhook="https://hooks.example/x",
+        sender=lambda url, text: sent.append((url, text)) or 200,
+    )
 
     assert sent[0][0] == "https://hooks.example/x"
     assert sent[0][1] == message

@@ -8,6 +8,7 @@ message.
     python scripts/dashboard.py            # writes reports/dashboard.html
     python scripts/dashboard.py --runs 50
 """
+
 from __future__ import annotations
 
 import argparse
@@ -31,7 +32,6 @@ REPORTS = Path(__file__).resolve().parents[1] / "reports"
 DISPLAY_TZ = ZoneInfo(os.environ["DASHBOARD_TZ"]) if os.environ.get("DASHBOARD_TZ") else None
 
 
-
 def local_time(value: str) -> str:
     """UTC in the file, the reader's clock on the screen, with the zone named."""
     try:
@@ -48,6 +48,7 @@ def heading(title: str) -> str:
 
 def column(title: str) -> str:
     return f"<th>{html.escape(title)}</th>"
+
 
 CSS = """
 :root{--ok:#0e7c66;--bad:#b4232c;--warn:#b26a00;--ink:#1f2933;--mut:#6b7280;--line:#e4e7eb;--bg:#f7f8fa}
@@ -89,9 +90,13 @@ def verdict_class(verdict: str) -> str:
 def bar(passed: int, failed: int, skipped: int) -> str:
     total = max(passed + failed + skipped, 1)
     parts = [("p", passed), ("f", failed), ("s", skipped)]
-    return '<div class="bar">' + "".join(
-        f'<span class="{cls}" style="width:{count / total * 100:.1f}%"></span>' for cls, count in parts
-    ) + "</div>"
+    return (
+        '<div class="bar">'
+        + "".join(
+            f'<span class="{cls}" style="width:{count / total * 100:.1f}%"></span>' for cls, count in parts
+        )
+        + "</div>"
+    )
 
 
 def runs_table(runs: list[dict]) -> str:
@@ -110,9 +115,11 @@ def runs_table(runs: list[dict]) -> str:
             f"<td>{run['duration']}s</td><td>{html.escape(groups)}</td>"
             "</tr>"
         )
-    header = "".join(column(name) for name in
-                     ("When", "Env", "Verdict", "Pass", "Fail", "Skip")) + "<th></th>" + \
-        "".join(column(name) for name in ("Time", "Groups"))
+    header = (
+        "".join(column(name) for name in ("When", "Env", "Verdict", "Pass", "Fail", "Skip"))
+        + "<th></th>"
+        + "".join(column(name) for name in ("Time", "Groups"))
+    )
     return f"<table><tr>{header}</tr>" + "".join(rows) + "</table>"
 
 
@@ -130,8 +137,7 @@ def artifacts_table(items: list[dict], limit: int = 200) -> str:
         "</tr>"
         for item in reversed(items[-limit:])
     ]
-    header = "".join(column(name) for name in
-                     ("Resource", "Id", "Env", "Created as", "By test", "When"))
+    header = "".join(column(name) for name in ("Resource", "Id", "Env", "Created as", "By test", "When"))
     return f"<table><tr>{header}</tr>" + "".join(rows) + "</table>"
 
 
@@ -198,7 +204,7 @@ def sparkline(runs: list[dict], width: int = 560, height: int = 44) -> str:
         f'aria-label="pass rate per run">'
         f'<polyline points="{points}" fill="none" stroke="#0e5c63" stroke-width="2"/>{dots}</svg>'
         f'<p class="hint">Pass rate across the last {len(rates)} runs, oldest on the left. '
-        f'The axis covers {low:.0%} to 100%, so a small dip is still visible.</p>'
+        f"The axis covers {low:.0%} to 100%, so a small dip is still visible.</p>"
     )
 
 
@@ -221,7 +227,9 @@ def groups_table(run: dict | None) -> str:
         f"<td>{bar(p, f, s)}</td></tr>"
         for name, p, f, s in group_rows(run)
     )
-    return f"<table><tr><th>Group</th><th>Passed</th><th>Failed</th><th>Skipped</th><th></th></tr>{rows}</table>"
+    return (
+        f"<table><tr><th>Group</th><th>Passed</th><th>Failed</th><th>Skipped</th><th></th></tr>{rows}</table>"
+    )
 
 
 def env_table(rows: list[tuple[str, int, str]]) -> str:
@@ -232,7 +240,9 @@ def env_table(rows: list[tuple[str, int, str]]) -> str:
         f"<td><code>make cleanup ENV={html.escape(env)}</code></td></tr>"
         for env, total, detail in rows
     )
-    return f"<table><tr><th>Environment</th><th>Objects</th><th>What</th><th>Remove with</th></tr>{body}</table>"
+    return (
+        f"<table><tr><th>Environment</th><th>Objects</th><th>What</th><th>Remove with</th></tr>{body}</table>"
+    )
 
 
 def findings_list(findings: list) -> str:
@@ -257,10 +267,14 @@ def cards(runs: list[dict], items: list[dict]) -> str:
     tiles += [(f"{resource} created", count) for resource, count in by_resource.most_common(3)]
     if latest:
         tiles.insert(0, ("Last verdict", latest["verdict"]))
-    return '<div class="cards">' + "".join(
-        f'<div class="card"><b>{html.escape(str(value))}</b><span>{html.escape(label)}</span></div>'
-        for label, value in tiles
-    ) + "</div>"
+    return (
+        '<div class="cards">'
+        + "".join(
+            f'<div class="card"><b>{html.escape(str(value))}</b><span>{html.escape(label)}</span></div>'
+            for label, value in tiles
+        )
+        + "</div>"
+    )
 
 
 def build(reports_dir: Path = REPORTS, run_limit: int = 25) -> Path:
@@ -276,9 +290,7 @@ def build(reports_dir: Path = REPORTS, run_limit: int = 25) -> Path:
     except Exception:  # a dashboard must render even when the analysis cannot
         findings = []
     subtitle = (
-        f"Last run {local_time(latest['started'])} on {latest['env']}"
-        if latest
-        else "No runs recorded yet"
+        f"Last run {local_time(latest['started'])} on {latest['env']}" if latest else "No runs recorded yet"
     )
 
     page = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">

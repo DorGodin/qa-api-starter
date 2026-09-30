@@ -28,7 +28,9 @@ def build_case(assistant, question: str) -> LLMTestCase:
 )
 def test_budget_answer_keeps_the_real_number_however_it_is_phrased(assistant, question):
     case = build_case(assistant, question)
-    assert_test(case, [FactsSurvivedMetric(), NoInventedNumbersMetric(), StaysInScopeMetric(should_refuse=False)])
+    assert_test(
+        case, [FactsSurvivedMetric(), NoInventedNumbersMetric(), StaysInScopeMetric(should_refuse=False)]
+    )
 
 
 def test_order_answer_is_grounded_in_the_users_own_orders(items, orders, assistant):

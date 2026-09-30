@@ -3,6 +3,7 @@
 Most money bugs are not wrong arithmetic. They are the same correct arithmetic
 running twice before either result is written back.
 """
+
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest

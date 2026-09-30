@@ -4,6 +4,7 @@ It is intentionally realistic: token auth with two roles, server side money math
 status transitions, an expand parameter, and a budget rule that returns 402.
 Replace this package with the real product's API when you adopt the framework.
 """
+
 from __future__ import annotations
 
 import itertools
@@ -32,6 +33,7 @@ async def security_headers(request, call_next):
     for header, value in SECURITY_HEADERS.items():
         response.headers.setdefault(header, value)
     return response
+
 
 USERS = {
     "admin": {"password": "admin-secret", "role": "admin", "budget": 0.0},

@@ -1,4 +1,5 @@
 """Opt-in: `pytest --edge-cases`. Broken payloads go through obj.create directly."""
+
 import pytest
 
 
@@ -25,12 +26,20 @@ def test_order_quantity_bounds(items, orders, quantity):
 
 
 def test_order_with_unknown_item(orders):
-    assert orders.create({"lines": [{"item_id": "itm-does-not-exist", "quantity": 1}]}, persona="member").status_code == 422
+    assert (
+        orders.create(
+            {"lines": [{"item_id": "itm-does-not-exist", "quantity": 1}]}, persona="member"
+        ).status_code
+        == 422
+    )
 
 
 def test_order_with_inactive_item(items, orders):
     item = items.create_fake_item(price=10.0, active=False)
-    assert orders.create({"lines": [{"item_id": item["id"], "quantity": 1}]}, persona="member").status_code == 422
+    assert (
+        orders.create({"lines": [{"item_id": item["id"], "quantity": 1}]}, persona="member").status_code
+        == 422
+    )
 
 
 def test_requests_without_a_token_are_rejected(items):

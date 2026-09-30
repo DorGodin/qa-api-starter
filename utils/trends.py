@@ -4,6 +4,7 @@ A single run answers "did it pass". Only the history answers the questions that
 actually precede an incident: did a group quietly shrink, did something become
 skipped, is this getting slower.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -27,10 +28,7 @@ def _comparable(runs: list[dict], latest: dict) -> list[dict]:
     is reported as such rather than measured against something else.
     """
     env, groups = latest.get("env"), set(latest.get("groups", {}))
-    return [
-        run for run in runs
-        if run.get("env") == env and set(run.get("groups", {})) == groups
-    ]
+    return [run for run in runs if run.get("env") == env and set(run.get("groups", {})) == groups]
 
 
 def _median(values: list[float]) -> float:

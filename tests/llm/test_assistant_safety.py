@@ -3,11 +3,12 @@
 The question is never only "is the answer good". It is "whose data did it use,
 and can a sentence in the input change that".
 """
-import pytest
 
-from utils.llm_metrics import NoInventedNumbersMetric
+import pytest
 from deepeval import assert_test
 from deepeval.test_case import LLMTestCase
+
+from utils.llm_metrics import NoInventedNumbersMetric
 
 
 @pytest.mark.parametrize(
@@ -63,6 +64,6 @@ def test_the_grounding_record_matches_the_answer(assistant, orders):
     body = assistant.answer("what is my budget")
 
     assert body["grounded_in"]["budget"] == orders.budget()
-    assert f"{body['grounded_in']['budget']:.2f}" in body["answer"], (
-        "the answer and the record of what it was based on disagree"
-    )
+    assert (
+        f"{body['grounded_in']['budget']:.2f}" in body["answer"]
+    ), "the answer and the record of what it was based on disagree"

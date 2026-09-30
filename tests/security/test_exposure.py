@@ -1,4 +1,5 @@
 """What the product reveals without being asked."""
+
 import pytest
 
 pytestmark = pytest.mark.usefixtures("fresh_state")
@@ -34,12 +35,14 @@ def test_error_bodies_do_not_name_internal_machinery(items, orders):
 
 def test_a_failed_login_does_not_say_which_half_was_wrong(api):
     unknown = api.request("POST", "/auth/token", persona=None, json={"username": "nobody", "password": "x"})
-    wrong_password = api.request("POST", "/auth/token", persona=None, json={"username": "member", "password": "x"})
+    wrong_password = api.request(
+        "POST", "/auth/token", persona=None, json={"username": "member", "password": "x"}
+    )
 
     assert unknown.status_code == wrong_password.status_code == 401
-    assert unknown.as_dict == wrong_password.as_dict, (
-        "different messages let an attacker enumerate valid usernames"
-    )
+    assert (
+        unknown.as_dict == wrong_password.as_dict
+    ), "different messages let an attacker enumerate valid usernames"
 
 
 @pytest.mark.parametrize(

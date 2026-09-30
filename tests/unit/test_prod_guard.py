@@ -1,4 +1,5 @@
 """Enforced, not conventional: every public helper that writes must guard prod."""
+
 from __future__ import annotations
 
 import ast
@@ -34,8 +35,7 @@ def test_data_creating_helpers_guard_prod(path):
         pytest.skip("package marker")
     tree = ast.parse(path.read_text(encoding="utf-8"))
     unguarded = [
-        f.name for f in _public_functions(tree)
-        if f.name not in READ_ONLY_HELPERS and not _guards_prod(f)
+        f.name for f in _public_functions(tree) if f.name not in READ_ONLY_HELPERS and not _guards_prod(f)
     ]
     assert not unguarded, (
         f"{path.name}: {unguarded} must call assert_not_prod('<name>') as the first statement, "

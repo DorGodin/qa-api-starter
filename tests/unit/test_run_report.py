@@ -19,15 +19,19 @@ def test_group_comes_from_the_folder():
 
 
 def test_counts_cover_every_outcome():
-    report = report_with(outcome("tests/suites/a.py::x"), outcome("tests/suites/b.py::y", "failed"),
-                         outcome("tests/unit/c.py::z", "skipped"))
+    report = report_with(
+        outcome("tests/suites/a.py::x"),
+        outcome("tests/suites/b.py::y", "failed"),
+        outcome("tests/unit/c.py::z", "skipped"),
+    )
 
     assert report.counts == {"passed": 1, "failed": 1, "skipped": 1}
 
 
 def test_groups_keep_a_stable_order():
-    report = report_with(outcome("tests/llm/a.py::x"), outcome("tests/suites/b.py::y"),
-                         outcome("tests/unit/c.py::z"))
+    report = report_with(
+        outcome("tests/llm/a.py::x"), outcome("tests/suites/b.py::y"), outcome("tests/unit/c.py::z")
+    )
 
     assert list(report.by_group()) == ["suites", "unit", "llm"]
 
@@ -83,7 +87,9 @@ def test_slowest_is_ordered_and_capped():
 
 
 def test_the_markdown_names_the_environment_and_the_verdict():
-    text = report_with(outcome("tests/suites/a.py::x", "failed", message="E   boom"), env="staging").to_markdown()
+    text = report_with(
+        outcome("tests/suites/a.py::x", "failed", message="E   boom"), env="staging"
+    ).to_markdown()
 
     assert "FAILED" in text
     assert "`staging`" in text
@@ -91,7 +97,9 @@ def test_the_markdown_names_the_environment_and_the_verdict():
 
 
 def test_skips_are_presented_as_unanswered_questions():
-    text = report_with(outcome("tests/unit/a.py::x", "skipped", message="TICKET-1: waiting on a fix")).to_markdown()
+    text = report_with(
+        outcome("tests/unit/a.py::x", "skipped", message="TICKET-1: waiting on a fix")
+    ).to_markdown()
 
     assert "did not answer" in text
     assert "TICKET-1" in text

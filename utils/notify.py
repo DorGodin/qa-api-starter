@@ -4,9 +4,11 @@ Short enough to read without opening anything, specific enough to act on. The
 sender is injected so the message can be tested without a network, and the whole
 thing is off unless a run asks for it.
 """
+
 from __future__ import annotations
 
-from typing import Callable, Protocol
+from collections.abc import Callable
+from typing import Protocol
 
 MAX_FAILURES_LISTED = 5
 

@@ -8,16 +8,25 @@ import dashboard  # noqa: E402
 
 def run(env="qa", verdict="PASSED", passed=10, failed=0, skipped=0):
     return {
-        "started": "2026-09-29T12:00:00+00:00", "env": env, "verdict": verdict,
-        "duration": 1.5, "groups": {"suites": {}}, "passed": passed,
-        "failed": failed, "skipped": skipped,
+        "started": "2026-09-29T12:00:00+00:00",
+        "env": env,
+        "verdict": verdict,
+        "duration": 1.5,
+        "groups": {"suites": {}},
+        "passed": passed,
+        "failed": failed,
+        "skipped": skipped,
     }
 
 
 def artifact(resource="items", entity_id="itm-1", env="qa"):
     return {
-        "resource": resource, "entity_id": entity_id, "env": env, "persona": "admin",
-        "test": "tests/suites/a.py::t", "created_at": "2026-09-29T12:00:00+00:00",
+        "resource": resource,
+        "entity_id": entity_id,
+        "env": env,
+        "persona": "admin",
+        "test": "tests/suites/a.py::t",
+        "created_at": "2026-09-29T12:00:00+00:00",
     }
 
 
@@ -79,7 +88,9 @@ def test_headings_and_columns_are_plain_and_escaped():
 
 
 def test_the_page_is_written_and_self_contained(tmp_path: Path):
-    (tmp_path / "history.jsonl").write_text('{"started":"2026-09-29T12:00:00+00:00","env":"qa","verdict":"PASSED","duration":1.0,"groups":{},"passed":3,"failed":0,"skipped":0}\n')
+    (tmp_path / "history.jsonl").write_text(
+        '{"started":"2026-09-29T12:00:00+00:00","env":"qa","verdict":"PASSED","duration":1.0,"groups":{},"passed":3,"failed":0,"skipped":0}\n'
+    )
     out = dashboard.build(reports_dir=tmp_path)
 
     page = out.read_text(encoding="utf-8")
@@ -89,10 +100,18 @@ def test_the_page_is_written_and_self_contained(tmp_path: Path):
 
 def run_with(failed=(), groups=None, passed=10, failed_count=0):
     return {
-        "started": "2026-09-29T12:00:00+00:00", "env": "qa", "verdict": "PASSED", "duration": 1.0,
-        "groups": groups if groups is not None else {"suites": {"passed": passed, "failed": failed_count, "skipped": 0}},
-        "failed_tests": list(failed), "skipped_tests": [],
-        "passed": passed, "failed": failed_count, "skipped": 0,
+        "started": "2026-09-29T12:00:00+00:00",
+        "env": "qa",
+        "verdict": "PASSED",
+        "duration": 1.0,
+        "groups": groups
+        if groups is not None
+        else {"suites": {"passed": passed, "failed": failed_count, "skipped": 0}},
+        "failed_tests": list(failed),
+        "skipped_tests": [],
+        "passed": passed,
+        "failed": failed_count,
+        "skipped": 0,
     }
 
 
@@ -123,9 +142,30 @@ def test_the_group_table_shows_each_group_of_the_last_run():
 
 def test_objects_are_grouped_per_environment_with_a_cleanup_command():
     items = [
-        {"resource": "items", "entity_id": "i1", "env": "qa", "persona": "admin", "test": "t", "created_at": "x"},
-        {"resource": "orders", "entity_id": "o1", "env": "qa", "persona": "admin", "test": "t", "created_at": "x"},
-        {"resource": "items", "entity_id": "i2", "env": "staging", "persona": "admin", "test": "t", "created_at": "x"},
+        {
+            "resource": "items",
+            "entity_id": "i1",
+            "env": "qa",
+            "persona": "admin",
+            "test": "t",
+            "created_at": "x",
+        },
+        {
+            "resource": "orders",
+            "entity_id": "o1",
+            "env": "qa",
+            "persona": "admin",
+            "test": "t",
+            "created_at": "x",
+        },
+        {
+            "resource": "items",
+            "entity_id": "i2",
+            "env": "staging",
+            "persona": "admin",
+            "test": "t",
+            "created_at": "x",
+        },
     ]
     rows = dashboard.artifacts_by_env(items)
 
@@ -147,8 +187,9 @@ def test_the_sparkline_is_inline_svg_with_no_network_call():
 def test_findings_are_marked_blocking_or_advisory():
     from utils.trends import Finding
 
-    html_out = dashboard.findings_list([Finding("group-shrank", "went from 10 to 7"),
-                                        Finding("slower", "took longer", blocking=False)])
+    html_out = dashboard.findings_list(
+        [Finding("group-shrank", "went from 10 to 7"), Finding("slower", "took longer", blocking=False)]
+    )
 
     assert 'class="bad"' in html_out and 'class="warn"' in html_out
     assert "No regression" in dashboard.findings_list([])
@@ -156,8 +197,11 @@ def test_findings_are_marked_blocking_or_advisory():
 
 def test_the_sparkline_axis_adapts_so_a_small_dip_is_visible():
     """One failure in sixty is 98%, which on a 0-100 axis is a flat line."""
-    runs = [run_with(passed=60, failed_count=0), run_with(passed=59, failed_count=1),
-            run_with(passed=60, failed_count=0)]
+    runs = [
+        run_with(passed=60, failed_count=0),
+        run_with(passed=59, failed_count=1),
+        run_with(passed=60, failed_count=0),
+    ]
     svg = dashboard.sparkline(runs)
 
     ys = [float(point.split(",")[1]) for point in svg.split('points="')[1].split('"')[0].split()]

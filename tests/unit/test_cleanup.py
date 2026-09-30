@@ -9,8 +9,14 @@ import cleanup  # noqa: E402
 
 
 def record(resource="items", entity_id="itm-1", env="qa", created_at="2026-09-29T10:00:00+00:00"):
-    return {"resource": resource, "entity_id": entity_id, "env": env, "persona": "admin",
-            "test": "tests/suites/a.py::t", "created_at": created_at}
+    return {
+        "resource": resource,
+        "entity_id": entity_id,
+        "env": env,
+        "persona": "admin",
+        "test": "tests/suites/a.py::t",
+        "created_at": created_at,
+    }
 
 
 class FakeResponse:
@@ -39,8 +45,10 @@ def test_a_resource_filter_narrows_it_further():
 
 
 def test_a_since_filter_drops_older_objects():
-    records = [record(entity_id="old", created_at="2026-09-01T10:00:00+00:00"),
-               record(entity_id="new", created_at="2026-09-29T10:00:00+00:00")]
+    records = [
+        record(entity_id="old", created_at="2026-09-01T10:00:00+00:00"),
+        record(entity_id="new", created_at="2026-09-29T10:00:00+00:00"),
+    ]
     selected = cleanup.select(records, "qa", since="2026-09-20")
     assert [r["entity_id"] for r in selected] == ["new"]
 

@@ -4,6 +4,7 @@ A field that changes type, or a response that stops matching what the API
 advertises, breaks every generated client without breaking a single assertion in
 a hand-written test.
 """
+
 import pytest
 
 from utils.openapi import documented_operations, load_spec, validate
@@ -56,9 +57,16 @@ def test_a_validation_error_matches_the_declared_error_shape(api, items, spec):
 
 def test_every_operation_the_tests_use_is_actually_documented(api):
     documented = set(documented_operations(api.base_url))
-    used = {("POST", "/items"), ("GET", "/items"), ("GET", "/items/{item_id}"),
-            ("POST", "/orders"), ("GET", "/orders"), ("GET", "/orders/{order_id}"),
-            ("POST", "/auth/token"), ("GET", "/me/budget")}
+    used = {
+        ("POST", "/items"),
+        ("GET", "/items"),
+        ("GET", "/items/{item_id}"),
+        ("POST", "/orders"),
+        ("GET", "/orders"),
+        ("GET", "/orders/{order_id}"),
+        ("POST", "/auth/token"),
+        ("GET", "/me/budget"),
+    }
 
     missing = sorted(f"{m} {p}" for m, p in used - documented)
     assert not missing, f"the suite calls operations the spec does not describe: {missing}"

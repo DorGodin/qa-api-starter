@@ -3,6 +3,7 @@
 A field that silently disappears breaks every consumer, and a suite that only
 asserts status codes will not notice.
 """
+
 import pytest
 
 pytestmark = pytest.mark.usefixtures("fresh_state")

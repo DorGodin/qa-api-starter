@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Compare the last run against the runs before it.
 
-    python scripts/trends.py            # report
-    python scripts/trends.py --check    # exit non-zero when something regressed
+python scripts/trends.py            # report
+python scripts/trends.py --check    # exit non-zero when something regressed
 """
+
 from __future__ import annotations
 
 import argparse

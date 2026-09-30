@@ -4,6 +4,7 @@ A scenario that lives in a CSV can be added by someone who does not write
 Python, reviewed by someone who does not read Python, and kept next to the rules
 it encodes. The test stays one function.
 """
+
 from __future__ import annotations
 
 import csv

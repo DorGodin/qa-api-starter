@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from utils.artifacts import Artifact, ArtifactLog, load, set_current_test, tail
+from utils.artifacts import ArtifactLog, load, set_current_test, tail
 
 
 def test_a_created_entity_is_recorded_with_its_id():

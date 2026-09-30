@@ -3,6 +3,7 @@
 A consumer that cannot tell 404 from 403, or gets a stack trace instead of a
 message, is looking at a defect even when the happy path works.
 """
+
 import pytest
 
 pytestmark = pytest.mark.usefixtures("fresh_state")
@@ -40,7 +41,7 @@ def test_each_kind_of_failure_gets_its_own_status(items, orders, case, expected)
 def test_an_error_body_does_not_leak_internals(items):
     body = str(items.get_by_id("itm-does-not-exist").as_dict)
 
-    for leak in ("Traceback", "File \"", "sqlalchemy", "psycopg", "/usr/lib", "site-packages"):
+    for leak in ("Traceback", 'File "', "sqlalchemy", "psycopg", "/usr/lib", "site-packages"):
         assert leak not in body, f"the error body leaked {leak!r}"
 
 
@@ -48,7 +49,9 @@ def test_a_wrong_state_transition_is_a_conflict_not_a_validation_error(items, or
     item = items.create_fake_item(price=10.0)
     order = orders.create_fake_order(item["id"])
 
-    assert orders.approve(order["id"]).status_code == 409, "approving a draft is a state problem, not a payload problem"
+    assert (
+        orders.approve(order["id"]).status_code == 409
+    ), "approving a draft is a state problem, not a payload problem"
 
 
 def test_an_insufficient_budget_is_not_reported_as_a_validation_error(items, orders):

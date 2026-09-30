@@ -18,7 +18,9 @@ def test_total_counts_every_match_not_just_the_page(items, catalogue):
 def test_paging_walks_the_whole_set_without_gaps_or_repeats(items, catalogue):
     seen = []
     for offset in (0, 3, 6):
-        seen += [row["id"] for row in items.find(params={"limit": 3, "offset": offset}).assert_ok(200).content]
+        seen += [
+            row["id"] for row in items.find(params={"limit": 3, "offset": offset}).assert_ok(200).content
+        ]
 
     assert len(seen) == 7
     assert len(set(seen)) == 7, "a row appeared on two pages"

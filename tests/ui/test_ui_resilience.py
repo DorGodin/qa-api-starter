@@ -4,6 +4,7 @@ Intercepting the network is the only way to test this: you cannot ask a healthy
 server to fail on demand, and a UI that shows a blank page on a 500 is a defect
 even when the API is fixed the same day.
 """
+
 from playwright.sync_api import expect
 
 
@@ -39,7 +40,10 @@ def test_a_rejected_submit_keeps_the_order_visible_and_explains_itself(page, sig
     page.get_by_test_id("order-row").last.get_by_test_id("submit").click()
 
     expect(page.get_by_test_id("order-error")).to_be_visible()
-    expect(page.get_by_test_id("order-row")).to_have_count(1), "the order must not vanish because it was refused"
+    (
+        expect(page.get_by_test_id("order-row")).to_have_count(1),
+        "the order must not vanish because it was refused",
+    )
 
 
 def test_the_error_message_clears_once_the_next_action_succeeds(page, signed_in, items):

@@ -18,6 +18,8 @@ def seed_catalogue(items_api, count: int = 3, price: float | None = None) -> lis
     created = list(existing)
     while len(created) < count:
         created.append(
-            items_api.create_fake_item(price=price if price is not None else round(fake.pyfloat(min_value=5, max_value=80), 2))
+            items_api.create_fake_item(
+                price=price if price is not None else round(fake.pyfloat(min_value=5, max_value=80), 2)
+            )
         )
     return created

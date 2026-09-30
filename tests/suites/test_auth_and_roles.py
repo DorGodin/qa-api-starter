@@ -3,7 +3,9 @@ import pytest
 
 def test_token_is_issued_for_valid_credentials(api, env_config):
     resp = api.request(
-        "POST", "/auth/token", persona=None,
+        "POST",
+        "/auth/token",
+        persona=None,
         json={"username": env_config["admin_user"], "password": "admin-secret"},
     ).assert_ok(200)
 

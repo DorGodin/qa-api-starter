@@ -6,6 +6,8 @@ select = ["E", "F", "W", "I", "UP", "B", "C4"]
 ignore = [
     "E501",  # the formatter owns line length
     "B008",  # FastAPI puts Depends() in defaults on purpose
+    "UP038", # isinstance(x, (A, B)) is faster at runtime than A | B, and ruff
+             # itself deprecated this rule. The tuple form stays.
 ]
 
 [lint.per-file-ignores]

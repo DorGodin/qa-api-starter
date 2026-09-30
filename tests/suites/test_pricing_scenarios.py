@@ -2,6 +2,7 @@
 
 Adding a pricing case means adding a line to data/scenarios/order_pricing.csv.
 """
+
 import pytest
 
 from utils.scenarios import as_float, load_csv

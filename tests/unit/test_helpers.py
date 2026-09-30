@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -10,7 +10,7 @@ def test_now_utc_is_aware():
 
 
 def test_to_iso_uses_z_suffix_and_milliseconds():
-    value = datetime(2026, 4, 12, 0, 0, 0, 123456, tzinfo=timezone.utc)
+    value = datetime(2026, 4, 12, 0, 0, 0, 123456, tzinfo=UTC)
     assert to_iso(value) == "2026-04-12T00:00:00.123Z"
 
 

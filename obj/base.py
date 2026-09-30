@@ -15,7 +15,7 @@ class Base:
 
     resource: str = ""
 
-    def __init__(self, client: ApiClient, log: "artifacts.ArtifactLog | None" = None) -> None:
+    def __init__(self, client: ApiClient, log: artifacts.ArtifactLog | None = None) -> None:
         if not self.resource:
             raise ValueError(f"{type(self).__name__} must set `resource`")
         self.client = client
@@ -32,7 +32,9 @@ class Base:
             self.log.record(self.resource, response.as_dict, persona if persona != "__active__" else None)
         return response
 
-    def get_by_id(self, entity_id: str, params: dict | None = None, persona: str | None = "__active__") -> Response:
+    def get_by_id(
+        self, entity_id: str, params: dict | None = None, persona: str | None = "__active__"
+    ) -> Response:
         return self.client.request("GET", f"{self.path}/{entity_id}", persona=persona, params=params)
 
     def find(self, params: dict | None = None, persona: str | None = "__active__") -> Response:

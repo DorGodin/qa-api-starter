@@ -1,4 +1,5 @@
 """Intents come from a file so a non-engineer can extend the coverage."""
+
 import pytest
 
 from utils.scenarios import load_json
@@ -17,7 +18,9 @@ def test_an_in_scope_question_is_answered_from_the_right_data(assistant, case):
         assert "order_count" in body["grounded_in"]
 
 
-@pytest.mark.parametrize("case", INTENTS["out_of_scope"], ids=[c["question"][:22] for c in INTENTS["out_of_scope"]])
+@pytest.mark.parametrize(
+    "case", INTENTS["out_of_scope"], ids=[c["question"][:22] for c in INTENTS["out_of_scope"]]
+)
 def test_an_out_of_scope_question_is_refused(assistant, case):
     body = assistant.answer(case["question"])
 

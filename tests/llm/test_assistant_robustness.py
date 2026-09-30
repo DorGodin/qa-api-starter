@@ -3,6 +3,7 @@
 An assistant that only works on tidy sentences fails the first time someone
 pastes, types in another language, or holds down a key.
 """
+
 import pytest
 
 
@@ -37,7 +38,7 @@ def test_non_ascii_input_does_not_break_it(assistant, question):
 def test_the_longest_accepted_question_is_handled(assistant):
     body = assistant.answer("budget " + "x" * 293)
 
-    assert len(("budget " + "x" * 293)) == 300
+    assert len("budget " + "x" * 293) == 300
     assert body["answer"]
 
 

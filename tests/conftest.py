@@ -8,9 +8,9 @@ import pytest
 
 from config.loader import load_env_config
 from obj import ApiClient, Assistant, Items, Orders
-from utils.bug_filing import Failure, JiraTracker, file_failures, format_report
 from utils import http_trace
 from utils.artifacts import ArtifactLog, set_current_test
+from utils.bug_filing import Failure, JiraTracker, file_failures, format_report
 from utils.notify import notify
 from utils.run_report import RunReport, TestOutcome
 from utils.trends import compare
@@ -31,10 +31,16 @@ def pytest_addoption(parser):
     parser.addoption("--ui", action="store_true", default=False, help="collect tests/ui (browser)")
     parser.addoption("--llm", action="store_true", default=False, help="collect tests/llm (LLM evaluation)")
     parser.addoption("--security", action="store_true", default=False, help="collect tests/security")
-    parser.addoption("--notify", action="store_true", default=False, help="post a run summary to NOTIFY_WEBHOOK")
-    parser.addoption("--notify-dry-run", action="store_true", default=False, help="print the summary, send nothing")
+    parser.addoption(
+        "--notify", action="store_true", default=False, help="post a run summary to NOTIFY_WEBHOOK"
+    )
+    parser.addoption(
+        "--notify-dry-run", action="store_true", default=False, help="print the summary, send nothing"
+    )
     parser.addoption("--file-bugs", action="store_true", default=False, help="open a ticket per failed test")
-    parser.addoption("--file-bugs-dry-run", action="store_true", default=False, help="print the payloads, create nothing")
+    parser.addoption(
+        "--file-bugs-dry-run", action="store_true", default=False, help="print the payloads, create nothing"
+    )
 
 
 def pytest_ignore_collect(collection_path: Path, config):
@@ -187,14 +193,21 @@ def pytest_sessionfinish(session, exitstatus):
     _notify(session)
     reporter = config.pluginmanager.get_plugin("terminalreporter")
     if reporter is not None:
-        reporter.write_line(f"run report: {written.relative_to(Path.cwd())}" if written.is_relative_to(Path.cwd()) else f"run report: {written}")
+        reporter.write_line(
+            f"run report: {written.relative_to(Path.cwd())}"
+            if written.is_relative_to(Path.cwd())
+            else f"run report: {written}"
+        )
 
     dry_run = config.getoption("file_bugs_dry_run")
     if not (config.getoption("file_bugs") or dry_run) or not _FAILURES:
         return
 
     project = os.getenv("TRACKER_PROJECT", "QA")
-    routing = {"suites": os.getenv("TRACKER_ASSIGNEE_SUITES", ""), "edge-cases": os.getenv("TRACKER_ASSIGNEE_EDGE", "")}
+    routing = {
+        "suites": os.getenv("TRACKER_ASSIGNEE_SUITES", ""),
+        "edge-cases": os.getenv("TRACKER_ASSIGNEE_EDGE", ""),
+    }
     routing = {k: v for k, v in routing.items() if v}
 
     if dry_run:

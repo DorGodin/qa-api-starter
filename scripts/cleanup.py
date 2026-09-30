@@ -9,6 +9,7 @@ reports what it could not remove.
     python scripts/cleanup.py --env qa --yes        # deletes
     python scripts/cleanup.py --env qa --resource orders --since 2026-09-29
 """
+
 from __future__ import annotations
 
 import argparse
@@ -27,7 +28,9 @@ REPORTS = Path(__file__).resolve().parents[1] / "reports"
 PASSWORDS = {"admin": "admin-secret", "member": "member-secret"}
 
 
-def select(records: list[dict], env: str, resource: str | None = None, since: str | None = None) -> list[dict]:
+def select(
+    records: list[dict], env: str, resource: str | None = None, since: str | None = None
+) -> list[dict]:
     """Newest first, so a delete that depends on order removes children before parents."""
     chosen = [r for r in records if r["env"] == env]
     if resource:

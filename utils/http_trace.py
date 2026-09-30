@@ -5,6 +5,7 @@ is not a step — it tells a developer to install the suite before they can look
 the defect. Every call goes through `ApiClient.request`, so the real sequence is
 already passing through one place.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -38,7 +39,7 @@ def record(test: str, call: Call) -> None:
         calls.append(call)
 
 
-def is_harness(call: "Call") -> bool:
+def is_harness(call: Call) -> bool:
     return call.path.startswith(HARNESS_PATHS)
 
 

@@ -8,6 +8,7 @@ refuse, did it stay inside its scope. Those live here and run offline.
 The judged metrics (relevancy, faithfulness, G-Eval) are opt-in and are skipped
 when no key is configured. See tests/llm/README.md.
 """
+
 from __future__ import annotations
 
 import re

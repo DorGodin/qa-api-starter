@@ -4,10 +4,11 @@ A run that only prints to a terminal is gone when the terminal is. This writes
 what someone would actually ask afterwards: what failed, what was skipped and
 why, what is getting slow, and which environment it ran against.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 GROUP_ORDER = ("suites", "unit", "edge-cases", "security", "ui", "llm", "other")
@@ -47,7 +48,7 @@ class TestOutcome:
 class RunReport:
     env: str
     outcomes: list[TestOutcome] = field(default_factory=list)
-    started: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    started: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def add(self, outcome: TestOutcome) -> None:
         self.outcomes.append(outcome)

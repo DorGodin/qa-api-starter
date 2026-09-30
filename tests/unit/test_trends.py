@@ -3,9 +3,15 @@ from utils.trends import Finding, blocking, compare, format_findings
 
 def run(env="qa", verdict="PASSED", duration=10.0, groups=None, skipped_tests=None, failed=0, passed=10):
     return {
-        "started": "2026-09-29T12:00:00+00:00", "env": env, "verdict": verdict, "duration": duration,
+        "started": "2026-09-29T12:00:00+00:00",
+        "env": env,
+        "verdict": verdict,
+        "duration": duration,
         "groups": groups if groups is not None else {"suites": {"passed": 10, "failed": 0, "skipped": 0}},
-        "skipped_tests": skipped_tests or [], "passed": passed, "failed": failed, "skipped": 0,
+        "skipped_tests": skipped_tests or [],
+        "passed": passed,
+        "failed": failed,
+        "skipped": 0,
     }
 
 

@@ -4,6 +4,7 @@ have anything to announce?
 These are the cheapest accessibility checks that catch the most common defects.
 They are not a full audit and do not pretend to be.
 """
+
 import pytest
 from playwright.sync_api import expect
 
@@ -49,7 +50,9 @@ def test_tab_order_follows_the_order_on_screen(page, ui_base_url):
 
 def test_the_page_declares_a_language(page, ui_base_url):
     page.goto(ui_base_url)
-    assert page.locator("html").get_attribute("lang"), "a missing lang attribute breaks screen reader pronunciation"
+    assert page.locator("html").get_attribute(
+        "lang"
+    ), "a missing lang attribute breaks screen reader pronunciation"
 
 
 def test_the_page_has_a_title(page, ui_base_url):
