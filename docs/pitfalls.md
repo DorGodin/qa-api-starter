@@ -326,3 +326,19 @@ has produced a false "nothing happened".
 
 **Rule:** in zsh, never keep a command in a variable. Use a shell function, or write the
 command inline. When a run prints nothing, look at the raw output before explaining it.
+
+## 2026-09-30 — Every public commit carried the work email
+
+Every push of this repo was preceded by a scan of the files for employer terms, and every
+scan was clean. All 25 commits were still authored with the work email: the global git
+identity was the work one, and the author is commit metadata, which a scan of file
+contents never reads. The separation the scans existed to protect was broken in the one
+place they did not look.
+
+**Rule:** the pre-push scan includes `git log --format='%ae %ce' | sort -u`, not only the
+files. Personal repositories take their identity from a conditional include in
+`~/.gitconfig` keyed on a `github.com/DorGodin` remote, so a new one is right without
+anyone remembering — provided the remote is added before the first commit, since until
+then the repository matches nothing and falls back to the global identity. The history
+was rewritten with only author and committer changed; content and dates were verified
+identical before the force push.
