@@ -209,3 +209,65 @@ IDE's test runner does — died on `ModuleNotFoundError: No module named 'config
 
 **Rule:** the plain tool has to work. `pythonpath = .` belongs in `pytest.ini`, where pytest,
 the IDE and CI all read it, not in a wrapper that only one entry point goes through.
+
+## 2026-09-30 — k6's threshold booleans mean the opposite of what they look like
+
+In `--summary-export`, a threshold reads `{"p(95)<400": false}` on a run where p95 was
+1.67ms. `false` means the threshold was **not crossed** — the run passed. Reading it the
+intuitive way inverts every verdict. Confirmed against a real breach, not assumed:
+`wrong_totals` at 12,034 recorded `{"count==0": true}`.
+
+**Rule:** normalise the polarity once, in `utils/perf_history.py::_breached`, and read the
+raw export nowhere else. The unit test builds its fixture with k6's real booleans and a
+mutant that flips the polarity fails seven of them.
+
+## 2026-09-30 — k6's summary export writes the setup() return value to disk
+
+`--summary-export` includes `setup_data`. `write_path.js` returns the member's bearer token
+from `setup()`, so dumping the export into `reports/` would have written a live credential
+into a file that gets attached to messages and uploaded as a CI artifact.
+
+**Rule:** never persist a raw k6 export. The wrapper writes it to a temp file, keeps only
+named numeric fields, and deletes the temp file in a `finally`, including when k6 fails.
+A unit test asserts the token string never reaches `perf.jsonl`.
+
+## 2026-09-30 — The first perf trend reported a 31% regression that was a bigger run
+
+The dashboard's most prominent line said write-path p95 had risen 31%. The baseline mixed
+runs at 2, 3 and 4 VUs, and included a deliberately broken run that returned before calling
+submit, so of course it looked fast. Neither is a regression. This is the same "compare like
+with like" mistake already logged for the pytest trends on 2026-09-29, repeated one layer
+over.
+
+**Rule:** `shape()` — scenario, profile, environment **and VUs** — is the only definition of
+"comparable", and the dashboard lines use the same function as the trend check so they can
+never disagree. A run that crossed a threshold is never a baseline. Verified the other
+direction too: a real 5ms sleep in the API produced a 330% rise that k6 itself called a pass.
+
+## 2026-09-30 — make perf-soak held for 20 seconds, not 10 minutes
+
+The soak profile read `__ENV.HOLD || "10m"`, but every Makefile target passed `HOLD=20s` by
+default, so the fallback never fired. The README promised a 10 minute soak; `make -n` showed
+`-e HOLD=20s -e PROFILE=soak`. A 20 second soak cannot find a leak.
+
+**Rule:** a default that lives in two places is a default one of them overrides. Each target
+now names its own HOLD. Check a make target with `make -n`, not by reading the recipe.
+
+## 2026-09-30 — A dashboard finding that could never go away
+
+Showing the trend check for the latest run of *every* shape meant a one-off local run at an
+odd VU count kept its breach on the panel forever, because no later run of that exact shape
+would ever replace it. A panel that is permanently red teaches everyone to stop reading it.
+
+**Rule:** the dashboard gives the same answer as `make perf-trends` — the latest run against
+its shape. Every shape's last verdict is still on the page, dated, in its own table.
+
+## 2026-09-30 — "pre-commit run --all-files" passed, and the commit was then blocked
+
+`--all-files` means all *tracked* files. Five new files had not been `git add`-ed yet, so
+the run that reported every hook green had never looked at them, and the real commit then
+failed on four ruff findings and four reformatted files.
+
+**Rule:** `git add` new files before running the hooks as a pre-flight check, or run them on
+the staged set the commit will actually contain. A green hook run means nothing about a file
+it never saw.

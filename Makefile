@@ -30,30 +30,40 @@ lock:
 clean:
 	rm -rf .pytest_cache **/__pycache__
 
-perf-smoke:     ## one user, seconds, gates every merge
-	k6 run perf/smoke.js
+# Every perf target goes through scripts/perf_run.py: k6's own output is shown
+# unchanged, and the result is appended to reports/perf.jsonl even when a
+# threshold is crossed - those are the runs worth having in the history.
+#
+# Each target names its own profile and its own HOLD default, so none of them
+# depends on k6 honouring the last of two duplicate -e flags. Soak in particular
+# must not inherit the 20s default: a 20 second soak cannot find a leak.
+PERF    = $(PY) scripts/perf_run.py
+K6RAMP  = -e VUS=$(or $(VUS),10) -e RAMP=$(or $(RAMP),10s)
+K6FLAGS = $(K6RAMP) -e HOLD=$(or $(HOLD),20s)
 
-# Each perf target names its own PROFILE so none of them depends on k6 flag
-# order. PROFILE= on the command line still overrides perf-load and perf-write.
-K6FLAGS = -e VUS=$(or $(VUS),10) -e RAMP=$(or $(RAMP),10s) -e HOLD=$(or $(HOLD),20s)
+perf-smoke:     ## one user, seconds, gates every merge
+	$(PERF) perf/smoke.js --profile smoke
 
 perf-load:      ## read path under concurrency; override VUS, RAMP, HOLD, PROFILE
-	k6 run $(K6FLAGS) -e PROFILE=$(or $(PROFILE),load) perf/load.js
+	$(PERF) perf/load.js --profile $(or $(PROFILE),load) $(K6FLAGS)
 
 perf-write:     ## write path under concurrency - create + submit, money math asserted
-	k6 run $(K6FLAGS) -e PROFILE=$(or $(PROFILE),load) perf/write_path.js
+	$(PERF) perf/write_path.js --profile $(or $(PROFILE),load) $(K6FLAGS)
 
 perf-spike:     ## sudden 5x jump on the write path, then recovery
-	k6 run $(K6FLAGS) -e PROFILE=spike perf/write_path.js
+	$(PERF) perf/write_path.js --profile spike $(K6FLAGS)
 
 perf-soak:      ## long hold, looking for leaks; override HOLD (default 10m)
-	k6 run $(K6FLAGS) -e PROFILE=soak perf/write_path.js
+	$(PERF) perf/write_path.js --profile soak $(K6RAMP) -e HOLD=$(or $(HOLD),10m)
 
 perf-stress:    ## ramp past capacity to find the ceiling; only 5xx fails the run
-	k6 run $(K6FLAGS) -e PROFILE=stress perf/write_path.js
+	$(PERF) perf/write_path.js --profile stress $(K6FLAGS)
 
 perf:           ## everything except soak and stress - the pre-release set
 	$(MAKE) perf-smoke && $(MAKE) perf-load && $(MAKE) perf-write
+
+perf-trends:    ## what moved against earlier perf runs of the same shape
+	$(PY) scripts/perf_trends.py
 
 ui:             ## browser suite (needs: playwright install chromium)
 	ENV=$(ENV) PYTHONPATH=. $(PY) -m pytest --ui tests/ui

@@ -50,7 +50,7 @@ make perf-smoke                          # one user, seconds
 make perf-load                           # read path
 make perf-write                          # write path, money math asserted
 make perf-spike                          # sudden 5x on the write path
-make perf-soak HOLD=30m                  # long hold
+make perf-soak                           # 10 minute hold; HOLD=30m for longer
 make perf-stress VUS=50                  # find the ceiling
 make perf                                # smoke + load + write, the pre-release set
 
@@ -60,6 +60,41 @@ BASE_URL=https://staging.example make perf-smoke
 
 Knobs: `VUS`, `RAMP`, `HOLD`, `PROFILE`, and for the write path `LINES`,
 `QUANTITY`, `ITEM_PRICE`, `BUDGET`.
+
+## History and the dashboard
+
+Every `make perf-*` target runs through `scripts/perf_run.py`. The output you see is k6's own,
+unchanged. What the wrapper adds is one line in `reports/perf.jsonl` per run, which is what
+makes a trend possible:
+
+```bash
+make perf-trends     # the last run against earlier runs of the same shape
+make dashboard       # the load panels sit next to the test panels
+```
+
+A single run tells you whether it is fast enough right now. It cannot tell you that p95 has
+gone from 2ms to 9ms over a month, because 9ms still passes a 400ms threshold. The history
+can, and `make perf-trends` says so.
+
+How it decides what to compare, and why:
+
+| Rule | Why |
+|---|---|
+| Only runs of the same scenario, profile, environment **and VU count** | p95 at 25 users against 4 users is the load level, not a regression. The first version left VUs out and reported a 31% "rise" that was only a bigger run |
+| A run that crossed a threshold is never a baseline | the write path returns early when a total is wrong, so a broken run looks fast and makes the next healthy one look slow |
+| The baseline is the median of the last five, and a rise under 25% is not reported | latency is noisy, and a check that fires on noise is one nobody reads |
+| A p95 rise is reported, never blocking | what blocks is what k6 already judged: a crossed threshold |
+
+Two things the wrapper does on purpose:
+
+- **A run that crosses a threshold is still recorded**, and then the wrapper exits with k6's
+  own code (99), so the pipeline still fails. Those are the runs worth having in the history.
+- **k6's summary export includes `setup_data`**, and on the write path that holds a bearer
+  token. The export goes to a temporary file, only the numbers are kept, and the file is
+  deleted even when k6 fails.
+
+`k6 run perf/write_path.js` directly still works, but it records nothing. Use the `make`
+target, or `python scripts/perf_run.py perf/write_path.js --profile spike -e VUS=25`.
 
 ## Provisioning
 

@@ -49,6 +49,7 @@ After a run:
 | `make perf-load` | the read path under concurrency |
 | `make perf-write` | the write path under concurrency, with the money math asserted |
 | `make perf-spike` / `perf-soak` / `perf-stress` | a sudden 5x, a long hold, a ramp past capacity |
+| `make perf-trends` | whether p95 has crept up against earlier load runs of the same shape |
 
 **Why they are separate.** A developer checking one change should not wait for a browser to
 start. When everything always runs, people stop running anything.
@@ -134,6 +135,19 @@ That compares the last run to earlier ones and flags three things that are easy 
 **group that shrank** (fewer tests ran than last time — usually a forgotten flag or a
 renamed folder), a **test that became skipped**, and a **new failure**. It also says when a
 run got slower, but that never blocks.
+
+**`perf.jsonl`** — one line per load run: which script, which load shape, how many
+users, p95 and p99, and the three correctness counts (wrong totals, budget rejections,
+5xx). Every `make perf-*` target writes it, including runs that crossed a threshold.
+
+```bash
+make perf-trends
+```
+
+This catches what a single load run cannot: **p95 creeping up**. A climb from 2ms to 9ms
+still passes a 400ms threshold, so k6 calls it a pass. The history does not. It only
+compares runs of the same script, shape and number of users, because a bigger run is
+slower by design and that is not a regression.
 
 **`artifacts.jsonl`** — every object the tests created: what it was, its id, on which
 environment, and which test made it.
@@ -350,6 +364,7 @@ make test        # טרמינל 2 — הרצת הבדיקות
 | `make perf-load` | מסלול הקריאה תחת עומס מקבילי |
 | `make perf-write` | מסלול הכתיבה תחת עומס, כולל בדיקת חישוב הכספים |
 | `make perf-spike` / `perf-soak` / `perf-stress` | זינוק פתאומי, החזקה ארוכה, ועלייה מעל הקיבולת |
+| `make perf-trends` | האם p95 זחל למעלה מול הרצות עומס קודמות באותה צורה |
 
 **למה מפרידים.** מפתח שבודק שינוי קטן לא צריך לחכות שדפדפן יעלה. כשהכל רץ תמיד, אנשים
 מפסיקים להריץ בכלל.
@@ -425,6 +440,18 @@ make trends
 הפקודה משווה את ההרצה האחרונה לקודמות ומתריעה על שלושה דברים שקל לפספס: **קבוצה שהתכווצה**
 (פחות בדיקות רצו מאשר בפעם שעברה — בדרך כלל דגל שנשכח או תיקייה ששונתה), **בדיקה שהפכה
 למדולגת**, ו**כשל חדש**. היא גם אומרת אם ההרצה האטה, אבל זה לא חוסם.
+
+**`perf.jsonl`** — שורה אחת לכל הרצת עומס: איזה סקריפט, איזו צורת עומס, כמה משתמשים,
+p95 ו-p99, ושלוש ספירות של נכונות (סכומים שגויים, דחיות תקציב, שגיאות 5xx). כל פקודת
+`make perf-*` כותבת אליו, גם כשהריצה חצתה סף.
+
+```bash
+make perf-trends
+```
+
+זה תופס מה שהרצת עומס אחת לא יכולה: **p95 שזוחל למעלה**. עלייה מ-2ms ל-9ms עדיין עוברת
+סף של 400ms, אז k6 אומר שהכל תקין. ההיסטוריה לא. היא משווה רק הרצות של אותו סקריפט, אותה
+צורת עומס ואותו מספר משתמשים — הרצה גדולה יותר איטית יותר מטבעה, וזו לא נסיגה.
 
 **`artifacts.jsonl`** — כל אובייקט שהבדיקות יצרו: מה נוצר, מה ה-id שלו, על איזו סביבה,
 ואיזה טסט יצר אותו.

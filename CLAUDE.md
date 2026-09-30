@@ -109,6 +109,15 @@ it feeds. `make dashboard` turns both into a single
 self-contained HTML page: recent runs with their environment and verdict, and every object
 created with its id and the test that made it.
 
+`reports/perf.jsonl` gets one line per load run, written by `scripts/perf_run.py` — every
+`make perf-*` target goes through it, and so does CI. Two rules hold it together. A run that
+crosses a threshold is still recorded, then the wrapper exits with k6's own code. And
+nothing from k6's `setup_data` is ever kept, because on the write path it holds a bearer
+token. k6's threshold booleans are TRUE when a threshold was CROSSED; `utils/perf_history.py`
+normalises that once, and nothing else should read the raw export. Runs are compared only
+by `shape()` — scenario, profile, environment and VUs — and a breached run is never a
+baseline.
+
 The ledger records what was **created**, not what still exists. Check the API before
 calling something leftover data.
 

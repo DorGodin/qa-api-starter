@@ -61,12 +61,29 @@ jobs:
           python -m uvicorn demo_api.app:app --host 127.0.0.1 --port 8000 &
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/health && break; sleep 0.5; done
       - uses: grafana/setup-k6-action@v1
+      # Through perf_run.py, as locally: k6's output unchanged, one row per run in
+      # reports/perf.jsonl, and k6's exit code passed back so a crossed threshold
+      # still fails the job.
       - name: smoke - does it work at all under one user
-        run: k6 run perf/smoke.js
+        run: python scripts/perf_run.py perf/smoke.js --profile smoke
       - name: read path under concurrency
-        run: k6 run -e VUS=5 -e RAMP=3s -e HOLD=7s perf/load.js
+        run: python scripts/perf_run.py perf/load.js --profile load -e VUS=5 -e RAMP=3s -e HOLD=7s
       - name: write path under concurrency - money math is a gate here
-        run: k6 run -e VUS=5 -e RAMP=3s -e HOLD=7s perf/write_path.js
+        run: python scripts/perf_run.py perf/write_path.js --profile load -e VUS=5 -e RAMP=3s -e HOLD=7s
+      - name: perf dashboard
+        if: always()
+        run: python scripts/dashboard.py
+      - name: keep this run's numbers
+        # always(): the run that crossed a threshold is the one whose numbers you want.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-${{ github.run_id }}
+          path: |
+            reports/perf.jsonl
+            reports/dashboard.html
+          if-no-files-found: ignore
+          retention-days: 14
 
   perf-heavy:
     name: perf spike + soak (k6, nightly)
@@ -83,9 +100,23 @@ jobs:
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/health && break; sleep 0.5; done
       - uses: grafana/setup-k6-action@v1
       - name: spike - survive a sudden 5x and recover
-        run: k6 run -e PROFILE=spike -e VUS=5 -e HOLD=15s perf/write_path.js
+        run: python scripts/perf_run.py perf/write_path.js --profile spike -e VUS=5 -e HOLD=15s
       - name: soak - hold the load and look for leaks
-        run: k6 run -e PROFILE=soak -e VUS=5 -e HOLD=3m perf/write_path.js
+        if: always()
+        run: python scripts/perf_run.py perf/write_path.js --profile soak -e VUS=5 -e HOLD=3m
+      - name: perf dashboard
+        if: always()
+        run: python scripts/dashboard.py
+      - name: keep this run's numbers
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-heavy-${{ github.run_id }}
+          path: |
+            reports/perf.jsonl
+            reports/dashboard.html
+          if-no-files-found: ignore
+          retention-days: 30
 
   llm:
     name: llm evaluation (deepeval)
