@@ -7,10 +7,12 @@ from utils.local_time import local_day, parse_instant
 
 
 def soonest_slot(barbers, barber_id, service_id, tz):
-    return (
-        barbers.slots(barber_id, local_day(tz, 0), service_id)
-        or barbers.slots(barber_id, local_day(tz, 1), service_id)
-    )[0]
+    """The second free time from now, not the first: the first can be seconds
+    away and expire between being listed and being booked."""
+    upcoming = barbers.slots(barber_id, local_day(tz, 0), service_id) + barbers.slots(
+        barber_id, local_day(tz, 1), service_id
+    )
+    return upcoming[1]
 
 
 def test_a_customer_cannot_cancel_inside_the_cutoff_but_the_owner_can(

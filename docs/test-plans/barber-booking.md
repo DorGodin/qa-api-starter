@@ -96,6 +96,42 @@ a clashing slot, a barber allowed to cancel. **11 of 11 caught.** The first pass
 the two survivors were a vacuous string comparison and a missing check that the listing
 offers back-to-back slots.
 
+
+## The booking page (tests/barber_ui, with --ui)
+
+12 tests drive the page at `/` through Playwright, checked twice: on the screen, and through
+the API behind it.
+
+| Test | What it proves |
+|---|---|
+| signing in replaces the form | the sign-in form is really gone, not only marked hidden |
+| the Book button appears only after a time is chosen | a hidden panel stays hidden |
+| a customer books a time and sees it | the message, the list, the price, the time gone from the grid, and the stored start |
+| cancelling gives the time back | the list shows cancelled and the grid offers the time again |
+| a late cancellation explains why | the reason, what to do next ("call the shop"), and the booking still there |
+| a double click books once | counted on the wire: one POST, and "Booked" rather than a refusal |
+| signing up signs you straight in | the new account lands on the booking screen |
+| a time taken while you were looking | two windows; the second is told it has just gone, and no longer offered it |
+| times on the shop clock in any browser time zone | a New York browser still sees 09:00 opening and 18:30 last start |
+| a name that looks like HTML | shown as text, never run |
+| a wrong password and an unknown user | the same message |
+| every field has a label | fields are reachable by label, outcomes are announced |
+
+**Waiting is on the page's own signal.** The page holds `aria-busy="true"` while it fetches
+and `"false"` once the screen is current; the page object waits for that. It replaced
+`wait_for_load_state("networkidle")`, which returns at once on a page that has already
+loaded — a test read the list before it refreshed, passed once by luck, failed the next run.
+
+**Mutation check on the page.** Eight behaviours of the page were broken one at a time:
+hidden panels left on screen, a name written as HTML, times shown on the browser's clock, a
+double click sending twice, refusals shown as raw codes, a failed booking not refreshing
+the times, outcomes not announced, the late-cancellation reason lost. **8 of 8 caught.**
+
+```bash
+make ui-barber-watch        # watch in a visible browser
+make ui-barber-record       # video and trace of every test in reports/ui-barber
+```
+
 ## Test data prerequisites
 
 The product's three seeded accounts (`owner`, `barber`, `customer`) with the passwords from

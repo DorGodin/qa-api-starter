@@ -71,6 +71,19 @@ perf-trends:    ## what moved against earlier perf runs of the same shape
 ui:             ## browser suite (needs: playwright install chromium)
 	ENV=$(ENV) PYTHONPATH=. $(PY) -m pytest --ui tests/ui
 
+ui-barber:      ## the barbershop's booking page in a real browser (start the barbershop first)
+	ENV=barber $(PY) -m pytest --ui tests/barber_ui
+
+ui-barber-watch: ## the same, in a visible browser at human speed; SLOWMO=ms, K=name filter
+	ENV=barber $(PY) -m pytest --ui tests/barber_ui --headed --slowmo $(or $(SLOWMO),600) $(if $(K),-k "$(K)",)
+
+ui-barber-record: ## a video and a step-by-step trace of every test, in reports/ui-barber
+	rm -rf reports/ui-barber
+	ENV=barber $(PY) -m pytest --ui tests/barber_ui --video on --tracing on --output reports/ui-barber
+	@echo ""
+	@echo "videos:  reports/ui-barber/*/video*.webm"
+	@echo "trace:   $(VENV)/bin/playwright show-trace reports/ui-barber/<test>/trace*.zip"
+
 llm:            ## LLM evaluation with DeepEval, deterministic metrics, no API key
 	ENV=$(ENV) PYTHONPATH=. $(PY) -m pytest --llm tests/llm
 

@@ -264,6 +264,18 @@ chairs, the booking window, days off, late cancellation, a double tap with an
 `Idempotency-Key`, a price change that must not reach back into bookings, who can see and do
 what — and daylight saving, on whichever transition falls inside the booking window.
 
+**And the booking page, in a real browser.** The barbershop serves a booking page at `/`,
+and `tests/barber_ui/` drives it the way a customer does — 12 tests, among them two
+customers looking at the same free time where the second is told plainly it has just gone,
+a browser set to New York that must still show the shop's own clock, a double click that
+must send one request, and a name that looks like HTML that must never run. To watch them:
+
+```bash
+make ui-barber-watch                    # a visible browser, at human speed
+make ui-barber-watch K="looking"        # just the two-customer race
+make ui-barber-record                   # a video and a step-by-step trace of every test
+```
+
 **Every rule was broken on purpose in the product, one at a time, and each break was
 caught.** Two were not the first time: one assertion compared `…00Z` with `…00.000Z` and so
 passed whatever the product did, and nothing checked that the listing offers the slot right
@@ -630,6 +642,18 @@ ENV=barber pytest
 ותורים צמודים, שעת סגירה ברמת רבע השעה, לקוח בשני כיסאות, חלון ההזמנה, ימי חופש, ביטול מאוחר,
 לחיצה כפולה עם `Idempotency-Key`, שינוי מחיר שאסור לו לשנות הזמנות קיימות, מי רואה ומי מורשה
 לעשות מה — ושעון קיץ, על המעבר שנופל בתוך חלון ההזמנה, יהיה אשר יהיה.
+
+**וגם מסך ההזמנה, בדפדפן אמיתי.** המספרה מגישה מסך הזמנה בכתובת `/`, והבדיקות
+ב-`tests/barber_ui/` מפעילות אותו כמו לקוח — 12 בדיקות, ביניהן שני לקוחות שמסתכלים על אותו
+תור פנוי והשני מקבל הודעה ברורה שהתור בדיוק נתפס, דפדפן שמכוון לשעון של ניו יורק ועדיין חייב
+להציג את השעון של המספרה, לחיצה כפולה שחייבת לשלוח בקשה אחת, ושם שנראה כמו HTML ואסור לו
+לרוץ. כדי לראות אותן רצות:
+
+```bash
+make ui-barber-watch                    # דפדפן פתוח, במהירות של בן אדם
+make ui-barber-watch K="looking"        # רק המרוץ בין שני הלקוחות
+make ui-barber-record                   # סרטון ומעקב צעד-אחרי-צעד לכל בדיקה
+```
 
 **כל חוק נשבר בכוונה במוצר, אחד אחרי השני, וכל שבירה נתפסה.** שתיים לא נתפסו בפעם הראשונה:
 בדיקה אחת השוותה `…00Z` ל-`…00.000Z` ולכן עברה בלי קשר למה שהמוצר עשה, ושום בדיקה לא וידאה

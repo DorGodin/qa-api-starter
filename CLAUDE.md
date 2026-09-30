@@ -349,11 +349,12 @@ obj/            API object layer
   auth.py       one login strategy per auth.type
   base.py       standard CRUD every resource inherits
   resources/    the demo product, one module per resource  <- replace these
-  barber/       the barbershop product (github.com/DorGodin/barber-booking-api)
+  barber/       the barbershop product (github.com/DorGodin/barber-booking-api); booking_page.py is its page object
 tests/
   conftest.py   env config, session client, personas, product- and flag-gated collection
   suites/       demo product behaviour tests
   barber/       barbershop product tests - collected only when ENV's product is barber-booking
+  barber_ui/    the barbershop's booking page in a real browser - that product only, and only with --ui
   unit/         framework's own tests (--unit), whatever the product
   edge-cases/   validation edge cases (--edge-cases)
 utils/          helpers.py, functions/ (prod-guarded data seeding), concurrency.py (at_once),

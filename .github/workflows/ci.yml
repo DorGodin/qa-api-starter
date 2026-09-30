@@ -148,6 +148,19 @@ jobs:
       - name: the barbershop suites
         env: { ENV: barber }
         run: python -m pytest -q
+      - name: install the browser
+        run: python -m playwright install --with-deps chromium
+      - name: the booking page, in a real browser
+        env: { ENV: barber }
+        run: python -m pytest --ui tests/barber_ui -q --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber
+      - name: keep the video and trace of any page test that failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: barber-ui-failures-${{ github.run_id }}
+          path: reports/ui-barber
+          if-no-files-found: ignore
+          retention-days: 14
 
   llm:
     name: llm evaluation (deepeval)

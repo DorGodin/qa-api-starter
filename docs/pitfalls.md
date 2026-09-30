@@ -385,3 +385,40 @@ blocks predated the two new required keys.
 
 **Rule:** after changing anything under `utils/`, `scripts/`, `obj/` or `config/`, run
 `pytest --unit` before calling the change done — not only the suite the change was for.
+
+## 2026-09-30 — wait_for_load_state("networkidle") on a loaded page waits for nothing
+
+After booking, the page object waited with `wait_for_load_state("networkidle")` before
+reading the list of free times. That call waits for a load state, and a page that has
+already loaded has already reached it — so it returned at once and the test read the list
+before the page refreshed it. It passed on its first run by luck and failed on the next.
+
+**Rule:** wait for the page's own signal, never for a guess about the network. The booking
+page holds `aria-busy="true"` while it fetches and `"false"` once what is on screen is
+current (a counter, since refreshes overlap), and `BookingPage.settled()` waits for it.
+A flaky test is run until it fails and its failure read, never re-run until it passes.
+
+## 2026-09-30 — "The first free time today" races the clock
+
+The late-cancellation tests booked the first free time. The first time can be seconds
+away; if a quarter hour ticks over between listing it and booking it, the booking is
+refused as in the past, and the test times out waiting for a Cancel button. One run in
+fifteen failed with a 35 second duration — a 30 second wait — and it could not be
+reproduced in forty more runs, which is exactly what a clock race looks like.
+
+**Rule:** a test that needs "soon" takes the second free time, not the first — at least a
+slot's length away, and still inside any cutoff being tested.
+
+## 2026-09-30 — Two mutants survived for reasons that were not bugs, and both taught something
+
+"A double click sends twice" survived when only the page's guard was removed: the button is
+also disabled, and either protection alone holds. "The late-cancellation reason is lost"
+survived because the test looked for "24 hours", which the API's own fallback text also
+says. The first was an equivalent mutant — remove both protections and it is caught. The
+second was a weak assertion: the requirement is to tell the customer what to do next, so
+the test now looks for "call the shop".
+
+**Rule:** a surviving mutant is either an equivalent one (prove it by breaking what else
+protects the behaviour) or an assertion that checks something a second source also
+provides. Count on the wire where the screen cannot tell — with one Idempotency-Key per
+choice, a second request is answered as a success, so only the request count shows it.

@@ -20,6 +20,7 @@ GATED = {
     "tests/unit": "--unit",
     "tests/edge-cases": "--edge-cases",
     "tests/ui": "--ui",
+    "tests/barber_ui": "--ui",
     "tests/llm": "--llm",
     "tests/security": "--security",
 }
@@ -36,6 +37,7 @@ PRODUCT_FOLDERS = {
     "tests/ui": "demo",
     "tests/llm": "demo",
     "tests/barber": "barber-booking",
+    "tests/barber_ui": "barber-booking",
 }
 
 
