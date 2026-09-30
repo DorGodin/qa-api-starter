@@ -77,9 +77,26 @@ class BookingPage:
         expect(self.by("confirm")).to_be_visible()
         return self
 
-    def book(self) -> BookingPage:
+    def book(self, keep_popup: bool = False) -> BookingPage:
+        """Book, and read the popup that answers. The popup is modal - nothing
+        behind it can be pressed - so unless asked to keep it, it is closed and
+        what it said is kept in `last_popup`."""
         self.by("book").click()
         self.settled()
+        popup = self.by("popup")
+        expect(popup).to_be_visible()
+        self.last_popup = {
+            "title": plain(self.by("popup-title").inner_text()),
+            "text": plain(self.by("popup-text").inner_text()),
+            "kind": popup.get_attribute("data-kind"),
+        }
+        if not keep_popup:
+            self.close_popup()
+        return self
+
+    def close_popup(self) -> BookingPage:
+        self.by("popup-close").click()
+        expect(self.by("popup")).to_be_hidden()
         return self
 
     def settled(self) -> None:

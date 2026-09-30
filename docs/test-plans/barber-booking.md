@@ -99,7 +99,7 @@ offers back-to-back slots.
 
 ## The booking page (tests/barber_ui, with --ui)
 
-18 tests drive the page at `/` - Hebrew, right to left - through Playwright, checked twice:
+22 tests drive the page at `/` - Hebrew, right to left - through Playwright, checked twice:
 on the screen, and through the API behind it.
 
 | Test | What it proves |
@@ -122,6 +122,10 @@ on the screen, and through the API behind it.
 | prices the Israeli way | the amount, then the sign - never `₪80` |
 | dates in Hebrew | the weekday and month are Hebrew, with no Latin letters |
 | no English reaches the customer | wrong password, invalid sign-up and a taken slot all answer in Hebrew only |
+| a booking is confirmed in a popup | green, modal, says the day, time and price, and puts the focus on its close button |
+| the popup closes with its button and with Escape | both close it |
+| nothing behind the popup can be pressed | it is `:modal`, and a click on a time behind it does not land |
+| a refusal that is not a taken time | red "לא הצלחנו לקבוע את התור", with the reason - not the taken-time wording |
 
 **Waiting is on the page's own signal.** The page holds `aria-busy="true"` while it fetches
 and `"false"` once the screen is current; the page object waits for that. It replaced
@@ -134,7 +138,13 @@ double click sending twice, refusals shown as raw codes, a failed booking not re
 the times, outcomes not announced, the late-cancellation reason lost - and for Hebrew: the
 layout left to right, names not isolated, prices the American way, dates in English, the
 server's English shown for an unmapped code, times following the page's direction, labels
-wrapped around their fields. **15 of 15 caught.**
+wrapped around their fields - and for the popup: no popup, a popup that is not modal, a
+refusal shown as a success, a taken time worded like any other refusal, a close button that
+does nothing, a success that leaves out the price. **21 of 21 caught.**
+
+`BookingPage.book()` reads the popup, keeps what it said in `last_popup`, and closes it:
+the popup is modal, so a test that went on to press anything behind it would wait for a
+click that can never land. A test about the popup itself passes `keep_popup=True`.
 
 ```bash
 make ui-barber-watch        # watch in a visible browser

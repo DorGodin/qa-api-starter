@@ -449,3 +449,13 @@ nothing - the same class of false negative as the unsplit `$PT` earlier today.
 
 **Rule:** quote every glob that belongs to the command, not the shell (`--include='*.py'`),
 or do the search in Python. When a check comes back empty, prove it can come back full.
+
+## 2026-09-30 — A screenshot showed a state the page was no longer in
+
+Checking the new popup by eye, a screenshot showed the page freshly signed in: the wrong
+service, today's date, no popup, no booking. The page's own state, read a second later,
+said the opposite - popup open, one booking, the right day. The screenshot was a stale
+frame. Believing it would have meant "fixing" a page that worked.
+
+**Rule:** when a screenshot and the page disagree, read the page's state (the DOM, the
+API) before acting on either. A screenshot is evidence of what was painted, at some moment.

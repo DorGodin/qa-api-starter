@@ -85,6 +85,7 @@ def test_a_double_click_on_book_books_once(signed_in, bookings, account, ui_barb
 
     signed_in.by("book").dblclick()
     signed_in.settled()
+    expect(signed_in.by("popup")).to_be_visible()
 
     # Counted on the wire. With one Idempotency-Key per chosen time, a second
     # request would be answered as a success, so the screen alone cannot show

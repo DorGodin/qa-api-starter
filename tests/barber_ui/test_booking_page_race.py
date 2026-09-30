@@ -36,6 +36,9 @@ def test_a_time_taken_while_you_were_looking_is_explained(
 
     expect(first.message()).to_contain_text("נקבע:")
     expect(second.message()).to_contain_text("מישהו בדיוק קבע את 10:00")
+    assert first.last_popup["kind"] == "ok" and "התור נקבע" in first.last_popup["title"]
+    assert second.last_popup == {**second.last_popup, "kind": "error", "title": "השעה כבר תפוסה"}
+    assert "10:00" in second.last_popup["text"]
     expect(second.message()).to_have_attribute("data-kind", "error")
     assert "10:00" not in second.times(), "the losing screen still offers the time it just lost"
     owner_view = bookings.listing(persona="owner", barber_id=contested["id"], status="confirmed")
