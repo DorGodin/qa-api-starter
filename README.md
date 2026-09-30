@@ -264,8 +264,11 @@ chairs, the booking window, days off, late cancellation, a double tap with an
 `Idempotency-Key`, a price change that must not reach back into bookings, who can see and do
 what — and daylight saving, on whichever transition falls inside the booking window.
 
-**And the booking page, in a real browser.** The barbershop serves a booking page at `/`,
-and `tests/barber_ui/` drives it the way a customer does — 12 tests, among them two
+**And the booking page, in a real browser.** The barbershop serves a booking page at `/` —
+in Hebrew, right to left — and `tests/barber_ui/` drives it the way a customer does. 18
+tests: six are about Hebrew itself (the layout mirrored, times still read left to right, a
+Latin name isolated inside a Hebrew sentence, the price the Israeli way round, and never a
+word of the server's English on screen), and among the rest are two
 customers looking at the same free time where the second is told plainly it has just gone,
 a browser set to New York that must still show the shop's own clock, a double click that
 must send one request, and a name that looks like HTML that must never run. To watch them:
@@ -643,8 +646,10 @@ ENV=barber pytest
 לחיצה כפולה עם `Idempotency-Key`, שינוי מחיר שאסור לו לשנות הזמנות קיימות, מי רואה ומי מורשה
 לעשות מה — ושעון קיץ, על המעבר שנופל בתוך חלון ההזמנה, יהיה אשר יהיה.
 
-**וגם מסך ההזמנה, בדפדפן אמיתי.** המספרה מגישה מסך הזמנה בכתובת `/`, והבדיקות
-ב-`tests/barber_ui/` מפעילות אותו כמו לקוח — 12 בדיקות, ביניהן שני לקוחות שמסתכלים על אותו
+**וגם מסך ההזמנה, בדפדפן אמיתי.** המספרה מגישה מסך הזמנה בכתובת `/` — בעברית, מימין
+לשמאל — והבדיקות ב-`tests/barber_ui/` מפעילות אותו כמו לקוח. 18 בדיקות: שש מהן על העברית
+עצמה (הפריסה מתהפכת, שעות נשארות משמאל לימין, שם באנגלית מבודד בתוך משפט עברי, מחיר בסדר
+הישראלי, ואף מילה באנגלית מהשרת על המסך), ובין השאר שני לקוחות שמסתכלים על אותו
 תור פנוי והשני מקבל הודעה ברורה שהתור בדיוק נתפס, דפדפן שמכוון לשעון של ניו יורק ועדיין חייב
 להציג את השעון של המספרה, לחיצה כפולה שחייבת לשלוח בקשה אחת, ושם שנראה כמו HTML ואסור לו
 לרוץ. כדי לראות אותן רצות:

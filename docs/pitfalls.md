@@ -422,3 +422,30 @@ the test now looks for "call the shop".
 protects the behaviour) or an assertion that checks something a second source also
 provides. Count on the wire where the screen cannot tell — with one Idempotency-Key per
 choice, a second request is answered as a success, so only the request count shows it.
+
+## 2026-09-30 — expect(...).to_contain_text(...), "message" is a tuple
+
+`expect(msg).to_contain_text("call the shop"), "say what to do next"` looked like an
+assertion with a message. It is an expression statement: a tuple whose first half runs the
+check and whose second half is discarded. The check still ran; the message would never
+have been shown. ruff made it visible by wrapping the tuple in parentheses.
+
+**Rule:** Playwright takes the message inside: `expect(locator, "why").to_contain_text(...)`.
+
+## 2026-09-30 — Typed escapes became invisible characters, twice
+
+Twice a `\u2068` typed into a file or a command landed as the real, invisible U+2068 - once
+in the barbershop page, once in a test's own sample data. Both were caught by the
+source-hygiene test written that same hour, which is the point of having it.
+
+**Rule:** build direction characters with `chr(0x2068)`, never type their escapes into a
+file or a command. `tests/unit/test_source_hygiene.py` scans every source file.
+
+## 2026-09-30 — zsh expanded a grep pattern and the search found "nothing"
+
+`grep -rlP '...' --include=*.py …` printed "none". zsh had expanded `*.py` itself, found no
+match in the working directory, and grep never searched. A clean result that searched
+nothing - the same class of false negative as the unsplit `$PT` earlier today.
+
+**Rule:** quote every glob that belongs to the command, not the shell (`--include='*.py'`),
+or do the search in Python. When a check comes back empty, prove it can come back full.

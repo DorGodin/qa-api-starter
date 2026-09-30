@@ -4,7 +4,7 @@ code, or give away which half of a login was wrong."""
 import pytest
 from playwright.sync_api import expect
 
-from obj.barber.booking_page import BookingPage
+from obj.barber.booking_page import BARBER, DATE, PASSWORD, SERVICE, USERNAME, YOUR_NAME, BookingPage
 from utils.local_time import local_day
 
 
@@ -38,8 +38,8 @@ def test_a_wrong_password_and_an_unknown_user_look_the_same(page, env_config, cr
     answers = []
     for username in (owner, "nobody-at-all"):
         screen = BookingPage(page, env_config["url"]).open()
-        page.get_by_label("Username").first.fill(username)
-        page.get_by_label("Password").first.fill("wrong-password")
+        page.get_by_label(USERNAME, exact=True).first.fill(username)
+        page.get_by_label(PASSWORD, exact=True).first.fill("wrong-password")
         screen.by("login").click()
         expect(screen.by("login-error")).to_be_visible()
         answers.append(screen.by("login-error").inner_text())
@@ -50,11 +50,11 @@ def test_a_wrong_password_and_an_unknown_user_look_the_same(page, env_config, cr
 
 def test_every_field_has_a_label_a_screen_reader_can_read(shop, account):
     shop.open()
-    for label in ("Username", "Password", "Your name"):
-        expect(shop.page.get_by_label(label).first).to_be_visible()
+    for label in (USERNAME, PASSWORD, YOUR_NAME):
+        expect(shop.page.get_by_label(label, exact=True).first).to_be_visible()
 
     shop.sign_in(account["username"], account["password"])
-    for label in ("Barber", "Service", "Date"):
-        expect(shop.page.get_by_label(label)).to_be_visible()
+    for label in (BARBER, SERVICE, DATE):
+        expect(shop.page.get_by_label(label, exact=True)).to_be_visible()
     # Booked, taken, cancelled: every outcome is announced, not only painted.
     expect(shop.page.get_by_role("status")).to_have_count(1)

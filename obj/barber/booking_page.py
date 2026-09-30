@@ -12,6 +12,21 @@ from datetime import date
 
 from playwright.sync_api import Locator, Page, expect
 
+# The page is Hebrew. Its field labels, as a person reads them.
+USERNAME, PASSWORD, YOUR_NAME = "שם משתמש", "סיסמה", "השם שלך"
+BARBER, SERVICE, DATE = "ספר", "שירות", "תאריך"
+
+# Unicode direction controls the page puts around names (isolates) and that
+# Intl puts inside prices (marks), plus the no-break space: invisible, and in
+# the way of a plain comparison. `plain()` removes them.
+BIDI_CONTROLS = dict.fromkeys(
+    map(ord, "\u2066\u2067\u2068\u2069\u200e\u200f\u202a\u202b\u202c\u202d\u202e"), None
+)
+
+
+def plain(text: str) -> str:
+    return text.translate(BIDI_CONTROLS).replace("\u00a0", " ")
+
 
 class BookingPage:
     def __init__(self, page: Page, base_url: str) -> None:
@@ -28,8 +43,8 @@ class BookingPage:
 
     def sign_in(self, username: str, password: str) -> BookingPage:
         self.open()
-        self.page.get_by_label("Username").first.fill(username)
-        self.page.get_by_label("Password").first.fill(password)
+        self.page.get_by_label(USERNAME, exact=True).first.fill(username)
+        self.page.get_by_label(PASSWORD, exact=True).first.fill(password)
         self.by("login").click()
         expect(self.by("app")).to_be_visible()
         self.settled()
@@ -37,7 +52,7 @@ class BookingPage:
 
     def sign_up(self, name: str, username: str, password: str) -> BookingPage:
         self.open()
-        self.page.get_by_label("Your name").fill(name)
+        self.page.get_by_label(YOUR_NAME, exact=True).fill(name)
         self.by("signup-username").fill(username)
         self.by("signup-password").fill(password)
         self.by("signup").click()
@@ -79,6 +94,10 @@ class BookingPage:
 
     def message(self) -> Locator:
         return self.by("message")
+
+    def text(self, locator: Locator) -> str:
+        """What the element says, without the invisible direction controls."""
+        return plain(locator.inner_text())
 
     def rows(self) -> Locator:
         return self.by("booking-row")

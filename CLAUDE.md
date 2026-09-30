@@ -233,6 +233,23 @@ sends it.
 - **Select by `data-testid`.** Never by CSS class or visible text that a copy change breaks.
 - **Assert what the user sees**, including the error message. A 402 the user never sees is
   a different defect from a 402 shown as "Not enough budget".
+- **Wait on the page's own signal, never on the network.** The barbershop page holds
+  `aria-busy` until its screen is current; `BookingPage.settled()` waits for it.
+  `wait_for_load_state("networkidle")` returns at once on a page already loaded.
+- **Look labels up exactly** (`exact=True`). A substring match forgives a label that wraps
+  its field and swallows every option of a select into the field's name.
+- **Compare Hebrew text through `plain()`.** The page puts direction isolates around names
+  and Intl puts marks inside prices; they are invisible and break a plain comparison.
+- **A message for `expect()` goes inside it:** `expect(locator, "why").to_...`. Written
+  after it with a comma, it is a tuple whose second half is silently thrown away.
+
+## Verifying before committing
+
+Gate a commit on the test command's own exit code - `pytest -q > out.txt; code=$?` - never
+on a pipeline. `pytest | tail -1 && git commit` commits a red run: a pipeline's status is its
+last command's. Direction characters (U+2066-2069, U+200E/F, U+202A-E) are never typed into
+a command or a file: tooling here turns a typed escape into the invisible character itself.
+Build them with `chr(0x2068)`; `tests/unit/test_source_hygiene.py` fails on any in source.
 
 ## LLM features
 

@@ -26,8 +26,8 @@ def test_a_customer_books_a_time_and_sees_it(signed_in, bookings, account, ui_ba
     day = local_day(shop_tz, 3)
     signed_in.choose(ui_barber["id"], ui_haircut["id"], day).pick("11:00").book()
 
-    expect(signed_in.message()).to_contain_text("Booked:")
-    expect(signed_in.row_at("11:00")).to_contain_text("₪80.00")
+    expect(signed_in.message()).to_contain_text("נקבע:")
+    assert "80.00 ₪" in signed_in.text(signed_in.row_at("11:00"))
     assert "11:00" not in signed_in.times(), "a booked time is still offered"
 
     stored = bookings.listing(persona=account["persona"])["content"]
@@ -42,8 +42,8 @@ def test_cancelling_from_the_list_gives_the_time_back(
 
     signed_in.cancel("12:00")
 
-    expect(signed_in.message()).to_contain_text("Cancelled")
-    expect(signed_in.row_at("12:00")).to_contain_text("cancelled")
+    expect(signed_in.message()).to_contain_text("בוטל")
+    expect(signed_in.row_at("12:00")).to_contain_text("בוטל")
     assert "12:00" in signed_in.times()
     assert bookings.listing(persona=account["persona"], status="confirmed")["total"] == 0
 
@@ -68,10 +68,9 @@ def test_a_late_cancellation_explains_why_and_keeps_the_booking(
 
     signed_in.cancel(soonest)
 
-    expect(signed_in.message()).to_contain_text("24 hours")
-    (
-        expect(signed_in.message()).to_contain_text("call the shop"),
-        "say what to do next, not only what went wrong",
+    expect(signed_in.message()).to_contain_text("24 שעות")
+    expect(signed_in.message(), "say what to do next, not only what went wrong").to_contain_text(
+        "להתקשר למספרה"
     )
     expect(signed_in.message()).to_have_attribute("data-kind", "error")
     assert bookings.listing(persona=account["persona"], status="confirmed")["total"] == 1
@@ -97,7 +96,7 @@ def test_a_double_click_on_book_books_once(signed_in, bookings, account, ui_barb
     # The server would refuse a second booking anyway. What the page must also
     # not do is send it: the refusal would replace "Booked" with "Someone just
     # booked 13:00" - told to the very customer who just booked it.
-    expect(signed_in.message()).to_contain_text("Booked:")
+    expect(signed_in.message()).to_contain_text("נקבע:")
     expect(signed_in.message()).to_have_attribute("data-kind", "ok")
 
 

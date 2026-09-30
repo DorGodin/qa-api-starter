@@ -34,8 +34,8 @@ def test_a_time_taken_while_you_were_looking_is_explained(
     first.book()
     second.book()
 
-    expect(first.message()).to_contain_text("Booked:")
-    expect(second.message()).to_contain_text("Someone just booked 10:00")
+    expect(first.message()).to_contain_text("נקבע:")
+    expect(second.message()).to_contain_text("מישהו בדיוק קבע את 10:00")
     expect(second.message()).to_have_attribute("data-kind", "error")
     assert "10:00" not in second.times(), "the losing screen still offers the time it just lost"
     owner_view = bookings.listing(persona="owner", barber_id=contested["id"], status="confirmed")
