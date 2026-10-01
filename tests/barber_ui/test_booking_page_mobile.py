@@ -211,3 +211,25 @@ def test_a_new_service_added_on_a_phone_is_offered_to_customers(phone_owner, ser
 
     expect(phone_owner.message()).to_have_attribute("data-kind", "ok")
     assert name in [s["name"] for s in services.find(persona="owner").assert_ok(200).content]
+
+
+def test_at_200_percent_zoom_the_page_still_fits_and_books(
+    browser, env_config, account, ui_barber, ui_haircut, shop_tz
+):
+    # WCAG 1.4.4 and 1.4.10: zooming a 1100px window to 200% leaves the page 550
+    # CSS pixels to lay itself out in, at twice the pixel density.
+    context = browser.new_context(
+        viewport={"width": 550, "height": 380}, device_scale_factor=2, locale="he-IL"
+    )
+    try:
+        zoomed = BookingPage(context.new_page(), env_config["url"])
+        zoomed.sign_in(account["username"], account["password"])
+        zoomed.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 6)).pick("15:30")
+
+        assert sideways_overflow(zoomed.page) == []
+        zoomed.by("book").click()
+        zoomed.settled()
+        expect(zoomed.by("popup")).to_be_visible()
+        assert fits_on_screen(zoomed.page, zoomed.by("popup")), "the whole answer, at 200%"
+    finally:
+        context.close()

@@ -259,6 +259,11 @@ that engine's suite, or it survives every run and proves nothing.
   twice and one protection was removed. Prove which by breaking the other one too; never
   delete a survivor to make the report green.
 - Runs never touch the product's checkout and never reach the history (`QA_NO_RECORD=1`).
+- **Write the mutants with the change; run the catalogue once, at the end of the day.** A full
+  run takes about 25 minutes, so it never gates a commit or a push: run `make mutate-check`
+  (seconds) and push. The nightly `mutation` job in CI - or one run at the end of the working day -
+  runs the whole catalogue, and whatever survived, flaked or errored is fixed first thing the next
+  time anyone works on it.
 
 ## Page tests on phones
 
@@ -416,6 +421,10 @@ always serialised with `to_iso()` so they end in `Z`, not `+00:00`.
 `requirements.txt` holds direct dependencies pinned with `==`. `requirements.lock.txt` is
 the full resolved set and is what CI installs. To change one: edit `requirements.txt`, run
 `scripts/maintenance/relock.sh`, commit both in the same MR. Never edit the lock by hand.
+Read the lock's diff before committing it: the relock freezes whatever the virtualenv holds, so a
+tool installed into it by hand lands in the lock too. The `dependencies` workflow runs pip-audit
+on every push and every night; a red run there is a published advisory, and the fix is an
+upgrade through this same procedure, never an ignore.
 
 ## Naming
 

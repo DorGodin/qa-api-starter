@@ -90,7 +90,9 @@ def test_a_failing_suite_catches_the_mutant_and_a_passing_one_lets_it_survive(
     (tmp_path / "app" / "rule.py").write_text("return True\n", encoding="utf-8")
     monkeypatch.setattr(mutate.ProductServer, "start", lambda self: True)
     monkeypatch.setattr(mutate.ProductServer, "stop", lambda self: None)
-    monkeypatch.setattr(mutate, "run_suite", lambda name: (passes, "FAILED tests/x.py::t"))
+    monkeypatch.setattr(
+        mutate, "run_suite", lambda name: ("passed" if passes else "failed", "FAILED tests/x.py::t")
+    )
 
     outcome = mutate.run_mutant(
         tmp_path, mutate.load_catalogue(catalogue(tmp_path, [mutant()]))[0], Path("python")
@@ -136,3 +138,33 @@ def test_only_committed_development_values_are_read_never_a_private_env(tmp_path
     (tmp_path / ".env").write_text("SECRET_KEY=someones-real-key\n")
 
     assert mutate.env_example(tmp_path) == {"SECRET_KEY": "dev", "SEED_OWNER_PASSWORD": "x=y"}
+
+
+def test_a_suite_that_errors_is_reported_as_an_error_never_as_a_catch(tmp_path, monkeypatch):
+    (tmp_path / "app").mkdir()
+    (tmp_path / "app" / "rule.py").write_text("return True\n", encoding="utf-8")
+    monkeypatch.setattr(mutate.ProductServer, "start", lambda self: True)
+    monkeypatch.setattr(mutate.ProductServer, "stop", lambda self: None)
+    monkeypatch.setattr(mutate, "run_suite", lambda name: ("error", "no tests ran"))
+
+    outcome = mutate.run_mutant(
+        tmp_path, mutate.load_catalogue(catalogue(tmp_path, [mutant()]))[0], Path("python")
+    )
+
+    assert outcome.caught_by is None
+    assert "no tests ran" in outcome.error
+
+
+@pytest.mark.parametrize(
+    "suite, returncode, expected",
+    [
+        ("api", 0, "passed"),
+        ("api", 1, "failed"),
+        ("ui", 2, "error"),
+        ("api", 4, "error"),
+        ("api", 5, "error"),
+        ("load", 99, "failed"),
+    ],
+)
+def test_only_a_test_that_failed_counts_as_a_catch(suite, returncode, expected):
+    assert mutate.verdict(suite, returncode) == expected

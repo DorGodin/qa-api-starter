@@ -67,7 +67,7 @@ perf-barber:    ## the barbershop booking race under load, on its test copy (mak
 
 PRODUCT ?= ../barber-booking-api
 
-mutate:         ## break the barbershop rule by rule and check a suite catches each (about 15 min); ONLY=name filter
+mutate:         ## break the barbershop rule by rule and check a suite catches each (about 25 min - end of day, not before a push); ONLY=name filter
 	$(PY) scripts/mutate.py --product $(PRODUCT) $(if $(ONLY),--only "$(ONLY)",)
 
 mutate-check:   ## the mutation catalogue still matches the product - every anchor exactly once, in seconds

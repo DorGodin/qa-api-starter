@@ -620,3 +620,25 @@ times without choosing - was never pressed.
 
 **Rule:** a keyboard test presses Tab in the state a person is in, including before choosing
 anything, and checks where a second Tab and a Shift+Tab land.
+
+## 2026-10-01 — Neither repository had ever been scanned for vulnerable dependencies
+
+The first pip-audit run found seven advisories against the barbershop's starlette 0.41.3 - one of
+them Host-header URL reconstruction - one against pytest and two against requests. The locks had
+been pinned with care and never looked at again. A pinned dependency is not a safe one: it is one
+that does not change while the advisories about it accumulate.
+
+**Rule:** pip-audit runs on every push and every night (`.github/workflows/dependencies.yml`),
+and Dependabot proposes the upgrades. A relock freezes the whole virtualenv - the barbershop's
+lock picked up a ruff installed into it by hand - so the lock's diff is read before it is committed.
+
+## 2026-10-01 — A full mutation run before every push
+
+Every push waited on the whole catalogue - 25 to 60 minutes - and a day of work became a day of
+waiting. A speed-up (parallel workers, a remembered killing test per mutant) was built, measured
+barely faster under the load four browsers put on one machine, and dropped: it added 400 lines to
+save time nobody needed to wait for once the runs moved to the end of the day.
+
+**Rule:** mutants are written with the change and proved by the nightly run; a push waits only on
+`make mutate-check`. Measure a speed-up before keeping it, and drop it when the waiting it removes
+is gone.

@@ -1,15 +1,15 @@
 # Direct dependencies only, pinned with ==.
 # An unpinned suite cannot tell a product regression from a dependency release.
-pytest==8.4.2
+pytest==9.0.3
 pytest-dependency==0.6.0
-requests==2.32.3
+requests==2.34.2
 Faker==33.1.0
-pytest-playwright==0.6.2
+pytest-playwright==0.9.0
 axe-playwright-python==0.1.8
 deepeval==4.2.6
 jsonschema==4.23.0
 
 # demo target only - drop these when you point the framework at a real API
-fastapi==0.115.6
+fastapi==0.142.2
 uvicorn==0.34.0
 PyYAML==6.0.3

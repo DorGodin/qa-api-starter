@@ -11,11 +11,11 @@ Clone it, run it, then point it at your own product.
 has just gone, and it leaves their screen. Recorded from the UI suite against the barbershop —
 `make ui-barber-watch K="looking"` runs it in front of you.*
 
-**534 tests, in CI on every push** — 404 against the demo API that ships in this repository,
-in six groups, and 130 against a second product in its own repository,
+**548 tests, in CI on every push** — 411 against the demo API that ships in this repository,
+in six groups, and 137 against a second product in its own repository,
 [barber-booking-api](https://github.com/DorGodin/barber-booking-api), reached only through its
 URL, its page tests on a desktop, an iPhone (WebKit, Safari's engine) and an Android phone. On top
-of them: load tests whose thresholds fail the pipeline, and **88 mutants** — rules
+of them: load tests whose thresholds fail the pipeline, and **92 mutants** — rules
 of the product broken on purpose, each of which a named suite must catch, run every night
 (`make mutate`).
 
@@ -284,7 +284,7 @@ what — and daylight saving, on whichever transition falls inside the booking w
 
 **And the booking page, in a real browser.** The barbershop serves a booking page at `/` —
 in Hebrew, right to left — and `tests/barber_ui/` drives it the way a customer and the
-owner do. 83 tests: twenty on the owner's management screen (hours, days off, a new barber,
+owner do. 87 tests: twenty on the owner's management screen (hours, days off, a new barber,
 prices in shekels, withdrawing a service — each checked from the customer's side), four on
 the popup every booking answers in (green when booked, red "השעה כבר
 תפוסה" when someone was faster, and modal: nothing behind it can be pressed), six are about
@@ -336,7 +336,16 @@ comes from an address of its own (`fresh_address`, sent as `X-Forwarded-For`), o
 row would lock the machine the suites run on. `test_page_policy.py` checks the policy allows
 exactly the script and style the page serves, by hash; in the browser, a whole booking and the
 owner's screen run with no violation, and a script slipped past the escaping does not run. Each
-rule has a mutant — thirteen, all caught.
+rule has a mutant — thirteen, all caught. `test_sign_out.py` checks that signing out ends the
+sign-in on the server: a token copied before the sign-out is refused at once, not in twelve
+hours, and the person's other sign-ins stay.
+
+**And the dependencies themselves.** pip-audit had never been run on either repository. Its
+first run found seven advisories against the barbershop's starlette — Host-header URL
+reconstruction among them — and others against pytest and requests. All are fixed by upgrades,
+and a `dependencies` workflow now runs pip-audit on every push and every night, because an
+advisory can be published against a lock nobody changed. Dependabot opens a pull request for
+every newer release, and the pull request runs the whole pipeline.
 
 **And for people who do not use a mouse.** `test_booking_page_accessibility.py` runs axe-core
 against WCAG 2.2 AA on every screen — sign-in, a time chosen, the popup, the owner's screen — and
@@ -347,7 +356,11 @@ found that getting from the chosen time to the book button took a Tab for every 
 The times are now a radio group (one Tab stop, the arrows to move — the left arrow is the next
 time, the page reads right to left), and the focus goes to the new booking. The keyboard tests
 skip WebKit, with the reason: Safari's Tab skips buttons unless the user turns on keyboard
-navigation in macOS, a setting the page cannot change.
+navigation in macOS, a setting the page cannot change. The same file checks the accessibility
+statement Israeli law asks for — one link from every screen, the level, what was checked, the
+known limits, the premises and a contact — and the page at 200% zoom. What no test can check —
+what a screen reader actually says — is a checklist for a person:
+[`docs/screen-reader-checklist.md`](docs/screen-reader-checklist.md), VoiceOver on an iPhone.
 
 **And on a phone.** CI runs every page test three times: on a desktop, on an iPhone in WebKit —
 Safari's engine — and on an Android phone. `test_booking_page_mobile.py` also opens three phones of
@@ -377,13 +390,13 @@ runs these suites on every push.
 
 A green suite proves the product passes it. It does not prove the suite would fail if the
 product broke: a test can assert nothing and stay green. So `mutants/barber-booking.yml` holds
-88 rules of the barbershop broken on purpose — the booking lock, back-to-back slots, closing
+92 rules of the barbershop broken on purpose — the booking lock, back-to-back slots, closing
 time, daylight saving, the 24 hour cutoff, the Hebrew, the popup, the owner's screen, the phone
 layout, answers that arrive late — and
 for each one, the suite that must notice.
 
 ```bash
-make mutate          # every mutant, about 15 minutes; prints each one caught or SURVIVED
+make mutate          # every mutant, about 25 minutes; prints each one caught or SURVIVED
 make mutate ONLY=lock
 make mutate-check    # every anchor still matches the product, in seconds
 ```
@@ -392,7 +405,10 @@ make mutate-check    # every anchor still matches the product, in seconds
 disk — but exports its last commit to a temporary directory and breaks that copy, on its own
 port and database. It runs the unmodified product first and refuses to report if anything is
 already red. Nothing it runs reaches the history or the dashboard. CI checks the anchors on
-every push and runs the whole catalogue every night.
+every push and runs the whole catalogue every night. A full run takes about 25 minutes, so it
+never holds up a push: new rules get their mutants in the same change, and the nightly run
+proves them. A pytest exit code other than pass or fail — a test that could not be collected —
+is reported as an error, never counted as a catch.
 
 Building the catalogue found four weaknesses that every green run had hidden: an assertion
 that compared `…00Z` with `…00.000Z` and so could never fail, a load test whose race was over
@@ -527,10 +543,10 @@ every helper that writes data must guard production. Claude Code reads it automa
 ## מה זה
 
 תשתית מוכנה לבדיקות API בפייתון ו-pytest. היא מגיעה עם API קטן לדוגמה, אז הבדיקות רצות
-מהרגע שמשכפלים את הריפו. **534 בדיקות, ב-CI בכל push** — 404 על ה-API לדוגמה שבתוך הריפו, בשש
-קבוצות, ו-130 על מוצר שני בריפו משלו, [barber-booking-api](https://github.com/DorGodin/barber-booking-api),
+מהרגע שמשכפלים את הריפו. **548 בדיקות, ב-CI בכל push** — 411 על ה-API לדוגמה שבתוך הריפו, בשש
+קבוצות, ו-137 על מוצר שני בריפו משלו, [barber-booking-api](https://github.com/DorGodin/barber-booking-api),
 שהן מכירות רק דרך הכתובת שלו, ובדיקות המסך שלו רצות על מחשב, על אייפון (WebKit, המנוע של Safari) ועל
-אנדרואיד. מעל זה: בדיקות עומס שהספים שלהן מפילים את הפייפליין, ו-**88 מוטציות** —
+אנדרואיד. מעל זה: בדיקות עומס שהספים שלהן מפילים את הפייפליין, ו-**92 מוטציות** —
 חוקים של המוצר שנשברים בכוונה, וכל אחד מהם חייב להיתפס על ידי סוויטה מסוימת, בהרצה לילית (`make mutate`).
 
 המטרה: להגיע למקום עבודה חדש ולא לבנות מאפס את מה שלוקח שבועות — שכבת האובייקטים, ניהול
@@ -769,7 +785,7 @@ ENV=barber pytest
 לעשות מה — ושעון קיץ, על המעבר שנופל בתוך חלון ההזמנה, יהיה אשר יהיה.
 
 **וגם מסך ההזמנה, בדפדפן אמיתי.** המספרה מגישה מסך הזמנה בכתובת `/` — בעברית, מימין
-לשמאל — והבדיקות ב-`tests/barber_ui/` מפעילות אותו כמו לקוח וכמו בעל המספרה. 83 בדיקות: עשרים על
+לשמאל — והבדיקות ב-`tests/barber_ui/` מפעילות אותו כמו לקוח וכמו בעל המספרה. 87 בדיקות: עשרים על
 מסך הניהול (שעות, ימי חופש, ספר חדש, מחירים בשקלים, הסתרת שירות — כל אחת נבדקת גם מהצד של הלקוח),
 ארבע על החלון הקופץ
 שכל הזמנה עונה בו (ירוק כשהתור נקבע, אדום "השעה כבר תפוסה" כשמישהו הקדים, והוא חוסם את הדף
@@ -815,7 +831,14 @@ make ui-barber-journeys                 # רק המסעות מקצה לקצה
 משלה (`fresh_address`, נשלחת ב-`X-Forwarded-For`), אחרת כמה הרצות ברצף היו נועלות את המחשב שהבדיקות
 רצות ממנו. `test_page_policy.py` בודק שהמדיניות מתירה בדיוק את ה-script וה-style שהדף מגיש, לפי hash;
 ובדפדפן, הזמנה שלמה ומסך הבעלים רצים בלי אף הפרה, ו-script שעבר את ה-escaping לא רץ. לכל חוק יש
-מוטציה — שלוש עשרה, וכולן נתפסו.
+מוטציה — שלוש עשרה, וכולן נתפסו. `test_sign_out.py` בודק שיציאה מסיימת את החיבור גם בשרת: token
+שהועתק לפני היציאה נדחה מיד, ולא בעוד שתים עשרה שעות, והחיבורים האחרים של אותו אדם נשארים.
+
+**וגם התלויות עצמן.** pip-audit לא הורץ אף פעם על אף אחד מהריפואים. ההרצה הראשונה מצאה שבע פגיעויות
+ידועות ב-starlette של המספרה — ביניהן בניית כתובת לפי כותרת Host — ועוד ב-pytest וב-requests. כולן
+תוקנו בשדרוג, ו-workflow בשם `dependencies` מריץ עכשיו pip-audit בכל push ובכל לילה, כי פגיעות
+יכולה להתפרסם על נעילה שאף אחד לא שינה. Dependabot פותח pull request לכל גרסה חדשה, וה-pull request
+מריץ את כל הפייפליין.
 
 **וגם בשביל מי שלא משתמש בעכבר.** `test_booking_page_accessibility.py` מריץ axe-core מול WCAG 2.2 AA
 על כל מסך — כניסה, שעה שנבחרה, החלון הקופץ ומסך הבעלים — ואז עושה את מה ש-axe לא יכול: הזמנה שלמה
@@ -824,7 +847,10 @@ make ui-barber-journeys                 # רק המסעות מקצה לקצה
 95 כאלה — ושסגירת החלון הקופץ או ביטול הפילו את המיקוד לראש הדף. עכשיו השעות הן קבוצת radio (עצירת
 Tab אחת, והחצים כדי לזוז — החץ השמאלי הוא השעה הבאה, כי הדף מימין לשמאל), והמיקוד עובר להזמנה
 החדשה. בדיקות המקלדת מדלגות על WebKit, עם הסיבה: ה-Tab של Safari מדלג על כפתורים אלא אם המשתמש הפעיל
-ניווט מקלדת בהגדרות של macOS, הגדרה שהדף לא יכול לשנות.
+ניווט מקלדת בהגדרות של macOS, הגדרה שהדף לא יכול לשנות. אותו קובץ בודק את הצהרת הנגישות שהחוק
+בישראל דורש — קישור אחד מכל מסך, רמת הנגישות, מה נבדק, המגבלות הידועות, נגישות המקום ופרטי קשר — ואת
+הדף בהגדלה של 200%. את מה ששום בדיקה לא יכולה לבדוק — מה קורא מסך באמת משמיע — מכסה רשימת בדיקה לאדם:
+[`docs/screen-reader-checklist.md`](docs/screen-reader-checklist.md), VoiceOver באייפון.
 
 **וגם בטלפון.** ה-CI מריץ כל בדיקת מסך שלוש פעמים: על מחשב, על אייפון ב-WebKit — המנוע של Safari —
 ועל אנדרואיד. בנוסף, `test_booking_page_mobile.py` פותח שלושה טלפונים משלו, ביניהם האייפון SE ברוחב
@@ -849,13 +875,13 @@ Tab אחת, והחצים כדי לזוז — החץ השמאלי הוא השעה
 ## הבדיקות באמת תופסות משהו? — בדיקות מוטציה
 
 סוויטה ירוקה מוכיחה שהמוצר עובר אותה. היא לא מוכיחה שהיא תיכשל אם המוצר יישבר: בדיקה יכולה לא
-לבדוק כלום ולהישאר ירוקה. לכן `mutants/barber-booking.yml` מחזיק 88 חוקים של המספרה שנשברים בכוונה —
+לבדוק כלום ולהישאר ירוקה. לכן `mutants/barber-booking.yml` מחזיק 92 חוקים של המספרה שנשברים בכוונה —
 הנעילה של ההזמנה, תורים צמודים, שעת הסגירה, שעון קיץ, 24 השעות, העברית, החלון הקופץ, מסך הבעלים,
 הפריסה בטלפון, תשובות שמגיעות באיחור —
 ולכל אחד, הסוויטה שחייבת לשים לב.
 
 ```bash
-make mutate          # כל המוטציות, כרבע שעה; מדפיס כל אחת שנתפסה או שרדה
+make mutate          # כל המוטציות, כ-25 דקות; מדפיס כל אחת שנתפסה או שרדה
 make mutate ONLY=lock
 make mutate-check    # כל עוגן עדיין מתאים למוצר, בשניות
 ```
@@ -863,7 +889,9 @@ make mutate-check    # כל עוגן עדיין מתאים למוצר, בשני�
 `scripts/mutate.py` אף פעם לא עורך את הקוד של המוצר — שרתים שרצים קוראים ממנו את הדף — אלא מייצא
 את ה-commit האחרון לתיקייה זמנית ושובר את העותק, על פורט ומסד נתונים משלו. קודם הוא מריץ את המוצר
 התקין, ומסרב לדווח אם משהו כבר אדום. שום דבר שהוא מריץ לא נרשם בהיסטוריה או בדשבורד. ה-CI בודק את
-העוגנים בכל push ומריץ את כל הרשימה כל לילה.
+העוגנים בכל push ומריץ את כל הרשימה כל לילה. ריצה מלאה לוקחת כ-25 דקות, ולכן היא אף פעם לא מעכבת
+push: לחוקים חדשים כותבים מוטציות באותו שינוי, והריצה הלילית מוכיחה אותן. קוד יציאה של pytest שאינו
+הצלחה או כישלון — בדיקה שלא נאספה — מדווח כשגיאה, ואף פעם לא נספר כתפיסה.
 
 בניית הרשימה מצאה ארבע חולשות שכל ריצה ירוקה הסתירה: השוואה בין `…00Z` ל-`…00.000Z` שלא הייתה
 יכולה להיכשל אף פעם, בדיקת עומס שהמרוץ שלה נגמר בשנייה הראשונה, בדיקה שגם הניסוח של השרת עצמו

@@ -101,6 +101,7 @@ class Outcome:
     mutant: Mutant
     caught_by: str | None = None
     detail: str = ""
+    error: str = ""
     suites_run: list[str] = field(default_factory=list)
 
 
@@ -252,14 +253,25 @@ class ProductServer:
             shutil.rmtree(self.workdir, ignore_errors=True)
 
 
-def run_suite(name: str) -> tuple[bool, str]:
+def verdict(name: str, returncode: int) -> str:
+    """passed, failed - or error. For a pytest suite only 1 means a test failed; 2
+    interrupted, 3 internal error, 4 usage, 5 nothing collected mean the tests are
+    broken, and counting that as a catch would hide a survivor."""
+    if returncode == 0:
+        return "passed"
+    if name == "load" or returncode == 1:
+        return "failed"
+    return "error"
+
+
+def run_suite(name: str) -> tuple[str, str]:
     env = {**os.environ, "ENV": ENV_NAME, "QA_NO_RECORD": "1", "PYTHONPATH": str(ROOT)}
     result = subprocess.run(SUITES[name], cwd=ROOT, env=env, capture_output=True, text=True)
     lines = [line for line in result.stdout.splitlines() if line.startswith(("FAILED", "ERROR"))]
     summary = (
         lines[0].split(" - ")[0] if lines else (result.stdout.strip().splitlines() or ["(no output)"])[-1]
     )
-    return result.returncode == 0, summary
+    return verdict(name, result.returncode), summary
 
 
 def run_mutant(product: Path, mutant: Mutant, python: Path) -> Outcome:
@@ -272,8 +284,11 @@ def run_mutant(product: Path, mutant: Mutant, python: Path) -> Outcome:
             return outcome
         for suite in mutant.catches:
             outcome.suites_run.append(suite)
-            passed, summary = run_suite(suite)
-            if not passed:
+            status, summary = run_suite(suite)
+            if status == "error":
+                outcome.error = f"{suite}: {summary}"
+                return outcome
+            if status == "failed":
                 outcome.caught_by, outcome.detail = suite, summary
                 return outcome
         return outcome
@@ -288,7 +303,7 @@ def baseline(product: Path, suites: list[str], python: Path) -> list[str]:
     try:
         if not server.start():
             return ["startup"]
-        return [suite for suite in suites if not run_suite(suite)[0]]
+        return [suite for suite in suites if run_suite(suite)[0] != "passed"]
     finally:
         server.stop()
 
@@ -350,17 +365,18 @@ def main() -> int:
         for index, mutant in enumerate(mutants, 1):
             outcome = run_mutant(workspace, mutant, python)
             outcomes.append(outcome)
-            mark = "CAUGHT  " if outcome.caught_by else "SURVIVED"
+            mark = "CAUGHT  " if outcome.caught_by else "ERROR   " if outcome.error else "SURVIVED"
             detail = (
                 f"by {outcome.caught_by}: {outcome.detail}"
                 if outcome.caught_by
-                else f"ran {', '.join(outcome.suites_run)}"
+                else outcome.error or f"ran {', '.join(outcome.suites_run)}"
             )
             print(f"[{index:>2}/{len(mutants)}] {mark} {mutant.name}\n           {detail}", flush=True)
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
 
-    survivors = [o for o in outcomes if not o.caught_by]
+    survivors = [o for o in outcomes if not o.caught_by and not o.error]
+    errors = [o for o in outcomes if o.error]
     REPORTS.mkdir(exist_ok=True)
     report = REPORTS / f"mutation-{product.name}.json"
     report.write_text(
@@ -368,7 +384,7 @@ def main() -> int:
             {
                 "product": product.name,
                 "commit": commit,
-                "caught": len(outcomes) - len(survivors),
+                "caught": sum(1 for o in outcomes if o.caught_by),
                 "total": len(outcomes),
                 "mutants": [
                     {
@@ -377,6 +393,7 @@ def main() -> int:
                         "catches": o.mutant.catches,
                         "caught_by": o.caught_by,
                         "detail": o.detail,
+                        "error": o.error,
                     }
                     for o in outcomes
                 ],
@@ -387,11 +404,13 @@ def main() -> int:
         encoding="utf-8",
     )
     print(
-        f"\n{product.name} at {commit}: {len(outcomes) - len(survivors)} of {len(outcomes)} mutants caught. Report: {report.relative_to(ROOT)}"
+        f"\n{product.name} at {commit}: {sum(1 for o in outcomes if o.caught_by)} of {len(outcomes)} mutants caught. Report: {report.relative_to(ROOT)}"
     )
     for o in survivors:
         print(f"  SURVIVED {o.mutant.name} - {', '.join(o.mutant.catches)} did not notice")
-    return 1 if survivors else 0
+    for o in errors:
+        print(f"  ERROR    {o.mutant.name} - {o.error}")
+    return 1 if survivors or errors else 0
 
 
 if __name__ == "__main__":

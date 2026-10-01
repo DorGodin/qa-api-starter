@@ -111,3 +111,27 @@ def test_a_script_that_gets_past_the_escaping_is_still_not_run(page, env_config,
 
     assert page.evaluate("window.__ran") is None, "injected code ran, and could read the sign-in"
     assert all(v.startswith("script-src") for v in page.evaluate("window.__violations"))
+
+
+def test_signing_out_on_the_page_ends_the_sign_in_on_the_server_too(shop, account, api):
+    shop.sign_in(account["username"], account["password"])
+    token = shop.page.evaluate("() => sessionStorage.getItem('barber.session')")
+
+    with shop.page.expect_response(lambda r: "/auth/logout" in r.url and r.status == 204):
+        shop.by("logout").click()
+
+    stolen = {"Authorization": f"Bearer {token}"}
+    assert (
+        api.request("GET", "/me", persona=None, headers=stolen).status_code == 401
+    ), "a copy taken before the sign-out still works"
+
+
+def test_signing_out_with_no_connection_still_signs_this_device_out(shop, account):
+    shop.sign_in(account["username"], account["password"])
+    shop.page.route("**/auth/logout", lambda route: route.abort())
+
+    shop.by("logout").click()
+    shop.reload()
+
+    expect(shop.by("login-form")).to_be_visible()
+    expect(shop.by("app")).to_be_hidden()

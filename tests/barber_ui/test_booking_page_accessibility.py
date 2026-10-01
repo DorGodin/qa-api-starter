@@ -147,3 +147,26 @@ def test_every_stop_on_the_way_shows_where_the_focus_is(signed_in, keyboard):
     assert len(seen) >= 5, "the walk reached the page's controls"
     unmarked = [r["what"] for r in seen if r["style"] == "none" or r["width"] < 2]
     assert unmarked == [], f"focused with no visible ring: {unmarked}"
+
+
+def test_the_accessibility_statement_is_one_step_from_every_screen_and_says_what_the_law_asks(shop, account):
+    shop.open()
+    expect(shop.by("accessibility-link")).to_be_visible()
+    shop.sign_in(account["username"], account["password"])
+    expect(shop.by("accessibility-link")).to_be_visible()
+
+    shop.by("accessibility-link").click()
+    statement = shop.page
+    expect(statement).to_have_url(shop.base_url + "/accessibility")
+    expect(statement.locator("html")).to_have_attribute("lang", "he")
+    expect(statement.get_by_test_id("level")).to_contain_text("WCAG 2.2")
+    expect(statement.get_by_test_id("level")).to_contain_text("5568")
+    expect(statement.get_by_test_id("limits")).to_contain_text("קורא מסך")
+    expect(statement.get_by_test_id("premises")).not_to_be_empty()
+    expect(statement.get_by_test_id("contact").locator("a[href^='mailto:']")).to_have_count(1)
+    expect(statement.get_by_test_id("updated")).to_contain_text("עודכן")
+    assert "{{" not in statement.content(), "a placeholder was left unfilled"
+    assert violations(statement) == [], "the statement itself"
+
+    statement.get_by_test_id("back").click()
+    expect(shop.by("app")).to_be_visible()

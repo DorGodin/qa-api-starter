@@ -625,8 +625,8 @@ mutants:
 
       '
     replace: ''
-  - find: '        return HTMLResponse(html, headers={"Content-Security-Policy": page_policy(html)})'
-    replace: '        return HTMLResponse(html)'
+  - find: "        html = PAGE.read_text(encoding=\"utf-8\")\n        return HTMLResponse(html, headers={\"Content-Security-Policy\": page_policy(html)})"
+    replace: "        html = PAGE.read_text(encoding=\"utf-8\")\n        return HTMLResponse(html)"
 - name: inline scripts are allowed, so an injected one runs
   file: app/main.py
   catches:
@@ -735,3 +735,35 @@ mutants:
   changes:
   - find: '  input[type="checkbox"] { width:24px; height:24px; display:inline-block;'
     replace: '  input[type="checkbox"] { width:auto; display:inline-block;'
+- name: a signed-out token keeps working until it expires
+  file: app/deps.py
+  catches:
+  - api
+  changes:
+  - find: 'if claims is None or session.get(RevokedToken, claims["jti"]) is not None:'
+    replace: 'if claims is None:'
+- name: the page signs out without telling the server
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  if (ending) fetch("/auth/logout", { method: "POST", headers: { Authorization: `Bearer ${ending}` } }).catch(() => {});
+
+      '
+    replace: ''
+- name: the accessibility statement is not linked from the page
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '<footer><a href="/accessibility" data-testid="accessibility-link">הצהרת נגישות</a></footer>
+
+      '
+    replace: ''
+- name: the statement is served with its placeholders unfilled
+  file: app/main.py
+  catches:
+  - ui
+  changes:
+  - find: '            html = html.replace("{{" + name + "}}", html_text.escape(value))'
+    replace: '            pass'

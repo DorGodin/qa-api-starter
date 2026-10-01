@@ -120,6 +120,7 @@ jobs:
 
   barber:
     name: barbershop - a second product, in its own repository
+    timeout-minutes: 45
     env:
       # One definition of how the image is started, used to start it and to redeploy it.
       BARBER_IMAGE_RUN: >-
@@ -164,7 +165,12 @@ jobs:
         env: { ENV: barber }
         run: python scripts/perf_run.py perf/barber/booking_race.js --profile load -e VUS=10 -e RAMP=2s -e HOLD=8s
       - name: install the browsers - Chromium, and WebKit for Safari
-        run: python -m playwright install --with-deps chromium webkit
+        # Usually two minutes. The system packages it installs have hung for an
+        # hour once, and with no limit GitHub waits six. Each attempt gets six
+        # minutes - a hang does not fail on its own, so `||` alone would never
+        # retry it - and a second attempt, then the step fails.
+        timeout-minutes: 14
+        run: timeout 360 python -m playwright install --with-deps chromium webkit || timeout 360 python -m playwright install --with-deps chromium webkit
       - name: the booking page, in a real browser
         env: { ENV: barber }
         run: python -m pytest --ui tests/barber_ui -q --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber
