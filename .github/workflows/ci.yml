@@ -13,7 +13,7 @@ jobs:
     name: unit (no API, no network)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with: { python-version: "3.13" }
       - run: pip install -r requirements.lock.txt
@@ -23,7 +23,7 @@ jobs:
     name: product suites + edge cases
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with: { python-version: "3.13" }
       - run: pip install -r requirements.lock.txt
@@ -37,7 +37,7 @@ jobs:
     name: browser suite (playwright)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with: { python-version: "3.13" }
       - run: pip install -r requirements.lock.txt
@@ -52,7 +52,7 @@ jobs:
     name: perf smoke + load + write path (k6)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with: { python-version: "3.13" }
       - run: pip install -r requirements.lock.txt
@@ -90,7 +90,7 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with: { python-version: "3.13" }
       - run: pip install -r requirements.lock.txt
@@ -133,8 +133,8 @@ jobs:
     # which of the two is right.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
         with: { repository: DorGodin/barber-booking-api, path: barber-booking-api }
       - uses: actions/setup-python@v5
         with: { python-version: "3.13" }
@@ -217,8 +217,8 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
         with: { repository: DorGodin/barber-booking-api, path: barber-booking-api }
       - uses: actions/setup-python@v5
         with: { python-version: "3.13" }
@@ -246,7 +246,7 @@ jobs:
     name: llm evaluation (deepeval)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with: { python-version: "3.13" }
       - run: pip install -r requirements.lock.txt
@@ -260,7 +260,7 @@ jobs:
     name: docker compose
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: build and run the suites in containers
         run: docker compose run --rm tests
       - name: stop
@@ -277,7 +277,7 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
       - uses: gitleaks/gitleaks-action@v2
         env:
