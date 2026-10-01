@@ -138,8 +138,9 @@ jobs:
           .venv/bin/pip install -q -r requirements.lock.txt
           cp .env.example .env
           set -a; . ./.env; set +a
-          .venv/bin/python -m uvicorn app.main:create_app --factory --port 8100 --workers 2 &
-          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8100/health && exit 0; sleep 1; done
+          # The same copy `make run-test` starts: port 8101, its own database file.
+          DATABASE_URL=sqlite:///./barber-test.db .venv/bin/python -m uvicorn app.main:create_app --factory --port 8101 --workers 2 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8101/health && exit 0; sleep 1; done
           echo "the barbershop never became healthy"; exit 1
       - run: pip install -r requirements.lock.txt
       - name: prove the environment first

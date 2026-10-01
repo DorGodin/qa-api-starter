@@ -48,7 +48,7 @@
     "test_hooks": false
   },
   "barber": {
-    "url": "http://127.0.0.1:8100",
+    "url": "http://127.0.0.1:8101",
     "product": "barber-booking",
     "personas": { "owner": "owner", "barber": "barber", "customer": "customer" },
     "admin_persona": "owner",

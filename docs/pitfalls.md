@@ -489,3 +489,15 @@ zero, because nothing had run; only the setup error and `barbers_never_booked` s
 **Rule:** remove a directory rather than a glob (`rm -rf dir; mkdir -p dir`), confirm a
 server is up before running against it, and give every load test a gate that fails when
 it exercised nothing.
+
+## 2026-10-01 — The QA suites ran against the copy a person was using
+
+The barbershop suites and its load test ran against port 8100, the same copy the shop's
+owner screen was being clicked through. Every run created barbers, customers, services and
+bookings that the product has no way to delete; one afternoon left 720 barbers, 363 services
+and 983 bookings in that screen.
+
+**Rule:** a product that cannot clean up after a test gets a second copy for the tests.
+`ENV=barber` points at the barbershop's test copy on 8101 (`make run-test`, its own database
+file), never at the copy a person uses. Proven after the change: all the barbershop runs -
+API, page and load - left the copy on 8100 exactly as it was.

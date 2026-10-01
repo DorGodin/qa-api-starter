@@ -34,7 +34,8 @@ Each folder of scripts belongs to one product (`SCRIPT_PRODUCTS` in `scripts/per
 It is a race, kept alive. Every user aims at the same fresh time during a 200ms window,
 and the target moves on every window - so the race for a time is run again and again, at
 full concurrency, for the whole run. It creates its own barbers, service and customers in
-`setup()` and touches nothing else, so point it at a disposable copy: it leaves data behind.
+`setup()` and touches nothing else, and it leaves that data behind - which is why `ENV=barber`
+is the barbershop's test copy on 8101 (`make run-test`), not the copy anyone uses.
 
 | Gate | Fails the run when |
 |---|---|

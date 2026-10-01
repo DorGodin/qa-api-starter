@@ -252,12 +252,15 @@ booking API in its own repository. It shares no code with this one and has **no 
 — no reset, no back door. The suites in `tests/barber/` know it only through its URL.
 
 ```bash
-# in barber-booking-api:   cp .env.example .env && make install && make run
+# in barber-booking-api:   cp .env.example .env && make install && make run-test
 make env-check ENV=barber
 ENV=barber pytest
 ```
 
-With `ENV=barber` only the barbershop's suites are collected, and the demo's are not.
+With `ENV=barber` only the barbershop's suites are collected, and the demo's are not. They
+run against the barbershop's **test copy** on port 8101 (`make run-test`), which has its own
+database - never the copy on 8100 that a person clicks through, which they would bury in
+test barbers and services.
 
 What they cover: many customers racing for one slot (exactly one 201, every other a 409,
 zero 5xx), overlaps and back-to-back, closing time to the quarter hour, a customer in two
@@ -640,12 +643,14 @@ ln -s CLAUDE.md .cursorrules
 איפוס ואין דלת אחורית. הסוויטות ב-`tests/barber/` מכירות אותו רק דרך הכתובת שלו.
 
 ```bash
-# ב-barber-booking-api:   cp .env.example .env && make install && make run
+# ב-barber-booking-api:   cp .env.example .env && make install && make run-test
 make env-check ENV=barber
 ENV=barber pytest
 ```
 
-עם `ENV=barber` נאספות רק הסוויטות של המספרה, ושל הדמו לא.
+עם `ENV=barber` נאספות רק הסוויטות של המספרה, ושל הדמו לא. הן רצות על **עותק הבדיקות** של
+המספרה בפורט 8101 (`make run-test`), עם מסד נתונים משלו — אף פעם לא על העותק בפורט 8100 שאדם
+לוחץ בו, שהן היו קוברות בספרים ושירותים של בדיקות.
 
 מה הן בודקות: הרבה לקוחות שמתחרים על אותו תור (בדיוק 201 אחד, כל השאר 409, אפס 5xx), חפיפות
 ותורים צמודים, שעת סגירה ברמת רבע השעה, לקוח בשני כיסאות, חלון ההזמנה, ימי חופש, ביטול מאוחר,

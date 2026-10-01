@@ -332,7 +332,9 @@ only in each persona's own headers. `tests/unit/test_client_isolation.py` proves
 
 **Two products, one framework.** The demo lives in this repository; the barbershop lives in
 its own and shares no code with this one — the barbershop suites know it only through its
-URL and its documented contract (`obj/barber/__init__.py`). `ENV=barber` points at it. It
+URL and its documented contract (`obj/barber/__init__.py`). `ENV=barber` points at its
+**test copy** on 8101 (`make run-test` in that repository), never at 8100, the copy a person
+uses: every run leaves barbers, customers, services and bookings the product cannot delete. It
 is the standing proof that the framework is portable: CI checks the barbershop out, starts
 it, and runs its suites on every push.
 

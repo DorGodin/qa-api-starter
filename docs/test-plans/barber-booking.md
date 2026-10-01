@@ -196,7 +196,7 @@ its `.env.example`. Everything else each run creates for itself.
 
 ```bash
 # in barber-booking-api
-cp .env.example .env && make install && make run
+cp .env.example .env && make install && make run-test    # the test copy, port 8101
 
 # here
 make env-check ENV=barber
