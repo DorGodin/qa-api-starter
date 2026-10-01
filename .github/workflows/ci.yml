@@ -120,6 +120,12 @@ jobs:
 
   barber:
     name: barbershop - a second product, in its own repository
+    env:
+      # One definition of how the image is started, used to start it and to redeploy it.
+      BARBER_IMAGE_RUN: >-
+        docker run -d --name barber-image -p 8103:8100
+        --env-file barber-booking-api/.env.example -e DATABASE_URL=sqlite:////data/barber.db
+        -v barber-data:/data barber-booking
     # The same framework, pointed at a product it shares no code with, through
     # config alone. It tests the barbershop's main as it is today: when that
     # product changes a rule, this job is meant to go red until someone decides
@@ -173,16 +179,21 @@ jobs:
         # image is the one that proves what ships: its dependencies, its user,
         # its database path. DATABASE_URL is set again because .env.example points
         # at ./barber.db, which the image's non-root user cannot write - compose
-        # sets it the same way.
-        working-directory: barber-booking-api
+        # sets it the same way. The data lives on a named volume, as it would
+        # where it is deployed.
         run: |
-          docker build -q -t barber-booking .
-          docker run -d --name barber-image -p 8103:8100 --env-file .env.example -e DATABASE_URL=sqlite:////data/barber.db barber-booking
+          docker build -q -t barber-booking barber-booking-api
+          $BARBER_IMAGE_RUN
           for i in $(seq 1 60); do curl -sf http://127.0.0.1:8103/health && exit 0; sleep 1; done
           echo "the image never became healthy"; docker logs barber-image; exit 1
-      - name: the journeys, end to end, against that image
-        env: { ENV: barber-image }
-        run: python -m pytest --ui tests/barber_ui/test_journeys.py -q --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber/image
+      - name: the journeys, end to end, against that image - a redeploy included
+        env:
+          ENV: barber-image
+          # A redeploy is a new container on the same volume. The redeploy journey
+          # books, redeploys, and checks the account, the booking and the sign-in
+          # all survived.
+          REDEPLOY_COMMAND: docker rm -f barber-image && $BARBER_IMAGE_RUN
+        run: python -m pytest --ui tests/barber_ui/test_journeys.py -q -rs --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber/image
       - name: keep the video and trace of any page test that failed
         if: failure()
         uses: actions/upload-artifact@v4

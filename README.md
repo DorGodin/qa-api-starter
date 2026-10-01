@@ -11,11 +11,11 @@ Clone it, run it, then point it at your own product.
 has just gone, and it leaves their screen. Recorded from the UI suite against the barbershop —
 `make ui-barber-watch K="looking"` runs it in front of you.*
 
-**514 tests, in CI on every push** — 404 against the demo API that ships in this repository,
-in six groups, and 110 against a second product in its own repository,
+**519 tests, in CI on every push** — 404 against the demo API that ships in this repository,
+in six groups, and 115 against a second product in its own repository,
 [barber-booking-api](https://github.com/DorGodin/barber-booking-api), reached only through its
 URL, its page tests on a desktop, an iPhone (WebKit, Safari's engine) and an Android phone. On top
-of them: load tests whose thresholds fail the pipeline, and **58 mutants** — rules
+of them: load tests whose thresholds fail the pipeline, and **65 mutants** — rules
 of the product broken on purpose, each of which a named suite must catch, run every night
 (`make mutate`).
 
@@ -284,7 +284,7 @@ what — and daylight saving, on whichever transition falls inside the booking w
 
 **And the booking page, in a real browser.** The barbershop serves a booking page at `/` —
 in Hebrew, right to left — and `tests/barber_ui/` drives it the way a customer and the
-owner do. 71 tests: twenty on the owner's management screen (hours, days off, a new barber,
+owner do. 76 tests: twenty on the owner's management screen (hours, days off, a new barber,
 prices in shekels, withdrawing a service — each checked from the customer's side), four on
 the popup every booking answers in (green when booked, red "השעה כבר
 תפוסה" when someone was faster, and modal: nothing behind it can be pressed), six are about
@@ -310,9 +310,21 @@ service with its price, on the screen; a customer signs up on the screen, is off
 times those hours allow, and books the last one of the day; the barber signs in and finds it in
 his diary; the customer cancels, and a second customer is offered that time and books it. Each
 person is a browser of their own. The API is used once, at the end, to check that what the
-screens showed is what was stored. A second journey closes a day with a day off and opens it
-again. In CI the journeys also run against the barbershop's Docker image — what would be
-deployed — not only against its source.
+screens showed is what was stored. The other journeys:
+
+- **a shared device** — one customer signs out and the next signs in on the same open page, and
+  finds nothing of the one before: no bookings, no name, and no username or password left in a
+  form. Writing it found that signing out only hid the screen, and the sign-up form still held
+  the password the last customer had signed up with. A refresh keeps the sign-in; signing out
+  is not undone by one;
+- **what the owner changes, seen by each customer** — a new price reaches the next booking and
+  not the one already made, a withdrawn service is no longer offered but its bookings stay, and
+  a booking the owner cancels shows as cancelled to its customer and its time is offered again;
+- **a day off** closes a day and taking it back reopens it;
+- **a redeploy** — in CI the journeys run against the barbershop's Docker image, what would be
+  deployed. One books, replaces the container with a new one on the same volume, and checks that
+  the account, the booking and the sign-in all survived. Proven both ways: against a redeploy that
+  loses the database, it fails.
 
 **And on a phone.** CI runs every page test three times: on a desktop, on an iPhone in WebKit —
 Safari's engine — and on an Android phone. `test_booking_page_mobile.py` also opens three phones of
@@ -342,7 +354,7 @@ runs these suites on every push.
 
 A green suite proves the product passes it. It does not prove the suite would fail if the
 product broke: a test can assert nothing and stay green. So `mutants/barber-booking.yml` holds
-58 rules of the barbershop broken on purpose — the booking lock, back-to-back slots, closing
+65 rules of the barbershop broken on purpose — the booking lock, back-to-back slots, closing
 time, daylight saving, the 24 hour cutoff, the Hebrew, the popup, the owner's screen, the phone
 layout, answers that arrive late — and
 for each one, the suite that must notice.
@@ -492,10 +504,10 @@ every helper that writes data must guard production. Claude Code reads it automa
 ## מה זה
 
 תשתית מוכנה לבדיקות API בפייתון ו-pytest. היא מגיעה עם API קטן לדוגמה, אז הבדיקות רצות
-מהרגע שמשכפלים את הריפו. **514 בדיקות, ב-CI בכל push** — 404 על ה-API לדוגמה שבתוך הריפו, בשש
-קבוצות, ו-110 על מוצר שני בריפו משלו, [barber-booking-api](https://github.com/DorGodin/barber-booking-api),
+מהרגע שמשכפלים את הריפו. **519 בדיקות, ב-CI בכל push** — 404 על ה-API לדוגמה שבתוך הריפו, בשש
+קבוצות, ו-115 על מוצר שני בריפו משלו, [barber-booking-api](https://github.com/DorGodin/barber-booking-api),
 שהן מכירות רק דרך הכתובת שלו, ובדיקות המסך שלו רצות על מחשב, על אייפון (WebKit, המנוע של Safari) ועל
-אנדרואיד. מעל זה: בדיקות עומס שהספים שלהן מפילים את הפייפליין, ו-**58 מוטציות** —
+אנדרואיד. מעל זה: בדיקות עומס שהספים שלהן מפילים את הפייפליין, ו-**65 מוטציות** —
 חוקים של המוצר שנשברים בכוונה, וכל אחד מהם חייב להיתפס על ידי סוויטה מסוימת, בהרצה לילית (`make mutate`).
 
 המטרה: להגיע למקום עבודה חדש ולא לבנות מאפס את מה שלוקח שבועות — שכבת האובייקטים, ניהול
@@ -734,7 +746,7 @@ ENV=barber pytest
 לעשות מה — ושעון קיץ, על המעבר שנופל בתוך חלון ההזמנה, יהיה אשר יהיה.
 
 **וגם מסך ההזמנה, בדפדפן אמיתי.** המספרה מגישה מסך הזמנה בכתובת `/` — בעברית, מימין
-לשמאל — והבדיקות ב-`tests/barber_ui/` מפעילות אותו כמו לקוח וכמו בעל המספרה. 71 בדיקות: עשרים על
+לשמאל — והבדיקות ב-`tests/barber_ui/` מפעילות אותו כמו לקוח וכמו בעל המספרה. 76 בדיקות: עשרים על
 מסך הניהול (שעות, ימי חופש, ספר חדש, מחירים בשקלים, הסתרת שירות — כל אחת נבדקת גם מהצד של הלקוח),
 ארבע על החלון הקופץ
 שכל הזמנה עונה בו (ירוק כשהתור נקבע, אדום "השעה כבר תפוסה" כשמישהו הקדים, והוא חוסם את הדף
@@ -758,8 +770,19 @@ make ui-barber-journeys                 # רק המסעות מקצה לקצה
 בעל המספרה מוסיף ספר, מקליד לו שעות ושירות עם מחיר, במסך; לקוח נרשם במסך, מקבל בדיוק את השעות
 שהשעות האלה מאפשרות, וקובע את האחרונה ביום; הספר מתחבר ומוצא את התור ביומן שלו; הלקוח מבטל,
 ולקוח שני מקבל את השעה הזו וקובע אותה. לכל אדם דפדפן משלו. ה-API משמש פעם אחת, בסוף, כדי לבדוק
-שמה שהמסכים הראו הוא מה שנשמר. מסע שני סוגר יום עם יום חופש ופותח אותו שוב. ב-CI המסעות רצים
-גם מול ה-Docker image של המספרה — מה שבאמת היה עולה לאוויר — ולא רק מול קוד המקור.
+שמה שהמסכים הראו הוא מה שנשמר. שאר המסעות:
+
+- **מכשיר משותף** — לקוח אחד יוצא והבא נכנס באותו דף פתוח, ולא מוצא שום דבר של הקודם: לא תורים,
+  לא שם, ולא שם משתמש או סיסמה שנשארו בטופס. כתיבת המסע גילתה שהיציאה רק הסתירה את המסך, וטופס
+  ההרשמה עדיין החזיק את הסיסמה שהלקוח הקודם נרשם איתה. רענון שומר על החיבור, ויציאה לא מתבטלת
+  ברענון;
+- **מה שבעל המספרה משנה, כפי שכל לקוח רואה אותו** — מחיר חדש מגיע להזמנה הבאה ולא לזו שכבר נקבעה,
+  שירות שהוסר כבר לא מוצע אבל התורים שלו נשארים, ותור שהבעלים ביטל מופיע כמבוטל אצל הלקוח והשעה
+  שלו מוצעת שוב;
+- **יום חופש** סוגר יום, וביטול החופש פותח אותו שוב;
+- **פריסה מחדש** — ב-CI המסעות רצים מול ה-Docker image של המספרה, מה שבאמת היה עולה לאוויר. אחד
+  מהם קובע תור, מחליף את הקונטיינר בחדש על אותו volume, ובודק שהחשבון, התור והחיבור שרדו. הוכח
+  לשני הכיוונים: מול פריסה מחדש שמאבדת את מסד הנתונים, הוא נכשל.
 
 **וגם בטלפון.** ה-CI מריץ כל בדיקת מסך שלוש פעמים: על מחשב, על אייפון ב-WebKit — המנוע של Safari —
 ועל אנדרואיד. בנוסף, `test_booking_page_mobile.py` פותח שלושה טלפונים משלו, ביניהם האייפון SE ברוחב
@@ -784,7 +807,7 @@ make ui-barber-journeys                 # רק המסעות מקצה לקצה
 ## הבדיקות באמת תופסות משהו? — בדיקות מוטציה
 
 סוויטה ירוקה מוכיחה שהמוצר עובר אותה. היא לא מוכיחה שהיא תיכשל אם המוצר יישבר: בדיקה יכולה לא
-לבדוק כלום ולהישאר ירוקה. לכן `mutants/barber-booking.yml` מחזיק 58 חוקים של המספרה שנשברים בכוונה —
+לבדוק כלום ולהישאר ירוקה. לכן `mutants/barber-booking.yml` מחזיק 65 חוקים של המספרה שנשברים בכוונה —
 הנעילה של ההזמנה, תורים צמודים, שעת הסגירה, שעון קיץ, 24 השעות, העברית, החלון הקופץ, מסך הבעלים,
 הפריסה בטלפון, תשובות שמגיעות באיחור —
 ולכל אחד, הסוויטה שחייבת לשים לב.

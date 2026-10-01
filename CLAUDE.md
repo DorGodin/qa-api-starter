@@ -281,6 +281,11 @@ the end, to check what was stored. A journey picks by what a person sees - a bar
 service's name - never by an id read from another screen: an id taken from the screen under test
 follows that screen's mistake. It runs against the source and, in CI, against the Docker image.
 
+The redeploy journey runs wherever `REDEPLOY_COMMAND` is set, and an environment that declares
+`"redeploy": true` (barber-image) fails it when the command is missing - a capability that can go
+missing must fail loudly, never turn into a skip. The next person on a shared device signs in
+with `navigate=False`: a navigation wipes the page, and with it what the last person left behind.
+
 ## Verifying before committing
 
 Gate a commit on the test command's own exit code - `pytest -q > out.txt; code=$?` - never

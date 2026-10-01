@@ -20,13 +20,17 @@ from utils.local_time import at_local, local_day, local_today, parse_instant
 
 
 class Held:
-    """Requests matching `matches` are held back, unanswered, until release()."""
+    """Requests matching `matches` are held back, unanswered, until release() -
+    at most `limit` of them; the rest go through."""
 
-    def __init__(self, page, matches) -> None:
-        self.page, self.matches, self.routes = page, matches, []
+    def __init__(self, page, matches, limit: int | None = None) -> None:
+        self.page, self.matches, self.limit, self.routes = page, matches, limit, []
         page.route(matches, self.hold)
 
     def hold(self, route) -> None:
+        if self.limit is not None and len(self.routes) >= self.limit:
+            route.continue_()
+            return
         self.routes.append(route)
 
     def release(self) -> None:
@@ -103,3 +107,23 @@ def test_the_bookings_of_the_barber_before_never_replace_the_bookings_of_the_bar
 
     expect(screen.rows()).to_have_count(1)
     expect(screen.row_at("13:00")).to_be_visible()
+
+
+def test_an_answer_for_the_person_who_signed_out_never_lands_in_the_page_they_left(
+    shop, account, ui_barber, ui_haircut, shop_tz
+):
+    errors = []
+    shop.page.on("pageerror", lambda error: errors.append(error))
+    shop.sign_in(account["username"], account["password"])
+    shop.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 8)).pick("10:00").book()
+    expect(shop.rows()).to_have_count(1)
+
+    held = Held(shop.page, lambda url: "/availability" in url or "/bookings?" in url)
+    shop.by("date").dispatch_event("change")
+    shop.by("logout").click()
+    held.release()
+    shop.settled()
+
+    expect(shop.by("slot")).to_have_count(0)
+    expect(shop.by("booking-row")).to_have_count(0)
+    assert errors == [], f"the page threw on an answer for someone no longer signed in: {errors}"

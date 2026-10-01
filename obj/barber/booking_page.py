@@ -41,8 +41,18 @@ class BookingPage:
         expect(self.by("login-form")).to_be_visible()
         return self
 
-    def sign_in(self, username: str, password: str) -> BookingPage:
-        self.open()
+    def reload(self) -> BookingPage:
+        """Refresh the page, as a person pulling it down on a phone does, and wait
+        until it has settled - signed in again, or showing the sign-in form."""
+        self.page.reload()
+        self.settled()
+        return self
+
+    def sign_in(self, username: str, password: str, navigate: bool = True) -> BookingPage:
+        """navigate=False signs in on the page as it is, the way the next person
+        on a shared device does: a navigation would wipe what the last one left."""
+        if navigate:
+            self.open()
         self.page.get_by_label(USERNAME, exact=True).first.fill(username)
         self.page.get_by_label(PASSWORD, exact=True).first.fill(password)
         self.by("login").click()
@@ -50,8 +60,9 @@ class BookingPage:
         self.settled()
         return self
 
-    def sign_up(self, name: str, username: str, password: str) -> BookingPage:
-        self.open()
+    def sign_up(self, name: str, username: str, password: str, navigate: bool = True) -> BookingPage:
+        if navigate:
+            self.open()
         self.page.get_by_label(YOUR_NAME, exact=True).fill(name)
         self.by("signup-username").fill(username)
         self.by("signup-password").fill(password)

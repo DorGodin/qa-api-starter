@@ -78,6 +78,7 @@
     "auth": { "type": "password_token", "path": "/auth/token" },
     "health_path": "/health",
     "test_hooks": false,
-    "shop_tz": "Asia/Jerusalem"
+    "shop_tz": "Asia/Jerusalem",
+    "redeploy": true
   }
 }

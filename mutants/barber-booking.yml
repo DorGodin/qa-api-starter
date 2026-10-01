@@ -483,3 +483,68 @@ mutants:
   changes:
   - find: query = query.where(Booking.barber_id == user.id)
     replace: query = query.where(Booking.customer_id == user.id)
+- name: a refresh signs the person out again
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '
+
+      resume();
+
+      </script>'
+    replace: '
+
+      </script>'
+- name: a refresh brings back a person who signed out
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  token = me = null;\n  forget();\n"
+    replace: '  token = me = null;
+
+      '
+- name: a remembered sign-in the server refuses is kept, and the page opens on an error
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    if (!r.ok) {\n      token = null;\n      forget();\n      return;\n    }\n    me = r.data;"
+    replace: '    me = r.data;'
+- name: signing out leaves the last person's bookings and the owner's tables in the page
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  for (const id of ["bookings", "slots", "hours", "days-off", "services", "barber", "service"]) $(id).replaceChildren();
+
+      '
+    replace: ''
+- name: signing out leaves the last person's name in the page
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  for (const id of ["display-name", "hours-for", "confirm-text"]) $(id).textContent = "";
+
+      '
+    replace: ''
+- name: the forms keep what the last person typed, the password included
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  clearForms();\n  $(\"auth\").hidden = false;"
+    replace: '  $("auth").hidden = false;'
+  - find: "  clearForms();\n  $(\"auth\").hidden = true;"
+    replace: '  $("auth").hidden = true;'
+- name: an answer for the person who signed out lands on the next person's screen
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  for (const name of Object.keys(latest)) latest[name] += 1;
+
+      '
+    replace: ''

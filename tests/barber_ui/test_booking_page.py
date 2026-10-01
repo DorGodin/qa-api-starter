@@ -108,3 +108,16 @@ def test_signing_up_through_the_page_signs_you_straight_in(shop, customers):
 
     expect(shop.by("app")).to_be_visible()
     expect(shop.by("display-name")).to_contain_text(payload["display_name"])
+
+
+def test_a_remembered_sign_in_the_server_no_longer_accepts_is_dropped_on_refresh(shop):
+    shop.open()
+    shop.page.evaluate("() => sessionStorage.setItem('barber.session', 'expired-or-forged')")
+
+    shop.reload()
+
+    expect(shop.by("login-form")).to_be_visible()
+    expect(shop.by("app")).to_be_hidden()
+    assert (
+        shop.page.evaluate("() => sessionStorage.getItem('barber.session')") is None
+    ), "a dead sign-in is not kept"

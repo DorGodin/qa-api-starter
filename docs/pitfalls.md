@@ -570,3 +570,24 @@ by accident: the list is sorted by name, and a Latin "QA barber ..." sorts befor
 **Rule:** a journey takes no id from the screen it tests; the customer picks by the name the owner
 typed, and the owner's screen is checked to show that name. Test data looks like the real data - a
 Hebrew name in a Hebrew shop - or its quirks, like sorting first, hide defects.
+
+## 2026-10-01 — Signing out only hid the screen
+
+The page's sign-out set the token to null and hid the sections. The previous person's bookings,
+times and owner tables stayed in the page, and the sign-up form kept the name, username and
+password they had signed up with - on a shared device, filled in for the next person.
+
+**Rule:** a sign-out test signs the next person in on the same open page and reads every value
+and every word left in it, hidden ones included. Found by writing that journey, not by any test
+that signed in on a fresh page.
+
+## 2026-10-01 — Two sign-out tests passed for reasons that had nothing to do with sign-out
+
+The shared-device journey refreshed the page before signing out; a refresh clears the forms on
+its own, so a page that never cleared them passed. The late-answer test released the held answer
+after the next person had signed in; their newer ticket dropped it anyway, so the sign-out's own
+protection was never exercised. Both were found by mutants that survived.
+
+**Rule:** a test of what one step does must not have another step that does the same thing in
+between - no refresh before the sign-out under test, and the held answer released in the window
+the protection exists for: after the sign-out, before anyone else signs in.

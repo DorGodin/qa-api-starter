@@ -14,7 +14,11 @@ four people on four phones would be. Under --device, all of them use that phone.
 
 from __future__ import annotations
 
+import os
 import secrets
+import subprocess
+import time
+import urllib.request
 from datetime import datetime, timedelta
 
 import pytest
@@ -53,8 +57,8 @@ def new_account(run_id: str, who: str) -> dict:
     }
 
 
-def signed_up(screen: BookingPage, account: dict) -> BookingPage:
-    screen.sign_up(account["name"], account["username"], account["password"])
+def signed_up(screen: BookingPage, account: dict, navigate: bool = True) -> BookingPage:
+    screen.sign_up(account["name"], account["username"], account["password"], navigate=navigate)
     expect(screen.by("app")).to_be_visible()
     screen.settled()
     return screen
@@ -174,3 +178,140 @@ def test_a_day_off_given_on_the_screen_closes_the_day_and_taking_it_back_reopens
     assert owner.days_off() == []
     customer.choose_by_name(barber["name"], service, day)
     assert customer.times() == quarter_hours("10:00", "11:30"), "the day is back, with its hours"
+
+
+def values_left_in_the_page(screen: BookingPage) -> list[str]:
+    """Everything a person could read or send from the page without signing in:
+    the values in every field, and every word of text - hidden ones included."""
+    return screen.page.evaluate(
+        """() => [...document.querySelectorAll("input, select")].map((el) => el.value)
+            .concat([document.body.textContent])"""
+    )
+
+
+def test_on_a_shared_device_the_next_person_finds_nothing_of_the_one_before(
+    person, run_id, credentials, shop_tz
+):
+    day = local_day(shop_tz, 7)
+    owner = person(OwnerScreen).sign_in(*credentials("owner"))
+    barber = open_a_barber(owner, run_id, WEEKDAYS[day.weekday()], "10:00", "12:00")
+    service = f"QA journey cut {run_id}"
+    add_a_service(owner, service, 30, "80")
+
+    device = person()
+    first = new_account(run_id, "first")
+    signed_up(device, first)
+    device.choose_by_name(barber["name"], service, day).pick("10:00").book()
+    expect(device.row_at("10:00")).to_have_attribute("data-status", "confirmed")
+
+    device.by("logout").click()
+    expect(device.by("login-form")).to_be_visible()
+    left = values_left_in_the_page(device)
+    for value in (first["name"], first["username"], first["password"]):
+        assert not any(value in item for item in left), f"{value!r} is still in the page after signing out"
+    expect(device.by("booking-row")).to_have_count(0)
+
+    second = new_account(run_id, "second")
+    signed_up(device, second, navigate=False)
+    expect(device.by("display-name")).to_contain_text(second["name"])
+    expect(device.by("no-bookings")).to_be_visible()
+    expect(device.by("booking-row")).to_have_count(0)
+    device.choose_by_name(barber["name"], service, day).pick("11:00").book()
+
+    device.reload()
+    expect(device.by("app")).to_be_visible()
+    expect(device.by("display-name")).to_contain_text(second["name"])
+    expect(device.row_at("11:00")).to_have_attribute("data-status", "confirmed")
+
+    device.by("logout").click()
+    device.reload()
+    expect(device.by("login-form")).to_be_visible()
+    expect(device.by("app")).to_be_hidden()
+
+
+def test_what_the_owner_changes_reaches_each_customer_the_way_it_should(
+    person, run_id, credentials, bookings, shop_tz
+):
+    day = local_day(shop_tz, 7)
+    owner = person(OwnerScreen).sign_in(*credentials("owner"))
+    barber = open_a_barber(owner, run_id, WEEKDAYS[day.weekday()], "10:00", "14:00")
+    cut, trim = f"QA journey cut {run_id}", f"QA journey trim {run_id}"
+    cut_id = add_a_service(owner, cut, 30, "80")
+    add_a_service(owner, trim, 30, "50")
+
+    first = signed_up(person(), new_account(run_id, "first"))
+    first.choose_by_name(barber["name"], cut, day).pick("10:00").book()
+    assert "80.00 ₪" in first.last_popup["text"]
+
+    owner.save_service(cut_id, price="95")
+    expect(owner.message()).to_have_attribute("data-kind", "ok")
+    first.reload()
+    assert "80.00 ₪" in first.text(first.row_at("10:00")), "a booking keeps the price it was made at"
+
+    second = signed_up(person(), new_account(run_id, "second"))
+    assert "95.00 ₪" in second.text(second.by("service").locator("option", has_text=cut))
+    second.choose_by_name(barber["name"], cut, day).pick("11:00").book()
+    assert "95.00 ₪" in second.last_popup["text"], "a new booking takes the new price"
+
+    owner.save_service(cut_id, offered=False)
+    expect(owner.message()).to_have_attribute("data-kind", "ok")
+    third = signed_up(person(), new_account(run_id, "third"))
+    expect(third.by("service").locator("option", has_text=cut)).to_have_count(0)
+    first.reload()
+    expect(first.row_at("10:00")).to_have_attribute("data-status", "confirmed")
+
+    owner.select_barber(barber["id"])
+    owner.cancel("10:00")
+    first.reload()
+    expect(first.row_at("10:00")).to_have_attribute("data-status", "cancelled")
+    third.choose_by_name(barber["name"], trim, day)
+    assert "10:00" in third.times(), "the time the owner freed is offered again"
+
+    stored = {
+        (parse_instant(b["start"]), b["status"], b["price_minor"])
+        for b in bookings.listing(persona="owner", barber_id=barber["id"])["content"]
+    }
+    assert stored == {
+        (at_local(shop_tz, day, "10:00"), "cancelled", 8000),
+        (at_local(shop_tz, day, "11:00"), "confirmed", 9500),
+    }
+
+
+def healthy(env_config, seconds: int = 90) -> None:
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        try:
+            with urllib.request.urlopen(env_config["url"] + env_config["health_path"], timeout=2) as resp:
+                if resp.status == 200:
+                    return
+        except OSError:
+            time.sleep(1)
+    raise RuntimeError(f"{env_config['url']} did not come back within {seconds}s of the redeploy")
+
+
+def test_accounts_bookings_and_a_sign_in_survive_a_redeploy(person, run_id, credentials, env_config, shop_tz):
+    command = os.environ.get("REDEPLOY_COMMAND")
+    if not command and env_config.get("redeploy"):
+        pytest.fail(f"{env_config['url']} must be redeployed by this test, and REDEPLOY_COMMAND is not set")
+    if not command:
+        pytest.skip("this environment cannot be redeployed from a test; barber-image in CI can")
+    day = local_day(shop_tz, 7)
+    owner = person(OwnerScreen).sign_in(*credentials("owner"))
+    barber = open_a_barber(owner, run_id, WEEKDAYS[day.weekday()], "10:00", "12:00")
+    service = f"QA journey cut {run_id}"
+    add_a_service(owner, service, 30, "80")
+    account = new_account(run_id, "customer")
+    customer = signed_up(person(), account)
+    customer.choose_by_name(barber["name"], service, day).pick("10:00").book()
+
+    subprocess.run(command, shell=True, check=True, timeout=300)
+    healthy(env_config)
+
+    customer.reload()
+    expect(customer.by("app")).to_be_visible()
+    expect(customer.row_at("10:00")).to_have_attribute("data-status", "confirmed")
+    again = person().sign_in(account["username"], account["password"])
+    expect(again.row_at("10:00")).to_be_visible()
+    owner.reload()
+    owner.select_barber(barber["id"])
+    expect(owner.row_at("10:00")).to_be_visible()
