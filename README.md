@@ -11,10 +11,11 @@ Clone it, run it, then point it at your own product.
 has just gone, and it leaves their screen. Recorded from the UI suite against the barbershop —
 `make ui-barber-watch K="looking"` runs it in front of you.*
 
-**485 tests, in CI on every push** — 404 against the demo API that ships in this repository,
-in six groups, and 81 against a second product in its own repository,
+**512 tests, in CI on every push** — 404 against the demo API that ships in this repository,
+in six groups, and 108 against a second product in its own repository,
 [barber-booking-api](https://github.com/DorGodin/barber-booking-api), reached only through its
-URL. On top of them: load tests whose thresholds fail the pipeline, and **44 mutants** — rules
+URL, its page tests on a desktop, an iPhone (WebKit, Safari's engine) and an Android phone. On top
+of them: load tests whose thresholds fail the pipeline, and **56 mutants** — rules
 of the product broken on purpose, each of which a named suite must catch, run every night
 (`make mutate`).
 
@@ -283,7 +284,7 @@ what — and daylight saving, on whichever transition falls inside the booking w
 
 **And the booking page, in a real browser.** The barbershop serves a booking page at `/` —
 in Hebrew, right to left — and `tests/barber_ui/` drives it the way a customer and the
-owner do. 42 tests: twenty on the owner's management screen (hours, days off, a new barber,
+owner do. 69 tests: twenty on the owner's management screen (hours, days off, a new barber,
 prices in shekels, withdrawing a service — each checked from the customer's side), four on
 the popup every booking answers in (green when booked, red "השעה כבר
 תפוסה" when someone was faster, and modal: nothing behind it can be pressed), six are about
@@ -298,7 +299,26 @@ must send one request, and a name that looks like HTML that must never run. To w
 make ui-barber-watch                    # a visible browser, at human speed
 make ui-barber-watch K="looking"        # just the two-customer race
 make ui-barber-record                   # a video and a step-by-step trace of every test
+make ui-barber-mobile                   # every page test on an iPhone (WebKit) and an Android phone
 ```
+
+**And on a phone.** CI runs every page test three times: on a desktop, on an iPhone in WebKit —
+Safari's engine — and on an Android phone. `test_booking_page_mobile.py` also opens three phones of
+its own, the 320px iPhone SE among them, and checks what only a phone gets wrong: nothing reaches
+past the edge of the screen, everything pressable is big enough for a finger (44px), no field is
+small enough for Safari to zoom the page, the popup fits, a booking made by touch, and the owner's
+menu that jumps between sections. WebKit found two defects Chromium never shows — Safari drew the
+dropdowns itself, 23px tall whatever the CSS said, and let a long service name widen the page
+past the screen — so the mutation catalogue has a `ui-webkit` suite: those two mutants survive
+every Chromium run.
+
+**A flaky test that was a real bug.** One page test failed once in CI and passed on the retry.
+The cause: changing the barber, service or day asks the server again, and the answers can come
+back out of order. A late answer for an earlier choice replaced the current one — the date field
+said the 8th while the times were today's, and the owner could save one barber's hours onto
+another. The page now drops any answer older than the latest request, and
+`test_booking_page_late_answers.py` holds the earlier answer back on purpose and releases it
+after the current one, so the race happens on every run instead of once in a while.
 
 **Every rule was broken on purpose in the product, one at a time, and each break was
 caught.** Two were not the first time: one assertion compared `…00Z` with `…00.000Z` and so
@@ -310,8 +330,9 @@ runs these suites on every push.
 
 A green suite proves the product passes it. It does not prove the suite would fail if the
 product broke: a test can assert nothing and stay green. So `mutants/barber-booking.yml` holds
-44 rules of the barbershop broken on purpose — the booking lock, back-to-back slots, closing
-time, daylight saving, the 24 hour cutoff, the Hebrew, the popup, the owner's screen — and
+56 rules of the barbershop broken on purpose — the booking lock, back-to-back slots, closing
+time, daylight saving, the 24 hour cutoff, the Hebrew, the popup, the owner's screen, the phone
+layout, answers that arrive late — and
 for each one, the suite that must notice.
 
 ```bash
@@ -459,9 +480,10 @@ every helper that writes data must guard production. Claude Code reads it automa
 ## מה זה
 
 תשתית מוכנה לבדיקות API בפייתון ו-pytest. היא מגיעה עם API קטן לדוגמה, אז הבדיקות רצות
-מהרגע שמשכפלים את הריפו. **485 בדיקות, ב-CI בכל push** — 404 על ה-API לדוגמה שבתוך הריפו, בשש
-קבוצות, ו-81 על מוצר שני בריפו משלו, [barber-booking-api](https://github.com/DorGodin/barber-booking-api),
-שהן מכירות רק דרך הכתובת שלו. מעל זה: בדיקות עומס שהספים שלהן מפילים את הפייפליין, ו-**44 מוטציות** —
+מהרגע שמשכפלים את הריפו. **512 בדיקות, ב-CI בכל push** — 404 על ה-API לדוגמה שבתוך הריפו, בשש
+קבוצות, ו-108 על מוצר שני בריפו משלו, [barber-booking-api](https://github.com/DorGodin/barber-booking-api),
+שהן מכירות רק דרך הכתובת שלו, ובדיקות המסך שלו רצות על מחשב, על אייפון (WebKit, המנוע של Safari) ועל
+אנדרואיד. מעל זה: בדיקות עומס שהספים שלהן מפילים את הפייפליין, ו-**56 מוטציות** —
 חוקים של המוצר שנשברים בכוונה, וכל אחד מהם חייב להיתפס על ידי סוויטה מסוימת, בהרצה לילית (`make mutate`).
 
 המטרה: להגיע למקום עבודה חדש ולא לבנות מאפס את מה שלוקח שבועות — שכבת האובייקטים, ניהול
@@ -700,7 +722,7 @@ ENV=barber pytest
 לעשות מה — ושעון קיץ, על המעבר שנופל בתוך חלון ההזמנה, יהיה אשר יהיה.
 
 **וגם מסך ההזמנה, בדפדפן אמיתי.** המספרה מגישה מסך הזמנה בכתובת `/` — בעברית, מימין
-לשמאל — והבדיקות ב-`tests/barber_ui/` מפעילות אותו כמו לקוח וכמו בעל המספרה. 42 בדיקות: עשרים על
+לשמאל — והבדיקות ב-`tests/barber_ui/` מפעילות אותו כמו לקוח וכמו בעל המספרה. 69 בדיקות: עשרים על
 מסך הניהול (שעות, ימי חופש, ספר חדש, מחירים בשקלים, הסתרת שירות — כל אחת נבדקת גם מהצד של הלקוח),
 ארבע על החלון הקופץ
 שכל הזמנה עונה בו (ירוק כשהתור נקבע, אדום "השעה כבר תפוסה" כשמישהו הקדים, והוא חוסם את הדף
@@ -715,7 +737,23 @@ ENV=barber pytest
 make ui-barber-watch                    # דפדפן פתוח, במהירות של בן אדם
 make ui-barber-watch K="looking"        # רק המרוץ בין שני הלקוחות
 make ui-barber-record                   # סרטון ומעקב צעד-אחרי-צעד לכל בדיקה
+make ui-barber-mobile                   # כל בדיקות המסך על אייפון (WebKit) ועל אנדרואיד
 ```
+
+**וגם בטלפון.** ה-CI מריץ כל בדיקת מסך שלוש פעמים: על מחשב, על אייפון ב-WebKit — המנוע של Safari —
+ועל אנדרואיד. בנוסף, `test_booking_page_mobile.py` פותח שלושה טלפונים משלו, ביניהם האייפון SE ברוחב
+320px, ובודק את מה שרק טלפון מקלקל: ששום דבר לא חורג מקצה המסך, שכל מה שלוחצים עליו גדול מספיק
+לאצבע (44px), ששום שדה לא קטן מספיק כדי ש-Safari יגדיל את הדף, שהחלון הקופץ נכנס במסך, קביעת תור
+בנגיעה, ותפריט הקפיצה של הבעלים. WebKit מצא שני פגמים ש-Chromium לא מראה לעולם — Safari צייר את
+הרשימות הנפתחות בעצמו, בגובה 23px בלי קשר ל-CSS, ונתן לשם שירות ארוך להרחיב את הדף מעבר למסך —
+ולכן בקטלוג המוטציות יש סוויטה `ui-webkit`: שתי המוטציות האלה שורדות כל הרצה ב-Chromium.
+
+**בדיקה מהבהבת שהייתה באג אמיתי.** בדיקת מסך אחת נכשלה פעם אחת ב-CI ועברה בהרצה הבאה. הסיבה:
+כל החלפה של ספר, שירות או יום שואלת את השרת מחדש, והתשובות יכולות לחזור בסדר אחר. תשובה מאוחרת
+לבחירה קודמת החליפה את הנוכחית — בשדה התאריך היה כתוב 8 בחודש והשעות היו של היום, ובעל המספרה
+היה יכול לשמור שעות של ספר אחד על ספר אחר. עכשיו הדף זורק כל תשובה שישנה מהבקשה האחרונה, ו-
+`test_booking_page_late_answers.py` מעכב בכוונה את התשובה הקודמת ומשחרר אותה אחרי הנוכחית, כך
+שהמרוץ קורה בכל הרצה ולא רק מדי פעם.
 
 **כל חוק נשבר בכוונה במוצר, אחד אחרי השני, וכל שבירה נתפסה.** שתיים לא נתפסו בפעם הראשונה:
 בדיקה אחת השוותה `…00Z` ל-`…00.000Z` ולכן עברה בלי קשר למה שהמוצר עשה, ושום בדיקה לא וידאה
@@ -725,8 +763,9 @@ make ui-barber-record                   # סרטון ומעקב צעד-אחרי-
 ## הבדיקות באמת תופסות משהו? — בדיקות מוטציה
 
 סוויטה ירוקה מוכיחה שהמוצר עובר אותה. היא לא מוכיחה שהיא תיכשל אם המוצר יישבר: בדיקה יכולה לא
-לבדוק כלום ולהישאר ירוקה. לכן `mutants/barber-booking.yml` מחזיק 44 חוקים של המספרה שנשברים בכוונה —
-הנעילה של ההזמנה, תורים צמודים, שעת הסגירה, שעון קיץ, 24 השעות, העברית, החלון הקופץ, מסך הבעלים —
+לבדוק כלום ולהישאר ירוקה. לכן `mutants/barber-booking.yml` מחזיק 56 חוקים של המספרה שנשברים בכוונה —
+הנעילה של ההזמנה, תורים צמודים, שעת הסגירה, שעון קיץ, 24 השעות, העברית, החלון הקופץ, מסך הבעלים,
+הפריסה בטלפון, תשובות שמגיעות באיחור —
 ולכל אחד, הסוויטה שחייבת לשים לב.
 
 ```bash

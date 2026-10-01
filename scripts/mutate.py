@@ -51,6 +51,21 @@ PORT = 8102
 SUITES = {
     "api": [sys.executable, "-m", "pytest", "-q", "-x", "-p", "no:cacheprovider", "tests/barber"],
     "ui": [sys.executable, "-m", "pytest", "-q", "-x", "-p", "no:cacheprovider", "--ui", "tests/barber_ui"],
+    # Safari's engine. Some defects exist only there - a select drawn by the
+    # browser, 23px tall whatever the CSS says - and survive every Chromium run.
+    "ui-webkit": [
+        sys.executable,
+        "-m",
+        "pytest",
+        "-q",
+        "-x",
+        "-p",
+        "no:cacheprovider",
+        "--ui",
+        "tests/barber_ui/test_booking_page_mobile.py",
+        "--browser",
+        "webkit",
+    ],
     "load": [
         sys.executable,
         "scripts/perf_run.py",

@@ -7,26 +7,12 @@ import secrets
 import pytest
 from playwright.sync_api import expect
 
-from obj.barber.booking_page import OwnerScreen
 from utils.local_time import at_local, local_day, next_weekday, parse_instant
 
 SHOP_HOURS = {day: ["10:00", "19:00"] for day in ("sun", "mon", "tue", "wed", "thu")} | {
     "fri": None,
     "sat": None,
 }
-
-
-@pytest.fixture
-def owner_screen(page, env_config, credentials) -> OwnerScreen:
-    """Signs in on first use, so a test can create what it needs first - the page
-    reads its list of barbers once, at sign-in."""
-    screen = OwnerScreen(page, env_config["url"])
-
-    def _open() -> OwnerScreen:
-        username, password = credentials("owner")
-        return screen.sign_in(username, password)
-
-    return _open
 
 
 def offered(barbers, barber_id, day, service_id) -> list[str]:

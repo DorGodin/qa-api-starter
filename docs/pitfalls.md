@@ -518,3 +518,44 @@ peak users times duration, at an iteration no faster than a millisecond), never 
 Assert money by reconciling it - what left the balance equals the price times what was
 charged for - not by waiting to see whether it runs out. Proven against a demo copy that
 charges double: zero refusals, and `unreconciled_balance` failed the run.
+
+## 2026-10-01 — The UI fixture forced a desktop window over every --device
+
+`tests/barber_ui/conftest.py` returned a fixed 1100x760 viewport from `browser_context_args`, so
+`--device "iPhone 13"` changed the user agent and touch but kept the desktop screen. A mobile run
+would have passed as a desktop run - green, and testing nothing about phones.
+
+**Rule:** a fixture that sets the viewport returns the device's own when `--device` is given. Check
+that a phone run is a phone run: a layout assertion that differs between the two must fail on one of
+them if the viewport is wrong.
+
+## 2026-10-01 — A flaky page test was a race in the product
+
+`test_dates_are_written_in_hebrew` failed once in CI and passed everywhere else. Changing the
+barber, service and day sends one request each, and the answer for today - past 15:00, so without
+15:00 - landed after the answer for the day chosen and replaced it. In the product that means the
+date field says one day while the times are for another, and the owner can save one barber's
+hours onto the barber whose name is on the screen.
+
+**Rule:** treat a flaky test as a bug report. Reproduce it by forcing the order - hold the earlier
+response with `page.route`, release it after the later one - and only then fix. Every refresh that
+renders a server answer must drop an answer older than its latest request.
+
+## 2026-10-01 — Two defects existed only in Safari's engine
+
+On a 320px iPhone, Safari drew the selects itself, 23px tall whatever `min-height` said, and let a
+long service option widen the page past the screen. Every Chromium run, desktop and phone, was green.
+
+**Rule:** phone tests run on WebKit as well as Chromium, and a mutant for a defect only one engine
+shows names that engine's suite (`ui-webkit`). Proven: run as Chromium-only mutants, both survive.
+
+## 2026-10-01 — A squeezed button passed because Chromium hides the squeeze
+
+The mutant that let a row shrink its cancel button survived: the button went from 59px to 44px,
+and the check compared `scrollWidth` with `clientWidth`. Chromium lets the words slide into the
+padding up to the border, so nothing overflows there - the button only looks broken. WebKit did
+overflow. Measuring words plus padding against the width caught the mutant, and on its first run
+also caught a real one nobody had noticed: the sign-out button, squeezed by the owner's name.
+
+**Rule:** measure what a person sees, not what the engine reports as overflow. A survivor is a
+missing test until it is proven equivalent - prove it in both engines before deciding.

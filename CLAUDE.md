@@ -246,7 +246,9 @@ sends it.
 ## Mutation testing
 
 `mutants/barber-booking.yml` is the proof that the barbershop suites catch what they claim:
-each entry breaks one rule and names the suite (`api`, `ui`, `load`) that must go red.
+each entry breaks one rule and names the suite (`api`, `ui`, `ui-webkit`, `load`) that must go red.
+`ui-webkit` is the phone tests on Safari's engine: a defect only one engine shows gets a mutant on
+that engine's suite, or it survives every run and proves nothing.
 
 - **A new rule in a suite gets a mutant in the same change.** A test nobody has seen fail
   has not been shown to test anything.
@@ -257,6 +259,19 @@ each entry breaks one rule and names the suite (`api`, `ui`, `load`) that must g
   twice and one protection was removed. Prove which by breaking the other one too; never
   delete a survivor to make the report green.
 - Runs never touch the product's checkout and never reach the history (`QA_NO_RECORD=1`).
+
+## Page tests on phones
+
+Every barbershop page test runs three ways in CI - desktop, `--browser webkit --device "iPhone 13"`
+and `--device "Pixel 7"` (`make ui-barber-mobile`). A fixture that sets the viewport must leave a
+`--device` viewport alone; one that does not turns the phone run back into a desktop run without a
+single failure. Phone-only rules (a 44px finger, a 16px field, nothing past a 320px edge) live in
+`tests/barber_ui/test_booking_page_mobile.py`, which opens its own phones so it runs in every run.
+
+**A flaky page test is a bug report until it is proven otherwise.** Never answer one with a retry
+or a longer timeout. Find the order of events that fails, and force it - hold a response back
+with `page.route` and release it later (`test_booking_page_late_answers.py`) - so the test fails
+on every run until the product is fixed.
 
 ## Verifying before committing
 

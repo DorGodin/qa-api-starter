@@ -11,6 +11,8 @@ from utils.local_time import at_local, local_day
 LATIN = re.compile(r"[A-Za-z]")
 HEBREW = re.compile(r"[\u0590-\u05FF]")
 FSI, PDI = "\u2068", "\u2069"
+# Up to this width the page stacks its two columns (its @media max-width: 760px).
+PHONE_WIDTH = 760
 
 
 def test_the_page_is_hebrew_and_its_layout_is_mirrored(signed_in):
@@ -20,7 +22,10 @@ def test_the_page_is_hebrew_and_its_layout_is_mirrored(signed_in):
 
     booking = signed_in.by("left-panel").bounding_box()
     bookings = signed_in.by("right-panel").bounding_box()
-    assert booking["x"] > bookings["x"], "booking comes first, and in Hebrew first is on the right"
+    if signed_in.page.viewport_size["width"] > PHONE_WIDTH:
+        assert booking["x"] > bookings["x"], "booking comes first, and in Hebrew first is on the right"
+    else:
+        assert booking["y"] < bookings["y"], "on a phone the columns stack, and booking comes first - on top"
 
 
 def test_times_keep_their_own_order_inside_the_right_to_left_page(signed_in, ui_barber, ui_haircut, shop_tz):

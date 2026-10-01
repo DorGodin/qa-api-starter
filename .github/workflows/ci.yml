@@ -157,11 +157,17 @@ jobs:
       - name: the booking race under load - a double booking or a 5xx fails it
         env: { ENV: barber }
         run: python scripts/perf_run.py perf/barber/booking_race.js --profile load -e VUS=10 -e RAMP=2s -e HOLD=8s
-      - name: install the browser
-        run: python -m playwright install --with-deps chromium
+      - name: install the browsers - Chromium, and WebKit for Safari
+        run: python -m playwright install --with-deps chromium webkit
       - name: the booking page, in a real browser
         env: { ENV: barber }
         run: python -m pytest --ui tests/barber_ui -q --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber
+      - name: the booking page on an iPhone - every page test, on Safari's engine
+        env: { ENV: barber }
+        run: python -m pytest --ui tests/barber_ui -q --browser webkit --device "iPhone 13" --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber/iphone
+      - name: the booking page on an Android phone - every page test
+        env: { ENV: barber }
+        run: python -m pytest --ui tests/barber_ui -q --browser chromium --device "Pixel 7" --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber/android
       - name: keep the video and trace of any page test that failed
         if: failure()
         uses: actions/upload-artifact@v4
@@ -190,7 +196,8 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install -q -r requirements.lock.txt
       - run: pip install -r requirements.lock.txt
-      - run: python -m playwright install --with-deps chromium
+      # WebKit for the ui-webkit mutants: defects only Safari has survive a Chromium run.
+      - run: python -m playwright install --with-deps chromium webkit
       - uses: grafana/setup-k6-action@v1
       - name: every mutant must be caught
         run: python scripts/mutate.py --product barber-booking-api

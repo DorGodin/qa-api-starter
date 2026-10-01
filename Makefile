@@ -85,6 +85,10 @@ ui:             ## browser suite (needs: playwright install chromium)
 ui-barber:      ## the barbershop's booking page in a real browser (start the barbershop first)
 	ENV=barber $(PY) -m pytest --ui tests/barber_ui
 
+ui-barber-mobile: ## every barbershop page test on an iPhone (WebKit, Safari's engine) and an Android phone (needs: playwright install webkit)
+	ENV=barber $(PY) -m pytest --ui tests/barber_ui --browser webkit --device "iPhone 13"
+	ENV=barber $(PY) -m pytest --ui tests/barber_ui --browser chromium --device "Pixel 7"
+
 ui-barber-watch: ## the same, in a visible browser at human speed; SLOWMO=ms, K=name filter
 	ENV=barber $(PY) -m pytest --ui tests/barber_ui --headed --slowmo $(or $(SLOWMO),600) $(if $(K),-k "$(K)",)
 

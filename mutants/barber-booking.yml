@@ -1,7 +1,8 @@
 # Mutation catalogue for the barbershop (github.com/DorGodin/barber-booking-api).
 #
 # Each mutant breaks one rule of the product on purpose and names the suite that
-# must notice: api (tests/barber), ui (tests/barber_ui, a real browser) or load
+# must notice: api (tests/barber), ui (tests/barber_ui, a real browser), ui-webkit
+# (the phone tests on Safari's engine, for defects only Safari has) or load
 # (perf/barber/booking_race.js). `find` must appear exactly once in `file`;
 # `make mutate-check` fails when the product changes under an anchor.
 #
@@ -371,4 +372,100 @@ mutants:
   changes:
   - find: |2
         name_taken: () => "כבר יש שירות בשם הזה.",
+    replace: ''
+- name: a late answer for an earlier day replaces the times for the day chosen
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "availability?${params}`);\n  if (!current()) return;"
+    replace: availability?${params}`);
+- name: a late answer for the barber before replaces the bookings on the screen
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "const r = await api(\"GET\", `/bookings?${params}`);\n  if (!current()) return;"
+    replace: const r = await api("GET", `/bookings?${params}`);
+- name: a late answer for the barber before replaces the hours, and saving writes them onto the barber chosen
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "api(\"GET\", `/barbers/${barberId}/time-off`)]);\n  if (!current()) return;"
+    replace: api("GET", `/barbers/${barberId}/time-off`)]);
+- name: on a phone the two columns stay side by side
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  @media (max-width: 760px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+      '
+    replace: ''
+- name: fields small enough for Safari on iOS to zoom the page
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: padding:9px 10px; font-size:16px;
+    replace: padding:9px 10px; font-size:15px;
+- name: buttons and fields the size of a mouse pointer on a touch screen
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    button, input:not([type="checkbox"]), select, .owner-nav a { min-height:44px; }
+
+      '
+    replace: ''
+- name: the owner's section menu never shows
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  $("owner-nav").hidden = false;
+
+      '
+    replace: ''
+- name: a section's title lands under the menu that stays on top
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  @media (max-width: 760px) { [data-section] { scroll-margin-top:72px; } }
+
+      '
+    replace: ''
+- name: a row squeezes its button below the width of its own label
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  li > button { flex-shrink:0; }
+
+      '
+    replace: ''
+- name: Safari draws its own select, 23px tall whatever the CSS says
+  file: app/static/index.html
+  catches:
+  - ui-webkit
+  changes:
+  - find: 'select { -webkit-appearance:none; appearance:none; '
+    replace: 'select { '
+- name: a long option widens the page in Safari
+  file: app/static/index.html
+  catches:
+  - ui-webkit
+  changes:
+  - find: ' overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'
+    replace: ''
+- name: a long name squeezes the sign-out button on a narrow phone
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  [data-testid="whoami"] > button { flex-shrink:0; }
+
+      '
     replace: ''

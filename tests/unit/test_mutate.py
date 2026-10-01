@@ -37,7 +37,7 @@ def test_the_real_catalogue_loads_and_every_mutant_names_a_known_suite():
 
     assert len(mutants) >= 40
     assert all(set(m.catches) <= set(mutate.SUITES) for m in mutants)
-    assert {"api", "ui", "load"} <= {
+    assert set(mutate.SUITES) == {
         suite for m in mutants for suite in m.catches
     }, "every suite has a mutant to catch"
 
