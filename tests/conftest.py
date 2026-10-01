@@ -285,6 +285,11 @@ def pytest_sessionfinish(session, exitstatus):
         # collecting is not running. Recording it would put a NO TESTS RAN row in
         # the history for every --collect-only, and poison the trend it feeds.
         return
+    if os.environ.get("QA_NO_RECORD") == "1":
+        # A run against a deliberately broken product - a mutation run - is an
+        # experiment, not a measurement of the product. Recording it would put
+        # dozens of red runs into the history and the dashboard.
+        return
     written = _REPORT.write(_REPORTS_DIR)
     _append_history(session)
     _write_artifacts(session)

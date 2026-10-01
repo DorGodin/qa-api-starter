@@ -65,6 +65,14 @@ perf-stress:    ## ramp past capacity to find the ceiling; only 5xx fails the ru
 perf-barber:    ## the barbershop booking race under load, on its test copy (make run-test, port 8101)
 	ENV=$(or $(ENV_BARBER),barber) $(PERF) perf/barber/booking_race.js --profile $(or $(PROFILE),load) $(K6FLAGS)
 
+PRODUCT ?= ../barber-booking-api
+
+mutate:         ## break the barbershop rule by rule and check a suite catches each (about 15 min); ONLY=name filter
+	$(PY) scripts/mutate.py --product $(PRODUCT) $(if $(ONLY),--only "$(ONLY)",)
+
+mutate-check:   ## the mutation catalogue still matches the product - every anchor exactly once, in seconds
+	$(PY) scripts/mutate.py --product $(PRODUCT) --check
+
 perf:           ## everything except soak and stress - the pre-release set
 	$(MAKE) perf-smoke && $(MAKE) perf-load && $(MAKE) perf-write
 

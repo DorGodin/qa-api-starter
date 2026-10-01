@@ -243,6 +243,21 @@ sends it.
 - **A message for `expect()` goes inside it:** `expect(locator, "why").to_...`. Written
   after it with a comma, it is a tuple whose second half is silently thrown away.
 
+## Mutation testing
+
+`mutants/barber-booking.yml` is the proof that the barbershop suites catch what they claim:
+each entry breaks one rule and names the suite (`api`, `ui`, `load`) that must go red.
+
+- **A new rule in a suite gets a mutant in the same change.** A test nobody has seen fail
+  has not been shown to test anything.
+- **A product change that moves code under an anchor updates the catalogue in the same
+  change.** `make mutate-check` (and CI, on every push) fails when an anchor matches zero or
+  two places.
+- **A survivor is either a missing test or an equivalent mutant** - the rule is protected
+  twice and one protection was removed. Prove which by breaking the other one too; never
+  delete a survivor to make the report green.
+- Runs never touch the product's checkout and never reach the history (`QA_NO_RECORD=1`).
+
 ## Verifying before committing
 
 Gate a commit on the test command's own exit code - `pytest -q > out.txt; code=$?` - never

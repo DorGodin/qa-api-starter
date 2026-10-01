@@ -150,6 +150,11 @@ def main() -> int:
         duration=duration,
         exit_code=exit_code,
     )
+    if os.environ.get("QA_NO_RECORD") == "1":
+        print(
+            f"\n{row['scenario']}/{row['profile']} on {row['env']} - {row['verdict']} (QA_NO_RECORD: not recorded)"
+        )
+        return exit_code
     append(row, REPORTS / "perf.jsonl")
 
     print(

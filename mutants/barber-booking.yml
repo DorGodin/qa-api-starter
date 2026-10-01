@@ -1,0 +1,374 @@
+# Mutation catalogue for the barbershop (github.com/DorGodin/barber-booking-api).
+#
+# Each mutant breaks one rule of the product on purpose and names the suite that
+# must notice: api (tests/barber), ui (tests/barber_ui, a real browser) or load
+# (perf/barber/booking_race.js). `find` must appear exactly once in `file`;
+# `make mutate-check` fails when the product changes under an anchor.
+#
+#   make mutate          run them all, report every survivor
+#   make mutate-check    anchors only, in seconds
+product: barber-booking
+mutants:
+- name: the booking lock is silently ignored (the real bug from stage 2)
+  file: app/db.py
+  catches:
+  - api
+  changes: &id001
+  - find: |2-
+          if session.in_transaction():
+              session.commit()
+          session.connection
+    replace: '    session.connection'
+- name: the booking lock is silently ignored, under load
+  file: app/db.py
+  catches:
+  - load
+  changes: *id001
+- name: back-to-back counted as an overlap
+  file: app/scheduling.py
+  catches:
+  - api
+  changes:
+  - find: return self.start < other.end and other.start < self.end
+    replace: return self.start <= other.end and other.start <= self.end
+- name: a service ending exactly at closing is refused
+  file: app/scheduling.py
+  catches:
+  - api
+  changes:
+  - find: return self.start <= other.start and other.end <= self.end
+    replace: return self.start <= other.start and other.end < self.end
+- name: a fixed +02:00 offset instead of the time zone
+  file: app/scheduling.py
+  catches:
+  - api
+  changes:
+  - find: |2-
+          wall = datetime.combine(day, time(minute_of_day // 60, minute_of_day % 60), tzinfo=tz)
+          return wall.astimezone(UTC)
+    replace: |2-
+          wall = datetime.combine(day, time(minute_of_day // 60, minute_of_day % 60))
+          return (wall - timedelta(hours=2)).replace(tzinfo=UTC)
+- name: the Idempotency-Key is ignored
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: |2-
+              if idempotency_key is not None:
+                  seen =
+    replace: |2-
+              if False:
+                  seen =
+- name: somebody else's booking answers 403, not 404
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: |2-
+          if user.role == "customer" and booking.customer_id != user.id:
+              raise not_found("booking")
+    replace: |2-
+          if user.role == "customer" and booking.customer_id != user.id:
+              raise DomainError(403, "forbidden", "not yours")
+- name: the 24 hour cancellation cutoff is gone
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: if user.role == "customer" and booking.start_utc - now < timedelta
+    replace: if False and booking.start_utc - now < timedelta
+- name: a customer can sit in two chairs
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: '        if clashes(wanted, busy(session, wanted, customer_id=user.id)):'
+    replace: '        if False:'
+- name: a price change reaches back into bookings
+  file: app/views.py
+  catches:
+  - api
+  changes:
+  - find: '"price_minor": booking.price_minor,'
+    replace: '"price_minor": __import__("sqlalchemy").inspect(booking).session.get(__import__("app.models", fromlist=["Service"]).Service, booking.service_id).price_minor,'
+- name: availability offers a customer times that clash with their own booking
+  file: app/routers/barbers.py
+  catches:
+  - api
+  changes:
+  - find: |2-
+              if user.role == "customer":
+                  taken += busy(session, window, customer_id=user.id)
+    replace: '        pass'
+- name: a barber can cancel
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: |2-
+              if user.role == "barber":
+                  raise DomainError(403,
+    replace: |2-
+              if False:
+                  raise DomainError(403,
+- name: hidden panels stay on screen
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  [hidden] { display: none !important; }'
+    replace: ''
+- name: a display name is written as HTML
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: $("display-name").textContent = `${isolate(me.display_name)}
+    replace: $("display-name").innerHTML = `${isolate(me.display_name)}
+- name: times shown on the browser's clock
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: const clock = (local) => local.slice(11, 16);
+    replace: 'const clock = (local) => new Date(local).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });'
+- name: a double click sends the booking twice
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: |-
+      function book() {
+        if (!selected || booking) return;
+    replace: |-
+      function book() {
+        if (!selected) return;
+  - find: |2-
+        booking = true;
+        $("book").disabled = true;
+    replace: '  booking = true;'
+- name: refusals shown as raw codes
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  if (code && FRIENDLY[code]) return FRIENDLY[code](context);'
+    replace: '  if (code) return code;'
+- name: a failed booking does not refresh the times
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: |2-
+          popup(taken ? "השעה כבר תפוסה" : "לא הצלחנו לקבוע את התור", reason, "error");
+        }
+        await refresh();
+    replace: |2-
+          popup(taken ? "השעה כבר תפוסה" : "לא הצלחנו לקבוע את התור", reason, "error");
+          return;
+        }
+        await refresh();
+- name: outcomes are no longer announced
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: <p data-testid="message" role="status" aria-live="polite"></p>
+    replace: <p data-testid="message"></p>
+- name: the late-cancellation reason is lost
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: |2
+        late_cancellation: () => `אפשר לבטל תור עד ${shop.cancel_cutoff_hours} שעות לפני. כדי לבטל עכשיו צריך להתקשר למספרה.`,
+    replace: ''
+- name: the page is laid out left to right
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: <html lang="he" dir="rtl">
+    replace: <html lang="he">
+- name: Latin names are not isolated
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: const isolate = (value) => `\u2068${value}\u2069`;
+    replace: const isolate = (value) => `${value}`;
+- name: prices written the American way
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: 'new Intl.NumberFormat("he-IL", { style: "currency", currency })'
+    replace: 'new Intl.NumberFormat("en-US", { style: "currency", currency })'
+- name: dates written in English
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: toLocaleDateString("he-IL", { weekday
+    replace: toLocaleDateString("en-GB", { weekday
+- name: the server's English shown when a code has no Hebrew
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: |2
+        bad_credentials: () => "שם משתמש או סיסמה שגויים.",
+    replace: ''
+  - find: '  if (resp.status === 422 && context.invalid) return context.invalid;'
+    replace: |2-
+        if (resp.data && typeof resp.data.detail === "string") return resp.data.detail;
+        if (resp.status === 422 && context.invalid) return context.invalid;
+- name: times follow the page's right-to-left direction
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: padding:8px 0; direction:ltr; }
+    replace: padding:8px 0; }
+- name: labels wrap their fields again
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: <div class="field"><label for="barber">ספר</label><select id="barber" data-testid="barber"></select></div>
+    replace: <label>ספר <select data-testid="barber"></select></label>
+- name: no popup at all
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  if (!dialog.open) dialog.showModal();'
+    replace: ''
+- name: the popup is not modal
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  if (!dialog.open) dialog.showModal();'
+    replace: '  if (!dialog.open) dialog.show();'
+- name: a refusal shown as a success
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    popup(taken ? "השעה כבר תפוסה" : "לא הצלחנו לקבוע את התור", reason, "error");'
+    replace: '    popup("✓ התור נקבע", reason, "ok");'
+- name: a taken time and any other refusal look the same
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: 'taken ? "השעה כבר תפוסה" : "לא הצלחנו לקבוע את התור"'
+    replace: '"לא הצלחנו לקבוע את התור"'
+- name: the popup's close button does nothing
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: $("popup-close").addEventListener("click", () => $("popup").close());
+    replace: ''
+- name: the success popup leaves out the price
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: ${booked} · ${money(r.data.price_minor, r.data.currency)}
+    replace: ${booked}
+- name: prices go through a float and are truncated
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  return match ? Number(match[1]) * 100 + Number((match[2] || "").padEnd(2, "0")) : null;'
+    replace: |2-
+        const n = parseFloat(text);
+        return Number.isNaN(n) ? null : Math.floor(n * 100);
+- name: closing before opening is no longer checked
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '      if (open >= close) {'
+    replace: '      if (false) {'
+- name: times off the quarter hour are no longer checked
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '      if (![open, close].every((t) => HHMM.test(t) && onQuarter(t))) {'
+    replace: '      if (false) {'
+- name: an unticked day is not sent as a day off
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '      if (!works) { hours[row.dataset.day] = null; continue; }'
+    replace: '      if (!works) { continue; }'
+- name: a day off lands on the first barber, not the chosen one
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: |2-
+          const day = $("dayoff-date").value;
+          if (!day) { say("צריך לבחור תאריך ליום החופש.", "error"); return; }
+          const barberId = $("barber").value;
+    replace: |2-
+          const day = $("dayoff-date").value;
+          if (!day) { say("צריך לבחור תאריך ליום החופש.", "error"); return; }
+          const barberId = barbers[0].id;
+- name: a new barber is not the one selected afterwards
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: |2
+          $("barber").value = r.data.id;
+    replace: ''
+- name: withdrawing a service is not saved
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '{ price_minor: price, active: activeInput.checked }'
+    replace: '{ price_minor: price }'
+- name: customers get the management screen
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: |2-
+        if (!me || me.role !== "owner") return;
+        $("owner").hidden = false;
+    replace: |2-
+        if (!me) return;
+        $("owner").hidden = false;
+- name: the owner cannot cancel
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: b.status === "confirmed" && me.role !== "barber"
+    replace: b.status === "confirmed" && me.role === "customer"
+- name: the same day off twice is not explained
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: |2
+        already_off: () => "הספר כבר בחופש ביום הזה.",
+    replace: ''
+- name: a duplicate service name is not explained
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: |2
+        name_taken: () => "כבר יש שירות בשם הזה.",
+    replace: ''

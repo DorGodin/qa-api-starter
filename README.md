@@ -1,9 +1,22 @@
 # qa-api-starter
 
+[![ci](https://github.com/DorGodin/qa-api-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/DorGodin/qa-api-starter/actions/workflows/ci.yml)
+
 A ready-to-use API test framework in Python and pytest.
 Clone it, run it, then point it at your own product.
 
-It ships with a small demo API, so the tests work the moment you clone. **297 tests across six groups**, all running in CI on every push.
+![Two customers go for the same free time; the first is booked, the second is told it has just gone](docs/media/race.gif)
+
+*Two customers, one free 10:00. The first gets the green popup; the second is told the time
+has just gone, and it leaves their screen. Recorded from the UI suite against the barbershop —
+`make ui-barber-watch K="looking"` runs it in front of you.*
+
+**485 tests, in CI on every push** — 404 against the demo API that ships in this repository,
+in six groups, and 81 against a second product in its own repository,
+[barber-booking-api](https://github.com/DorGodin/barber-booking-api), reached only through its
+URL. On top of them: load tests whose thresholds fail the pipeline, and **44 mutants** — rules
+of the product broken on purpose, each of which a named suite must catch, run every night
+(`make mutate`).
 
 The point: arrive at a new job and not rebuild what takes weeks — the object layer,
 environments, personas, suite gating, the production guard, bug filing and CI.
@@ -293,6 +306,32 @@ passed whatever the product did, and nothing checked that the listing offers the
 after a booking. Both are fixed, and the result is 11 of 11. CI starts the barbershop and
 runs these suites on every push.
 
+## Do the tests actually catch anything? — mutation testing
+
+A green suite proves the product passes it. It does not prove the suite would fail if the
+product broke: a test can assert nothing and stay green. So `mutants/barber-booking.yml` holds
+44 rules of the barbershop broken on purpose — the booking lock, back-to-back slots, closing
+time, daylight saving, the 24 hour cutoff, the Hebrew, the popup, the owner's screen — and
+for each one, the suite that must notice.
+
+```bash
+make mutate          # every mutant, about 15 minutes; prints each one caught or SURVIVED
+make mutate ONLY=lock
+make mutate-check    # every anchor still matches the product, in seconds
+```
+
+`scripts/mutate.py` never edits the product's checkout — running servers read its page from
+disk — but exports its last commit to a temporary directory and breaks that copy, on its own
+port and database. It runs the unmodified product first and refuses to report if anything is
+already red. Nothing it runs reaches the history or the dashboard. CI checks the anchors on
+every push and runs the whole catalogue every night.
+
+Building the catalogue found four weaknesses that every green run had hidden: an assertion
+that compared `…00Z` with `…00.000Z` and so could never fail, a load test whose race was over
+in the first second, an assertion that the server's own wording also satisfied, and a rule —
+the slot right after a booking must still be offered — that no test checked at all. Each is in
+`docs/pitfalls.md`.
+
 ## Adoption, step by step
 
 A realistic schedule for putting this on a real product. Each step ends with something that
@@ -420,7 +459,10 @@ every helper that writes data must guard production. Claude Code reads it automa
 ## מה זה
 
 תשתית מוכנה לבדיקות API בפייתון ו-pytest. היא מגיעה עם API קטן לדוגמה, אז הבדיקות רצות
-מהרגע שמשכפלים את הריפו. **297 בדיקות בשש קבוצות**, וכולן רצות ב-CI בכל דחיפה.
+מהרגע שמשכפלים את הריפו. **485 בדיקות, ב-CI בכל push** — 404 על ה-API לדוגמה שבתוך הריפו, בשש
+קבוצות, ו-81 על מוצר שני בריפו משלו, [barber-booking-api](https://github.com/DorGodin/barber-booking-api),
+שהן מכירות רק דרך הכתובת שלו. מעל זה: בדיקות עומס שהספים שלהן מפילים את הפייפליין, ו-**44 מוטציות** —
+חוקים של המוצר שנשברים בכוונה, וכל אחד מהם חייב להיתפס על ידי סוויטה מסוימת, בהרצה לילית (`make mutate`).
 
 המטרה: להגיע למקום עבודה חדש ולא לבנות מאפס את מה שלוקח שבועות — שכבת האובייקטים, ניהול
 הסביבות, הפרסונות, הגידור של הסוויטות, ההגנה על פרודקשן, פתיחת הבאגים וה-CI.
@@ -679,6 +721,29 @@ make ui-barber-record                   # סרטון ומעקב צעד-אחרי-
 בדיקה אחת השוותה `…00Z` ל-`…00.000Z` ולכן עברה בלי קשר למה שהמוצר עשה, ושום בדיקה לא וידאה
 שהרשימה מציעה את התור שמיד אחרי הזמנה. שתיהן תוקנו, והתוצאה 11 מתוך 11. ה-CI מרים את המספרה
 ומריץ את הסוויטות האלה בכל push.
+
+## הבדיקות באמת תופסות משהו? — בדיקות מוטציה
+
+סוויטה ירוקה מוכיחה שהמוצר עובר אותה. היא לא מוכיחה שהיא תיכשל אם המוצר יישבר: בדיקה יכולה לא
+לבדוק כלום ולהישאר ירוקה. לכן `mutants/barber-booking.yml` מחזיק 44 חוקים של המספרה שנשברים בכוונה —
+הנעילה של ההזמנה, תורים צמודים, שעת הסגירה, שעון קיץ, 24 השעות, העברית, החלון הקופץ, מסך הבעלים —
+ולכל אחד, הסוויטה שחייבת לשים לב.
+
+```bash
+make mutate          # כל המוטציות, כרבע שעה; מדפיס כל אחת שנתפסה או שרדה
+make mutate ONLY=lock
+make mutate-check    # כל עוגן עדיין מתאים למוצר, בשניות
+```
+
+`scripts/mutate.py` אף פעם לא עורך את הקוד של המוצר — שרתים שרצים קוראים ממנו את הדף — אלא מייצא
+את ה-commit האחרון לתיקייה זמנית ושובר את העותק, על פורט ומסד נתונים משלו. קודם הוא מריץ את המוצר
+התקין, ומסרב לדווח אם משהו כבר אדום. שום דבר שהוא מריץ לא נרשם בהיסטוריה או בדשבורד. ה-CI בודק את
+העוגנים בכל push ומריץ את כל הרשימה כל לילה.
+
+בניית הרשימה מצאה ארבע חולשות שכל ריצה ירוקה הסתירה: השוואה בין `…00Z` ל-`…00.000Z` שלא הייתה
+יכולה להיכשל אף פעם, בדיקת עומס שהמרוץ שלה נגמר בשנייה הראשונה, בדיקה שגם הניסוח של השרת עצמו
+סיפק אותה, וחוק — התור שמיד אחרי הזמנה חייב להמשיך להיות מוצע — ששום בדיקה לא בדקה. כל אחת מהן
+ב-`docs/pitfalls.md`.
 
 ## איך מטמיעים, שלב אחרי שלב
 

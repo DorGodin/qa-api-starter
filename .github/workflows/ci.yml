@@ -143,6 +143,10 @@ jobs:
           for i in $(seq 1 60); do curl -sf http://127.0.0.1:8101/health && exit 0; sleep 1; done
           echo "the barbershop never became healthy"; exit 1
       - run: pip install -r requirements.lock.txt
+      - name: the mutation catalogue still matches the product
+        # Seconds. A product change that moves code under a mutant's anchor must
+        # update the catalogue in the same change, or the nightly run tests nothing.
+        run: python scripts/mutate.py --product barber-booking-api --check
       - name: prove the environment first
         env: { ENV: barber }
         run: python scripts/env_check.py
@@ -166,6 +170,38 @@ jobs:
           path: reports/ui-barber
           if-no-files-found: ignore
           retention-days: 14
+
+  mutation:
+    name: mutation - break the barbershop rule by rule (nightly)
+    # A green suite proves the product passes it, not that the suite would fail if
+    # the product broke. Every night each rule is broken on purpose and the suite
+    # named for it must go red. Too slow for a pull request.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { repository: DorGodin/barber-booking-api, path: barber-booking-api }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - name: the product's own virtualenv
+        working-directory: barber-booking-api
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -q -r requirements.lock.txt
+      - run: pip install -r requirements.lock.txt
+      - run: python -m playwright install --with-deps chromium
+      - uses: grafana/setup-k6-action@v1
+      - name: every mutant must be caught
+        run: python scripts/mutate.py --product barber-booking-api
+      - name: keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-${{ github.run_id }}
+          path: reports/mutation-barber-booking-api.json
+          if-no-files-found: ignore
+          retention-days: 30
 
   llm:
     name: llm evaluation (deepeval)
