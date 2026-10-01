@@ -154,7 +154,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '  if (code && FRIENDLY[code]) return FRIENDLY[code](context);'
+  - find: '  if (code && FRIENDLY[code]) return FRIENDLY[code](context, resp.data);'
     replace: '  if (code) return code;'
 - name: a failed booking does not refresh the times
   file: app/static/index.html
@@ -548,3 +548,110 @@ mutants:
 
       '
     replace: ''
+- name: a locked sign-in is let through anyway
+  file: app/routers/auth.py
+  catches:
+  - api
+  changes:
+  - find: '    if wait:
+
+      '
+    replace: '    if False:
+
+      '
+- name: one more guess than the limit is allowed
+  file: app/login_limits.py
+  catches:
+  - api
+  changes:
+  - find: '        if len(times) >= limit:'
+    replace: '        if len(times) > limit:'
+- name: the account lock counts every address, so anyone can lock the owner out
+  file: app/login_limits.py
+  catches:
+  - api
+  changes:
+  - find: ((LoginFailure.username == username, LoginFailure.ip == ip), config.login_max_failures)
+    replace: ((LoginFailure.username == username,), config.login_max_failures)
+- name: no limit per address, so one password can be tried on every account
+  file: app/login_limits.py
+  catches:
+  - api
+  changes:
+  - find: '        ((LoginFailure.ip == ip,), config.login_max_failures_per_ip),
+
+      '
+    replace: ''
+- name: the right password does not start the count again
+  file: app/routers/auth.py
+  catches:
+  - api
+  changes:
+  - find: '    forget_failures(session, body.username, ip)
+
+      '
+    replace: ''
+- name: a username that does not exist is never locked, which tells which ones do
+  file: app/routers/auth.py
+  catches:
+  - api
+  changes:
+  - find: '        record_failure(session, config, body.username, ip, now)
+
+      '
+    replace: "        if user:\n            record_failure(session, config, body.username, ip, now)\n"
+- name: a lock does not say when to try again
+  file: app/routers/auth.py
+  catches:
+  - api
+  changes:
+  - find: '            headers={"Retry-After": str(wait)},
+
+      '
+    replace: ''
+- name: a lock is shown as a wrong password
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  too_many_attempts: (_, data) =>'
+    replace: '  too_many_attempts_off: (_, data) =>'
+- name: the page has no Content-Security-Policy at all
+  file: app/main.py
+  catches:
+  - api
+  changes:
+  - find: '    "Content-Security-Policy": "default-src ''none''; frame-ancestors ''none''",
+
+      '
+    replace: ''
+  - find: '        return HTMLResponse(html, headers={"Content-Security-Policy": page_policy(html)})'
+    replace: '        return HTMLResponse(html)'
+- name: inline scripts are allowed, so an injected one runs
+  file: app/main.py
+  catches:
+  - ui
+  changes:
+  - find: '        f"script-src {hashes(''script'')}; "'
+    replace: '        "script-src ''unsafe-inline''; "'
+- name: the policy hashes something other than what is served, and blocks the page
+  file: app/main.py
+  catches:
+  - ui
+  changes:
+  - find: hashlib.sha256(body.encode())
+    replace: hashlib.sha256(body.strip().encode())
+- name: the select's arrow is blocked by the policy
+  file: app/main.py
+  catches:
+  - ui
+  changes:
+  - find: '        "img-src data:; "'
+    replace: '        "img-src ''self''; "'
+- name: the page may send what it reads to any site
+  file: app/main.py
+  catches:
+  - api
+  changes:
+  - find: '        "connect-src ''self''; "'
+    replace: '        "connect-src *; "'

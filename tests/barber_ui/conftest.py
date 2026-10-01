@@ -10,7 +10,15 @@ from __future__ import annotations
 import pytest
 
 from obj.barber.booking_page import BookingPage, OwnerScreen
-from tests.barber.conftest import barbers, bookings, customers, new_customer, services, shop_tz  # noqa: F401
+from tests.barber.conftest import (  # noqa: F401
+    barbers,
+    bookings,
+    customers,
+    fresh_address,
+    new_customer,
+    services,
+    shop_tz,
+)
 
 
 @pytest.fixture(scope="module")

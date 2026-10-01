@@ -24,6 +24,14 @@ class Response:
         return self.raw.status_code
 
     @property
+    def headers(self):
+        return self.raw.headers
+
+    @property
+    def text(self) -> str:
+        return self.raw.text
+
+    @property
     def ok(self) -> bool:
         return self.raw.ok
 

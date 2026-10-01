@@ -71,9 +71,10 @@ def test_dates_are_written_in_hebrew(signed_in, ui_barber, ui_haircut, shop_tz):
 
 
 def test_no_english_from_the_server_ever_reaches_the_customer(
-    shop, account, customers, bookings, barbers, credentials, ui_haircut, shop_tz
+    shop, account, customers, bookings, barbers, credentials, ui_haircut, shop_tz, fresh_address
 ):
     said = {}
+    shop.page.set_extra_http_headers({"X-Forwarded-For": fresh_address()})
 
     owner, _ = credentials("owner")
     shop.open()

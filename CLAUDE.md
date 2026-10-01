@@ -286,6 +286,15 @@ The redeploy journey runs wherever `REDEPLOY_COMMAND` is set, and an environment
 missing must fail loudly, never turn into a skip. The next person on a shared device signs in
 with `navigate=False`: a navigation wipes the page, and with it what the last person left behind.
 
+## Failing a sign-in on purpose
+
+The barbershop locks an address after 20 failed sign-ins and an account from one address after 5.
+Every request that fails a sign-in on purpose - an API test or a page test - comes from an address
+of its own: `headers={"X-Forwarded-For": fresh_address()}`, or `page.set_extra_http_headers(...)`
+in the browser. Counted against 127.0.0.1, a few runs in a row lock every test out, correct
+passwords included. The server trusts the header only from 127.0.0.1, which is where the suites
+run; against the Docker image in CI it is ignored, so nothing there may fail a sign-in.
+
 ## Verifying before committing
 
 Gate a commit on the test command's own exit code - `pytest -q > out.txt; code=$?` - never

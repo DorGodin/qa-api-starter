@@ -7,11 +7,30 @@ customers it needs. Two runs, or two suites, never book into each other.
 
 from __future__ import annotations
 
+import secrets
 from zoneinfo import ZoneInfo
 
 import pytest
 
 from obj.barber import Barbers, Bookings, Customers, Services
+
+
+@pytest.fixture
+def fresh_address():
+    """A client address of the test's own, sent as X-Forwarded-For, for every
+    request that fails a sign-in on purpose.
+
+    The barbershop refuses an address after 20 failed sign-ins in 15 minutes,
+    and an account from that address after 5. Counted against the machine the
+    suites run on, a few runs in a row would lock every test out - correct
+    passwords included. The server takes the header only from 127.0.0.1
+    (uvicorn's FORWARDED_ALLOW_IPS), which is where the suites reach it from.
+    198.18.0.0/15 is reserved for exactly this: benchmarking, never routed."""
+
+    def _new() -> str:
+        return f"198.{18 + secrets.randbelow(2)}.{secrets.randbelow(256)}.{1 + secrets.randbelow(254)}"
+
+    return _new
 
 
 @pytest.fixture(scope="session")

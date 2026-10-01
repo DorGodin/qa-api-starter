@@ -33,8 +33,9 @@ def test_a_name_that_looks_like_html_is_shown_as_text_and_never_run(shop, custom
     assert shop.page.evaluate("window.__ran") is None, "a display name was executed as code"
 
 
-def test_a_wrong_password_and_an_unknown_user_look_the_same(page, env_config, credentials):
+def test_a_wrong_password_and_an_unknown_user_look_the_same(page, env_config, credentials, fresh_address):
     owner, _ = credentials("owner")
+    page.set_extra_http_headers({"X-Forwarded-For": fresh_address()})
     answers = []
     for username in (owner, "nobody-at-all"):
         screen = BookingPage(page, env_config["url"]).open()
@@ -58,3 +59,55 @@ def test_every_field_has_a_label_a_screen_reader_can_read(shop, account):
         expect(shop.page.get_by_label(label, exact=True)).to_be_visible()
     # Booked, taken, cancelled: every outcome is announced, not only painted.
     expect(shop.page.get_by_role("status")).to_have_count(1)
+
+
+def test_too_many_wrong_passwords_are_refused_in_hebrew_with_how_long_to_wait(shop, account, fresh_address):
+    shop.page.set_extra_http_headers({"X-Forwarded-For": fresh_address()})
+    shop.open()
+    for password in ["not-the-password"] * 5 + [account["password"]]:
+        shop.page.get_by_label(USERNAME, exact=True).first.fill(account["username"])
+        shop.page.get_by_label(PASSWORD, exact=True).first.fill(password)
+        with shop.page.expect_response(lambda r: "/auth/token" in r.url):
+            shop.by("login").click()
+
+    error = shop.text(shop.by("login-error"))
+    assert "יותר מדי ניסיונות" in error and "דקות" in error, error
+    expect(shop.by("app")).to_be_hidden()
+
+
+WATCH_POLICY = """
+window.__violations = [];
+document.addEventListener("securitypolicyviolation", (e) => window.__violations.push(`${e.violatedDirective} ${e.blockedURI}`));
+"""
+
+
+def test_a_whole_booking_and_the_owners_screen_run_without_a_single_policy_violation(
+    page, env_config, account, credentials, ui_barber, ui_haircut, shop_tz
+):
+    page.add_init_script(WATCH_POLICY)
+    shop = BookingPage(page, env_config["url"]).sign_in(account["username"], account["password"])
+    shop.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 3)).pick("12:00").book()
+    expect(shop.row_at("12:00")).to_be_visible()
+    shop.by("logout").click()
+    shop.sign_in(*credentials("owner"), navigate=False)
+    expect(shop.by("owner")).to_be_visible()
+
+    assert page.evaluate("window.__violations") == [], "the policy blocks part of the page itself"
+
+
+def test_a_script_that_gets_past_the_escaping_is_still_not_run(page, env_config, account):
+    page.add_init_script(WATCH_POLICY)
+    BookingPage(page, env_config["url"]).sign_in(account["username"], account["password"])
+
+    page.evaluate(
+        """() => {
+            document.body.insertAdjacentHTML("beforeend", '<img src="data:," onerror="window.__ran = true">');
+            const script = document.createElement("script");
+            script.textContent = "window.__ran = true";
+            document.body.append(script);
+        }"""
+    )
+    page.wait_for_function("window.__violations.length >= 2")
+
+    assert page.evaluate("window.__ran") is None, "injected code ran, and could read the sign-in"
+    assert all(v.startswith("script-src") for v in page.evaluate("window.__violations"))

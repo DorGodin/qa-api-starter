@@ -591,3 +591,14 @@ protection was never exercised. Both were found by mutants that survived.
 **Rule:** a test of what one step does must not have another step that does the same thing in
 between - no refresh before the sign-out under test, and the held answer released in the window
 the protection exists for: after the sign-out, before anyone else signs in.
+
+## 2026-10-01 — The first login lock would have let anyone shut the shop
+
+The first version counted failed sign-ins per username. The existing tests sign in as `owner`
+with a wrong password on purpose - three runs in CI within the window, and the owner would have
+been locked for every later test. The same arithmetic in production: five wrong guesses from
+anywhere lock the real owner out of their own shop. A lock anyone can set is a denial of service.
+
+**Rule:** count an account's failures per address, with a separate, higher limit per address for
+password spraying. And a test that fails a sign-in on purpose comes from an address of its own,
+or the suites lock the machine they run on.

@@ -39,12 +39,19 @@ def test_every_bad_credential_looks_the_same_to_an_outsider(api):
     assert missing.as_dict == garbage.as_dict == wrong_scheme.as_dict
 
 
-def test_an_unknown_user_and_a_wrong_password_get_the_same_answer(api, credentials):
+def test_an_unknown_user_and_a_wrong_password_get_the_same_answer(api, credentials, fresh_address):
     owner, _ = credentials("owner")
+    address = {"X-Forwarded-For": fresh_address()}
     unknown = api.request(
-        "POST", "/auth/token", persona=None, json={"username": "nobody-at-all", "password": "x"}
+        "POST",
+        "/auth/token",
+        persona=None,
+        headers=address,
+        json={"username": "nobody-at-all", "password": "x"},
     )
-    wrong = api.request("POST", "/auth/token", persona=None, json={"username": owner, "password": "x"})
+    wrong = api.request(
+        "POST", "/auth/token", persona=None, headers=address, json={"username": owner, "password": "x"}
+    )
 
     assert unknown.status_code == wrong.status_code == 401
     assert unknown.as_dict == wrong.as_dict, "different answers let an attacker find real usernames"
