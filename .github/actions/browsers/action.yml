@@ -2,8 +2,7 @@ name: install the browsers
 description: >-
   Playwright's browsers, cached by the lock (which pins the Playwright version), and
   their system packages. A cached browser is not downloaded again; the system
-  packages always are, and they are what has hung - so each attempt is limited and
-  retried once.
+  packages always are, from Ubuntu's mirrors, and that download is what has hung.
 inputs:
   browsers:
     description: the engines to install, e.g. "chromium" or "chromium webkit"
@@ -15,11 +14,17 @@ runs:
       with:
         path: ~/.cache/ms-playwright
         key: ms-playwright-${{ runner.os }}-${{ inputs.browsers }}-${{ hashFiles('requirements.lock.txt') }}
+    - name: let apt give up on a stalled mirror and retry, by itself
+      # A download that stalls hung the install for an hour once. The first fix
+      # wrapped the install in `timeout` and tried twice: `timeout` stops the
+      # Playwright process, but the apt it started keeps running and holding
+      # dpkg's lock, so the second try failed at once on "Unable to acquire the
+      # dpkg frontend lock". The retry belongs to apt: a connection idle for 30
+      # seconds is dropped and the file fetched again, up to five times.
+      shell: bash
+      run: |
+        printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' \
+          | sudo tee /etc/apt/apt.conf.d/80-stalled-mirrors >/dev/null
     - name: install ${{ inputs.browsers }}
       shell: bash
-      # Usually under two minutes. The system packages once hung for an hour, and
-      # with no limit GitHub waits six. A hang does not fail on its own, so `||`
-      # alone would never retry it: each attempt gets six minutes.
-      run: >-
-        timeout 360 python -m playwright install --with-deps ${{ inputs.browsers }}
-        || timeout 360 python -m playwright install --with-deps ${{ inputs.browsers }}
+      run: python -m playwright install --with-deps ${{ inputs.browsers }}

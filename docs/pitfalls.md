@@ -685,3 +685,16 @@ against the unfixed server and pass against the fixed one.
 
 **Rule:** a page-object step that waits for an outcome waits for the failure outcome too and
 reports it. "Timed out" is a symptom; the message on the screen is usually the diagnosis.
+
+## 2026-10-01 — A retry that could never work
+
+The browser install was wrapped in `timeout 360 ... || timeout 360 ...` after a stalled
+download hung it for an hour. When it stalled again, `timeout` stopped Playwright's process
+but not the apt it had started, which kept dpkg's lock; the second attempt failed at once with
+"Unable to acquire the dpkg frontend lock". The retry had never been exercised on the failure it
+was written for.
+
+**Rule:** retry at the layer that owns the work. apt now drops a connection idle for 30
+seconds and fetches again, five times (`/etc/apt/apt.conf.d/80-stalled-mirrors`); the job's
+`timeout-minutes` stays as the outer limit. A wrapper around a process that starts children
+cannot clean up after them.
