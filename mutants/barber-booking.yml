@@ -605,10 +605,8 @@ mutants:
   catches:
   - api
   changes:
-  - find: '            headers={"Retry-After": str(wait)},
-
-      '
-    replace: ''
+  - find: "            \"too many failed sign-ins; try again later\",\n            extra={\"retry_after_seconds\": wait},\n            headers={\"Retry-After\": str(wait)},\n"
+    replace: "            \"too many failed sign-ins; try again later\",\n            extra={\"retry_after_seconds\": wait},\n"
 - name: a lock is shown as a wrong password
   file: app/static/index.html
   catches:
@@ -767,3 +765,52 @@ mutants:
   changes:
   - find: '            html = html.replace("{{" + name + "}}", html_text.escape(value))'
     replace: '            pass'
+- name: a customer may hold any number of bookings ahead
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: '        if ahead >= config.max_future_bookings:'
+    replace: '        if False:'
+- name: one more booking ahead than the limit is allowed
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: '        if ahead >= config.max_future_bookings:'
+    replace: '        if ahead > config.max_future_bookings:'
+- name: a cancelled booking still counts against the limit
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: .where(Booking.customer_id == user.id, Booking.status == "confirmed", Booking.start_utc > now)
+    replace: .where(Booking.customer_id == user.id, Booking.start_utc > now)
+- name: one address may make any number of accounts
+  file: app/routers/auth.py
+  catches:
+  - api
+  changes:
+  - find: '        if len(recent) >= config.signups_per_address:'
+    replace: '        if False:'
+- name: sign-ups are counted across every address, so one address shuts sign-up for all
+  file: app/routers/auth.py
+  catches:
+  - api
+  changes:
+  - find: select(Signup.at).where(Signup.ip == ip, Signup.at > now - window)
+    replace: select(Signup.at).where(Signup.at > now - window)
+- name: the booking limit is shown as a generic failure
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  too_many_bookings: (_, data) =>'
+    replace: '  too_many_bookings_off: (_, data) =>'
+- name: the sign-up limit is shown as a generic failure
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  too_many_signups: (_, data) =>'
+    replace: '  too_many_signups_off: (_, data) =>'

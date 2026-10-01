@@ -135,3 +135,20 @@ def test_signing_out_with_no_connection_still_signs_this_device_out(shop, accoun
 
     expect(shop.by("login-form")).to_be_visible()
     expect(shop.by("app")).to_be_hidden()
+
+
+def test_too_many_accounts_from_one_device_are_refused_in_hebrew_with_how_long_to_wait(
+    shop, customers, fresh_address
+):
+    device = fresh_address()
+    shop.page.set_extra_http_headers({"X-Forwarded-For": device})
+    for _ in range(5):
+        customers.create(customers.build_signup_payload(), headers={"X-Forwarded-For": device}).assert_ok(201)
+    payload = customers.build_signup_payload()
+
+    shop.sign_up(payload["display_name"], payload["username"], payload["password"])
+
+    expect(shop.by("signup-error")).to_be_visible()
+    error = shop.text(shop.by("signup-error"))
+    assert "יותר מדי חשבונות" in error and "דקות" in error, error
+    expect(shop.by("app")).to_be_hidden()

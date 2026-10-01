@@ -25,9 +25,11 @@ class Base:
     def path(self) -> str:
         return f"/{self.resource}"
 
-    def create(self, data: dict[str, Any], persona: str | None = "__active__") -> Response:
+    def create(
+        self, data: dict[str, Any], persona: str | None = "__active__", headers: dict[str, str] | None = None
+    ) -> Response:
         """Every create is recorded, so a run can say what it left behind."""
-        response = self.client.request("POST", self.path, persona=persona, json=data)
+        response = self.client.request("POST", self.path, persona=persona, json=data, headers=headers)
         if self.log is not None and response.ok:
             self.log.record(self.resource, response.as_dict, persona if persona != "__active__" else None)
         return response

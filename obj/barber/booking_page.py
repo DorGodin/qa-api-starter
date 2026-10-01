@@ -12,6 +12,8 @@ from datetime import date
 
 from playwright.sync_api import Locator, Page, expect
 
+from obj.barber.customers import new_device_address
+
 # The page is Hebrew. Its field labels, as a person reads them.
 USERNAME, PASSWORD, YOUR_NAME = "שם משתמש", "סיסמה", "השם שלך"
 BARBER, SERVICE, DATE = "ספר", "שירות", "תאריך"
@@ -26,6 +28,12 @@ BIDI_CONTROLS = dict.fromkeys(
 
 def plain(text: str) -> str:
     return text.translate(BIDI_CONTROLS).replace("\u00a0", " ")
+
+
+def a_device(browser, **context_args):
+    """A browser context that is a different person's device: an address of its
+    own, as the barbershop counts sign-ups and failed sign-ins by address."""
+    return browser.new_context(**context_args, extra_http_headers={"X-Forwarded-For": new_device_address()})
 
 
 class BookingPage:
@@ -56,7 +64,15 @@ class BookingPage:
         self.page.get_by_label(USERNAME, exact=True).first.fill(username)
         self.page.get_by_label(PASSWORD, exact=True).first.fill(password)
         self.by("login").click()
-        expect(self.by("app")).to_be_visible()
+        expect(
+            self.page.locator('[data-testid="app"]:visible, [data-testid="login-error"]:visible').first
+        ).to_be_visible()
+        if self.by("login-error").is_visible():
+            # Say why, not only that the screen never came: a refused sign-in
+            # otherwise reads as a page that is slow to load.
+            raise AssertionError(
+                f"signing in as {username} was refused: {plain(self.by('login-error').inner_text())}"
+            )
         self.settled()
         return self
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 import pytest
 
 from obj.barber.booking_page import BookingPage, OwnerScreen
+from obj.barber.customers import new_device_address
 from tests.barber.conftest import (  # noqa: F401
     barbers,
     bookings,
@@ -63,6 +64,16 @@ def owner_screen(page, env_config, credentials) -> OwnerScreen:
         return screen.sign_in(username, password)
 
     return _open
+
+
+@pytest.fixture(autouse=True)
+def every_browser_is_its_own_device(request):
+    """The page a test gets comes from an address of its own, as a different
+    person's phone would. The barbershop limits sign-ups and failed sign-ins by
+    address; from one shared 127.0.0.1 a run's page tests would refuse each other.
+    The contexts tests open themselves do the same (obj.barber.booking_page.a_device)."""
+    if "page" in request.fixturenames:
+        request.getfixturevalue("context").set_extra_http_headers({"X-Forwarded-For": new_device_address()})
 
 
 @pytest.fixture(scope="session")

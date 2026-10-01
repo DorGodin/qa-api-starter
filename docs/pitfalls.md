@@ -642,3 +642,34 @@ save time nobody needed to wait for once the runs moved to the end of the day.
 **Rule:** mutants are written with the change and proved by the nightly run; a push waits only on
 `make mutate-check`. Measure a speed-up before keeping it, and drop it when the waiting it removes
 is gone.
+
+## 2026-10-01 — Two limits that every shortcut in the tests leaned on
+
+A cap of two bookings ahead and five accounts per address each broke something that had only
+worked because nothing limited it. The bookings helper defaulted to the seeded customer, who had
+gathered hundreds of bookings on the test copy; every page sign-up came from 127.0.0.1; the load
+test booked as one customer per virtual user, which a cap of two turns into a race over in
+seconds; and the seed gave the demo customer, Yael, so many bookings she could no longer book
+in the two-window demo she exists for.
+
+**Rule:** a rule the product enforces is a rule the tests live under. No shared customer for
+bookings - the persona is required - every simulated device has its own address, and a load
+test's pool is sized so the run cannot exhaust it. Test data the demo depends on is checked by a
+test (`test_the_two_customers_to_sign_in_as_are_free_to_book`).
+
+## 2026-10-01 — Two flaky page tests, one a lottery and one a clock
+
+An iPhone run refused one test's sign-in as "too many failed sign-ins" - on a fresh account,
+from an address no test had failed from. The locks on record were the address-spraying test's,
+and the time left matched one of them: the page had drawn the same random address. Device
+addresses came from 198.18.0.0/15, 130,000 of them; a run draws hundreds and holds a few locked on
+purpose, so about one run in some hundreds collides. They now come from 2001:db8::/32 (2**96),
+and a refused page sign-in raises with the page's own message instead of "screen never came".
+
+The same evening the late-cancellation test failed on Android: it took today's second free time,
+and from 23:15 to 23:45 shop time today has one. It fell back to tomorrow only when today had
+none, so it failed for half an hour every night and passed the rest of the day.
+
+**Rule:** a random value shared across tests needs a space too large to collide in, not one
+that is usually large enough. A test that reads "today" must hold at every hour of the day:
+check what it needs (two times), not that something is there.

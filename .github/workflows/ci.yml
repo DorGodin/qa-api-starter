@@ -183,9 +183,14 @@ jobs:
     timeout-minutes: 20
     env:
       # One definition of how the image is started, used to start it and to redeploy it.
+      # FORWARDED_ALLOW_IPS: the tests reach the container through Docker's gateway,
+      # not 127.0.0.1, and send each customer's address as X-Forwarded-For - as a
+      # proxy in front of the deployed shop does. Without it every sign-up in the
+      # journeys counts against one address.
       BARBER_IMAGE_RUN: >-
         docker run -d --name barber-image -p 8103:8100
         --env-file barber-booking-api/.env.example -e DATABASE_URL=sqlite:////data/barber.db
+        -e FORWARDED_ALLOW_IPS=*
         -v barber-data:/data barber-booking
     steps:
       - uses: actions/checkout@v7

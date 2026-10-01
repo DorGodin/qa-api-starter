@@ -291,14 +291,19 @@ The redeploy journey runs wherever `REDEPLOY_COMMAND` is set, and an environment
 missing must fail loudly, never turn into a skip. The next person on a shared device signs in
 with `navigate=False`: a navigation wipes the page, and with it what the last person left behind.
 
-## Failing a sign-in on purpose
+## Every device has an address of its own
 
-The barbershop locks an address after 20 failed sign-ins and an account from one address after 5.
-Every request that fails a sign-in on purpose - an API test or a page test - comes from an address
-of its own: `headers={"X-Forwarded-For": fresh_address()}`, or `page.set_extra_http_headers(...)`
-in the browser. Counted against 127.0.0.1, a few runs in a row lock every test out, correct
-passwords included. The server trusts the header only from 127.0.0.1, which is where the suites
-run; against the Docker image in CI it is ignored, so nothing there may fail a sign-in.
+The barbershop counts by client address: 20 failed sign-ins lock an address, 5 an account from
+one address, and one address makes at most 5 accounts an hour. From one shared 127.0.0.1 a run
+locks itself out. So every customer the suites make (`Customers.create`) and every browser they
+open (the default page, `a_device` for the rest) sends an address of its own as X-Forwarded-For,
+as different people's phones would; a test that is about the limits names its address with
+`fresh_address`. The server trusts the header only from 127.0.0.1 - and, in CI, from Docker's
+gateway to the image (`FORWARDED_ALLOW_IPS=*`, as a proxy in front of the deployed shop would).
+
+A customer holds at most 2 bookings ahead, so no test books through a seeded customer: they
+fill up on a long-lived copy and every later booking is refused. `Bookings.book` and friends
+take the persona as a required argument; make the customer the test needs (`new_customer`).
 
 ## Accessibility
 

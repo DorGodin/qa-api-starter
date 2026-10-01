@@ -14,7 +14,7 @@ import secrets
 import pytest
 from playwright.sync_api import expect
 
-from obj.barber.booking_page import BookingPage, OwnerScreen
+from obj.barber.booking_page import BookingPage, OwnerScreen, a_device
 from utils.local_time import local_day
 
 PHONES = ["iPhone SE", "iPhone 13", "Pixel 7"]
@@ -32,7 +32,7 @@ CONTROLS = "button, select, input, a[href]"
 
 @pytest.fixture(params=PHONES)
 def phone(request, browser, playwright):
-    context = browser.new_context(**playwright.devices[request.param], locale="he-IL")
+    context = a_device(browser, **playwright.devices[request.param], locale="he-IL")
     page = context.new_page()
     yield page
     context.close()
@@ -218,9 +218,7 @@ def test_at_200_percent_zoom_the_page_still_fits_and_books(
 ):
     # WCAG 1.4.4 and 1.4.10: zooming a 1100px window to 200% leaves the page 550
     # CSS pixels to lay itself out in, at twice the pixel density.
-    context = browser.new_context(
-        viewport={"width": 550, "height": 380}, device_scale_factor=2, locale="he-IL"
-    )
+    context = a_device(browser, viewport={"width": 550, "height": 380}, device_scale_factor=2, locale="he-IL")
     try:
         zoomed = BookingPage(context.new_page(), env_config["url"])
         zoomed.sign_in(account["username"], account["password"])

@@ -11,11 +11,11 @@ Clone it, run it, then point it at your own product.
 has just gone, and it leaves their screen. Recorded from the UI suite against the barbershop —
 `make ui-barber-watch K="looking"` runs it in front of you.*
 
-**548 tests, in CI on every push** — 411 against the demo API that ships in this repository,
-in six groups, and 137 against a second product in its own repository,
+**556 tests, in CI on every push** — 411 against the demo API that ships in this repository,
+in six groups, and 145 against a second product in its own repository,
 [barber-booking-api](https://github.com/DorGodin/barber-booking-api), reached only through its
 URL, its page tests on a desktop, an iPhone (WebKit, Safari's engine) and an Android phone. On top
-of them: load tests whose thresholds fail the pipeline, and **92 mutants** — rules
+of them: load tests whose thresholds fail the pipeline, and **99 mutants** — rules
 of the product broken on purpose, each of which a named suite must catch, run every night
 (`make mutate`).
 
@@ -284,7 +284,7 @@ what — and daylight saving, on whichever transition falls inside the booking w
 
 **And the booking page, in a real browser.** The barbershop serves a booking page at `/` —
 in Hebrew, right to left — and `tests/barber_ui/` drives it the way a customer and the
-owner do. 87 tests: twenty on the owner's management screen (hours, days off, a new barber,
+owner do. 89 tests: twenty on the owner's management screen (hours, days off, a new barber,
 prices in shekels, withdrawing a service — each checked from the customer's side), four on
 the popup every booking answers in (green when booked, red "השעה כבר
 תפוסה" when someone was faster, and modal: nothing behind it can be pressed), six are about
@@ -338,7 +338,11 @@ exactly the script and style the page serves, by hash; in the browser, a whole b
 owner's screen run with no violation, and a script slipped past the escaping does not run. Each
 rule has a mutant — thirteen, all caught. `test_sign_out.py` checks that signing out ends the
 sign-in on the server: a token copied before the sign-out is refused at once, not in twelve
-hours, and the person's other sign-ins stay.
+hours, and the person's other sign-ins stay. A customer holds at most two bookings ahead
+(`test_booking_cap.py`, five sent at once with room for one included), and one address makes
+at most five accounts an hour (`test_signup_limits.py`), since more accounts are the way around
+the first. Every customer the suites make, and every browser they open, comes from an address
+of its own, as different people's phones would.
 
 **And the dependencies themselves.** pip-audit had never been run on either repository. Its
 first run found seven advisories against the barbershop's starlette — Host-header URL
@@ -390,7 +394,7 @@ runs these suites on every push.
 
 A green suite proves the product passes it. It does not prove the suite would fail if the
 product broke: a test can assert nothing and stay green. So `mutants/barber-booking.yml` holds
-92 rules of the barbershop broken on purpose — the booking lock, back-to-back slots, closing
+99 rules of the barbershop broken on purpose — the booking lock, back-to-back slots, closing
 time, daylight saving, the 24 hour cutoff, the Hebrew, the popup, the owner's screen, the phone
 layout, answers that arrive late — and
 for each one, the suite that must notice.
@@ -543,10 +547,10 @@ every helper that writes data must guard production. Claude Code reads it automa
 ## מה זה
 
 תשתית מוכנה לבדיקות API בפייתון ו-pytest. היא מגיעה עם API קטן לדוגמה, אז הבדיקות רצות
-מהרגע שמשכפלים את הריפו. **548 בדיקות, ב-CI בכל push** — 411 על ה-API לדוגמה שבתוך הריפו, בשש
-קבוצות, ו-137 על מוצר שני בריפו משלו, [barber-booking-api](https://github.com/DorGodin/barber-booking-api),
+מהרגע שמשכפלים את הריפו. **556 בדיקות, ב-CI בכל push** — 411 על ה-API לדוגמה שבתוך הריפו, בשש
+קבוצות, ו-145 על מוצר שני בריפו משלו, [barber-booking-api](https://github.com/DorGodin/barber-booking-api),
 שהן מכירות רק דרך הכתובת שלו, ובדיקות המסך שלו רצות על מחשב, על אייפון (WebKit, המנוע של Safari) ועל
-אנדרואיד. מעל זה: בדיקות עומס שהספים שלהן מפילים את הפייפליין, ו-**92 מוטציות** —
+אנדרואיד. מעל זה: בדיקות עומס שהספים שלהן מפילים את הפייפליין, ו-**99 מוטציות** —
 חוקים של המוצר שנשברים בכוונה, וכל אחד מהם חייב להיתפס על ידי סוויטה מסוימת, בהרצה לילית (`make mutate`).
 
 המטרה: להגיע למקום עבודה חדש ולא לבנות מאפס את מה שלוקח שבועות — שכבת האובייקטים, ניהול
@@ -785,7 +789,7 @@ ENV=barber pytest
 לעשות מה — ושעון קיץ, על המעבר שנופל בתוך חלון ההזמנה, יהיה אשר יהיה.
 
 **וגם מסך ההזמנה, בדפדפן אמיתי.** המספרה מגישה מסך הזמנה בכתובת `/` — בעברית, מימין
-לשמאל — והבדיקות ב-`tests/barber_ui/` מפעילות אותו כמו לקוח וכמו בעל המספרה. 87 בדיקות: עשרים על
+לשמאל — והבדיקות ב-`tests/barber_ui/` מפעילות אותו כמו לקוח וכמו בעל המספרה. 89 בדיקות: עשרים על
 מסך הניהול (שעות, ימי חופש, ספר חדש, מחירים בשקלים, הסתרת שירות — כל אחת נבדקת גם מהצד של הלקוח),
 ארבע על החלון הקופץ
 שכל הזמנה עונה בו (ירוק כשהתור נקבע, אדום "השעה כבר תפוסה" כשמישהו הקדים, והוא חוסם את הדף
@@ -832,7 +836,10 @@ make ui-barber-journeys                 # רק המסעות מקצה לקצה
 רצות ממנו. `test_page_policy.py` בודק שהמדיניות מתירה בדיוק את ה-script וה-style שהדף מגיש, לפי hash;
 ובדפדפן, הזמנה שלמה ומסך הבעלים רצים בלי אף הפרה, ו-script שעבר את ה-escaping לא רץ. לכל חוק יש
 מוטציה — שלוש עשרה, וכולן נתפסו. `test_sign_out.py` בודק שיציאה מסיימת את החיבור גם בשרת: token
-שהועתק לפני היציאה נדחה מיד, ולא בעוד שתים עשרה שעות, והחיבורים האחרים של אותו אדם נשארים.
+שהועתק לפני היציאה נדחה מיד, ולא בעוד שתים עשרה שעות, והחיבורים האחרים של אותו אדם נשארים. לקוח מחזיק
+לכל היותר שני תורים קדימה (`test_booking_cap.py`, כולל חמש הזמנות שנשלחות בבת אחת כשיש מקום לאחת),
+ומכתובת אחת נפתחים לכל היותר חמישה חשבונות בשעה (`test_signup_limits.py`), כי עוד חשבונות הם הדרך לעקוף
+את הראשון. כל לקוח שהבדיקות יוצרות, וכל דפדפן שהן פותחות, מגיע מכתובת משלו, כמו טלפונים של אנשים שונים.
 
 **וגם התלויות עצמן.** pip-audit לא הורץ אף פעם על אף אחד מהריפואים. ההרצה הראשונה מצאה שבע פגיעויות
 ידועות ב-starlette של המספרה — ביניהן בניית כתובת לפי כותרת Host — ועוד ב-pytest וב-requests. כולן
@@ -875,7 +882,7 @@ Tab אחת, והחצים כדי לזוז — החץ השמאלי הוא השעה
 ## הבדיקות באמת תופסות משהו? — בדיקות מוטציה
 
 סוויטה ירוקה מוכיחה שהמוצר עובר אותה. היא לא מוכיחה שהיא תיכשל אם המוצר יישבר: בדיקה יכולה לא
-לבדוק כלום ולהישאר ירוקה. לכן `mutants/barber-booking.yml` מחזיק 92 חוקים של המספרה שנשברים בכוונה —
+לבדוק כלום ולהישאר ירוקה. לכן `mutants/barber-booking.yml` מחזיק 99 חוקים של המספרה שנשברים בכוונה —
 הנעילה של ההזמנה, תורים צמודים, שעת הסגירה, שעון קיץ, 24 השעות, העברית, החלון הקופץ, מסך הבעלים,
 הפריסה בטלפון, תשובות שמגיעות באיחור —
 ולכל אחד, הסוויטה שחייבת לשים לב.

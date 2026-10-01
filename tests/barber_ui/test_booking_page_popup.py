@@ -63,3 +63,22 @@ def test_a_refusal_that_is_not_a_taken_time_says_it_could_not_book(
     assert shop.last_popup["kind"] == "error"
     assert shop.last_popup["title"] == "לא הצלחנו לקבוע את התור"
     assert "כבר יש לך תור" in shop.last_popup["text"]
+
+
+def test_a_third_booking_ahead_is_refused_saying_how_many_may_be_held(
+    shop, account, bookings, barbers, ui_haircut, shop_tz
+):
+    barber = barbers.create_fake_barber()
+    day = local_day(shop_tz, 10)
+    for hhmm in ("10:00", "11:00"):
+        bookings.create_booking(
+            barber["id"], ui_haircut["id"], at_local(shop_tz, day, hhmm), persona=account["persona"]
+        )
+    shop.sign_in(account["username"], account["password"])
+
+    shop.choose(barber["id"], ui_haircut["id"], day).pick("13:00").book()
+
+    assert shop.last_popup["kind"] == "error"
+    assert "עד 2 תורים" in shop.last_popup["text"] and "לבטל" in shop.last_popup["text"], shop.last_popup[
+        "text"
+    ]

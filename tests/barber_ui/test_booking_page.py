@@ -57,7 +57,10 @@ def test_a_late_cancellation_explains_why_and_keeps_the_booking(
     signed_in = shop.sign_in(account["username"], account["password"])
     today = local_day(shop_tz, 0)
     signed_in.choose(soon["id"], ui_haircut["id"], today)
-    if not signed_in.times():
+    # Late in the evening today has one time left, or none: then tomorrow's first
+    # ones, still well inside the 24 hours. With `not times()` alone this failed
+    # every night from 23:15 to 23:45, shop time, and passed the rest of the day.
+    if len(signed_in.times()) < 2:
         signed_in.choose(soon["id"], ui_haircut["id"], local_day(shop_tz, 1))
     # The second time, not the first: the first can be seconds away, and if a
     # quarter hour ticks over between listing it and booking it, the booking is

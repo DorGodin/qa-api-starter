@@ -24,7 +24,7 @@ from datetime import datetime, timedelta
 import pytest
 from playwright.sync_api import expect
 
-from obj.barber.booking_page import BookingPage, OwnerScreen
+from obj.barber.booking_page import BookingPage, OwnerScreen, a_device
 from utils.local_time import at_local, local_day, parse_instant
 
 WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
@@ -35,7 +35,7 @@ def person(browser, browser_context_args, env_config):
     contexts = []
 
     def _open(screen: type[BookingPage] = BookingPage) -> BookingPage:
-        context = browser.new_context(**browser_context_args)
+        context = a_device(browser, **browser_context_args)
         contexts.append(context)
         return screen(context.new_page(), env_config["url"])
 

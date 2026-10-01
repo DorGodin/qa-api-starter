@@ -23,7 +23,7 @@ class Bookings(Base):
         barber_id: str,
         service_id: str,
         start: datetime | str,
-        persona: str = "customer",
+        persona: str,
         idempotency_key: str | None = None,
     ) -> Response:
         headers = {"Idempotency-Key": idempotency_key} if idempotency_key else None
@@ -35,16 +35,14 @@ class Bookings(Base):
             headers=headers,
         )
 
-    def create_booking(
-        self, barber_id: str, service_id: str, start: datetime | str, persona: str = "customer"
-    ) -> dict:
+    def create_booking(self, barber_id: str, service_id: str, start: datetime | str, persona: str) -> dict:
         resp = self.book(barber_id, service_id, start, persona=persona).assert_ok(201)
         if self.log is not None:
             self.log.record(self.resource, resp.as_dict, persona)
         return resp.as_dict
 
-    def cancel(self, booking_id: str, persona: str = "customer") -> Response:
+    def cancel(self, booking_id: str, persona: str) -> Response:
         return self.client.request("POST", f"{self.path}/{booking_id}/cancel", persona=persona)
 
-    def listing(self, persona: str = "customer", **params) -> dict:
+    def listing(self, persona: str, **params) -> dict:
         return self.find(params=params or None, persona=persona).assert_ok(200).as_dict

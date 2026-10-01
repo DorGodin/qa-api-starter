@@ -20,12 +20,17 @@
 // runs never collide with each other.
 import http from "k6/http";
 import { check } from "k6";
+import exec from "k6/execution";
 import { Counter } from "k6/metrics";
 import { BASE_URL, authHeaders, login } from "../lib/session.js";
 import { stages, thresholds, track } from "../lib/profiles.js";
 
 const BARBERS = Number(__ENV.BARBERS || 4);
-const CUSTOMERS = Number(__ENV.CUSTOMERS || 30);
+// A customer may hold only two bookings ahead. One customer per user would reach
+// it within seconds, and from then on every request would be refused - the race
+// over again, as in the first version. So the pool is larger than the run can
+// fill, and each iteration books as the next customer in it.
+const CUSTOMERS = Number(__ENV.CUSTOMERS || 100);
 const DAYS = Number(__ENV.DAYS || 3);
 const WINDOW_MS = Number(__ENV.WINDOW_MS || 200);
 
@@ -110,11 +115,18 @@ export function setup() {
   }
   if (pool.length === 0) throw new Error("no free times: the pool is empty and nothing would be tested");
 
+  const hex = () => Math.floor(Math.random() * 65536).toString(16);
+  const runPrefix = `${hex()}:${hex()}:${hex()}:${hex()}`;
   const customers = [];
   for (let i = 0; i < CUSTOMERS; i++) {
     const username = `qa-load-${run}-c${i}`;
+    // Each from an address of its own, as different people's phones: one address
+    // may make only a few accounts an hour. A new range every run - addresses
+    // reused from run to run would use up their hour on a long-lived copy - in
+    // IPv6's documentation range, 2001:db8::/32, which is never routed.
+    const address = `2001:db8:${runPrefix}:${i.toString(16)}`;
     created(
-      http.post(`${BASE_URL}/customers`, json({ username, password, display_name: `Load customer ${i}` }), { headers: { "Content-Type": "application/json" }, tags: { name: "POST /customers" } }),
+      http.post(`${BASE_URL}/customers`, json({ username, password, display_name: `Load customer ${i}` }), { headers: { "Content-Type": "application/json", "X-Forwarded-For": address }, tags: { name: "POST /customers" } }),
       "a customer",
     );
     const token = http.post(`${BASE_URL}/auth/token`, json({ username, password }), { headers: { "Content-Type": "application/json" }, tags: { name: "POST /auth/token" } }).json("access_token");
@@ -124,7 +136,7 @@ export function setup() {
 }
 
 export default function (data) {
-  const token = data.customers[(__VU - 1) % data.customers.length];
+  const token = data.customers[exec.scenario.iterationInTest % data.customers.length];
   // Everyone aims at the same target during a window; the next window, the
   // next target. A pool too small for the run wraps, and the late windows
   // become refusals only - BARBERS and DAYS size it.
@@ -144,7 +156,7 @@ export default function (data) {
   }
   check(res, {
     "booked, or refused cleanly": (r) => r.status === 201 || r.status === 409,
-    "a refusal says why": (r) => r.status !== 409 || ["slot_taken", "customer_overlap"].includes(r.json("code")),
+    "a refusal says why": (r) => r.status !== 409 || ["slot_taken", "customer_overlap", "too_many_bookings"].includes(r.json("code")),
   });
 }
 
