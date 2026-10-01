@@ -425,6 +425,9 @@ Read the lock's diff before committing it: the relock freezes whatever the virtu
 tool installed into it by hand lands in the lock too. The `dependencies` workflow runs pip-audit
 on every push and every night; a red run there is a published advisory, and the fix is an
 upgrade through this same procedure, never an ignore.
+Dependabot watches `requirements.txt` only (the lock is excluded: bumped one line at a time it
+cannot install). Its pull request therefore fails the `dependencies` workflow until the lock is
+re-resolved on that branch: check it out, run the relock, read the diff, push.
 
 ## Naming
 
