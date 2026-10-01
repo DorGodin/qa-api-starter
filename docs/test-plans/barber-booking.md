@@ -99,7 +99,7 @@ offers back-to-back slots.
 
 ## The booking page (tests/barber_ui, with --ui)
 
-22 tests drive the page at `/` - Hebrew, right to left - through Playwright, checked twice:
+42 tests drive the page at `/` - Hebrew, right to left - through Playwright, checked twice:
 on the screen, and through the API behind it.
 
 | Test | What it proves |
@@ -150,6 +150,33 @@ click that can never land. A test about the popup itself passes `keep_popup=True
 make ui-barber-watch        # watch in a visible browser
 make ui-barber-record       # video and trace of every test in reports/ui-barber
 ```
+
+### The owner's screen (test_owner_screen.py, 20 tests with parameters)
+
+Every change the owner makes is checked from the other side too: not "the hours saved", but
+"the customer is now offered 12:00 to 13:30 on Monday and nothing on Tuesday".
+
+| Test | What it proves |
+|---|---|
+| the owner gets the management screen | and no booking form |
+| a customer and a barber never get it | the screen is the owner's only |
+| new hours change what customers are offered | Monday 12-14 only: 12:00 first, 13:30 last, Tuesday empty |
+| closing before opening is refused | a Hebrew reason, and the stored hours unchanged |
+| a time off the quarter hour is refused | 10:10, 9:00, 25:00, abc - each refused, nothing saved |
+| a day off takes the barber out that day | listed, no times offered, and undone |
+| the same day off twice | explained in Hebrew, still listed once |
+| a new barber is bookable at once | selected, on the shop's hours, bookable on Sunday at 10:00 |
+| a new service is priced exactly | 92.55 is stored as 9255 agorot - not the float's 9254 |
+| a price that is not shekels and agorot | 80.555, abc, -5, 80,50 - each refused, nothing created |
+| the same service name twice | explained in Hebrew |
+| a price change reaches new bookings only | the earlier booking keeps 80.00, the next one costs 99.90 |
+| withdrawing a service | gone from what customers are offered |
+| the owner cancels inside the cutoff | where a customer could not |
+
+Mutation check on the owner's screen: prices through a float, both hours checks removed, an
+unticked day not sent as off, a day off on the wrong barber, a new barber not selected, a
+withdrawal not saved, customers given the screen, the owner unable to cancel, two Hebrew
+explanations lost. **11 of 11 caught.**
 
 ## Test data prerequisites
 

@@ -47,3 +47,14 @@ def dst_transitions(tz: ZoneInfo, first: date, last: date) -> list[date]:
 
 def parse_instant(value: str) -> datetime:
     return datetime.fromisoformat(value)
+
+
+WEEKDAY_NAMES = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+
+
+def next_weekday(tz: ZoneInfo, weekday: str, after: int = 1) -> date:
+    """The first local date at least `after` days from today that falls on `weekday`."""
+    day = local_day(tz, after)
+    while WEEKDAY_NAMES[day.weekday()] != weekday:
+        day += timedelta(days=1)
+    return day

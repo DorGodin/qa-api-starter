@@ -62,3 +62,10 @@ class Barbers(Base):
         name = f"barber-{barber['username']}"
         self.client.register_persona(name, barber["username"], barber["password"])
         return name
+
+    def hours(self, barber_id: str, persona: str = "owner") -> dict:
+        return (
+            self.client.request("GET", f"{self.path}/{barber_id}/hours", persona=persona)
+            .assert_ok(200)
+            .as_dict["hours"]
+        )

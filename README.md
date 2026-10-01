@@ -265,8 +265,10 @@ chairs, the booking window, days off, late cancellation, a double tap with an
 what — and daylight saving, on whichever transition falls inside the booking window.
 
 **And the booking page, in a real browser.** The barbershop serves a booking page at `/` —
-in Hebrew, right to left — and `tests/barber_ui/` drives it the way a customer does. 22
-tests: four are about the popup every booking answers in (green when booked, red "השעה כבר
+in Hebrew, right to left — and `tests/barber_ui/` drives it the way a customer and the
+owner do. 42 tests: twenty on the owner's management screen (hours, days off, a new barber,
+prices in shekels, withdrawing a service — each checked from the customer's side), four on
+the popup every booking answers in (green when booked, red "השעה כבר
 תפוסה" when someone was faster, and modal: nothing behind it can be pressed), six are about
 Hebrew itself (the layout mirrored, times still read left to right, a
 Latin name isolated inside a Hebrew sentence, the price the Israeli way round, and never a
@@ -649,7 +651,9 @@ ENV=barber pytest
 לעשות מה — ושעון קיץ, על המעבר שנופל בתוך חלון ההזמנה, יהיה אשר יהיה.
 
 **וגם מסך ההזמנה, בדפדפן אמיתי.** המספרה מגישה מסך הזמנה בכתובת `/` — בעברית, מימין
-לשמאל — והבדיקות ב-`tests/barber_ui/` מפעילות אותו כמו לקוח. 22 בדיקות: ארבע על החלון הקופץ
+לשמאל — והבדיקות ב-`tests/barber_ui/` מפעילות אותו כמו לקוח וכמו בעל המספרה. 42 בדיקות: עשרים על
+מסך הניהול (שעות, ימי חופש, ספר חדש, מחירים בשקלים, הסתרת שירות — כל אחת נבדקת גם מהצד של הלקוח),
+ארבע על החלון הקופץ
 שכל הזמנה עונה בו (ירוק כשהתור נקבע, אדום "השעה כבר תפוסה" כשמישהו הקדים, והוא חוסם את הדף
 שמאחוריו), שש על העברית
 עצמה (הפריסה מתהפכת, שעות נשארות משמאל לימין, שם באנגלית מבודד בתוך משפט עברי, מחיר בסדר

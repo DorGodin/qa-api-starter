@@ -126,3 +126,79 @@ class BookingPage:
         self.row_at(hhmm).get_by_test_id("cancel").click()
         self.settled()
         return self
+
+
+class OwnerScreen(BookingPage):
+    """The same page, signed in as the owner: hours, days off, barbers, services."""
+
+    def select_barber(self, barber_id: str) -> OwnerScreen:
+        self.by("barber").select_option(value=barber_id)
+        self.settled()
+        return self
+
+    def hours_row(self, day: str) -> Locator:
+        return self.page.locator(f'[data-testid="hours-row"][data-day="{day}"]')
+
+    def set_day(self, day: str, opening: str | None = None, closing: str | None = None) -> OwnerScreen:
+        """A day with times works those hours; a day without is a day off."""
+        row = self.hours_row(day)
+        works = row.get_by_test_id("hours-works")
+        if opening is None:
+            works.uncheck()
+            return self
+        works.check()
+        row.get_by_test_id("hours-open").fill(opening)
+        row.get_by_test_id("hours-close").fill(closing)
+        return self
+
+    def save_hours(self) -> OwnerScreen:
+        self.by("save-hours").click()
+        self.settled()
+        return self
+
+    def add_day_off(self, day: date) -> OwnerScreen:
+        self.by("dayoff-date").fill(day.isoformat())
+        self.by("add-dayoff").click()
+        self.settled()
+        return self
+
+    def days_off(self) -> list[str]:
+        return [row.get_attribute("data-day") for row in self.by("dayoff-row").all()]
+
+    def remove_day_off(self, day: date) -> OwnerScreen:
+        self.page.locator(f'[data-testid="dayoff-row"][data-day="{day.isoformat()}"]').get_by_test_id(
+            "remove-dayoff"
+        ).click()
+        self.settled()
+        return self
+
+    def add_barber(self, name: str, username: str, password: str) -> OwnerScreen:
+        self.by("new-barber-name").fill(name)
+        self.by("new-barber-username").fill(username)
+        self.by("new-barber-password").fill(password)
+        self.by("add-barber").click()
+        self.settled()
+        return self
+
+    def add_service(self, name: str, minutes: int, price: str) -> OwnerScreen:
+        self.by("new-service-name").fill(name)
+        self.by("new-service-duration").select_option(value=str(minutes))
+        self.by("new-service-price").fill(price)
+        self.by("add-service").click()
+        self.settled()
+        return self
+
+    def service_row(self, service_id: str) -> Locator:
+        return self.page.locator(f'[data-testid="service-row"][data-id="{service_id}"]')
+
+    def save_service(
+        self, service_id: str, price: str | None = None, offered: bool | None = None
+    ) -> OwnerScreen:
+        row = self.service_row(service_id)
+        if price is not None:
+            row.get_by_test_id("service-price").fill(price)
+        if offered is not None:
+            row.get_by_test_id("service-active").set_checked(offered)
+        row.get_by_test_id("save-service").click()
+        self.settled()
+        return self
