@@ -51,6 +51,7 @@ After a run:
 | `make perf-write` | the write path under concurrency, with the money math asserted |
 | `make perf-spike` / `perf-soak` / `perf-stress` | a sudden 5x, a long hold, a ramp past capacity |
 | `make perf-trends` | whether p95 has crept up against earlier load runs of the same shape |
+| `make perf-barber` | the barbershop booking race under load: no double booking, no 5xx, every 201 stored |
 
 **Why they are separate.** A developer checking one change should not wait for a browser to
 start. When everything always runs, people stop running anything.
@@ -460,6 +461,7 @@ make test        # טרמינל 2 — הרצת הבדיקות
 | `make perf-write` | מסלול הכתיבה תחת עומס, כולל בדיקת חישוב הכספים |
 | `make perf-spike` / `perf-soak` / `perf-stress` | זינוק פתאומי, החזקה ארוכה, ועלייה מעל הקיבולת |
 | `make perf-trends` | האם p95 זחל למעלה מול הרצות עומס קודמות באותה צורה |
+| `make perf-barber` | מרוץ ההזמנות של המספרה תחת עומס: אין הזמנה כפולה, אין 5xx, וכל 201 נשמר |
 
 **למה מפרידים.** מפתח שבודק שינוי קטן לא צריך לחכות שדפדפן יעלה. כשהכל רץ תמיד, אנשים
 מפסיקים להריץ בכלל.

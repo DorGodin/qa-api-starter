@@ -62,6 +62,9 @@ perf-soak:      ## long hold, looking for leaks; override HOLD (default 10m)
 perf-stress:    ## ramp past capacity to find the ceiling; only 5xx fails the run
 	$(PERF) perf/write_path.js --profile stress $(K6FLAGS)
 
+perf-barber:    ## the barbershop booking race under load: ENV=barber (point it at a disposable copy - it creates data)
+	ENV=$(or $(ENV_BARBER),barber) $(PERF) perf/barber/booking_race.js --profile $(or $(PROFILE),load) $(K6FLAGS)
+
 perf:           ## everything except soak and stress - the pre-release set
 	$(MAKE) perf-smoke && $(MAKE) perf-load && $(MAKE) perf-write
 

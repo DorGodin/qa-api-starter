@@ -178,6 +178,15 @@ unticked day not sent as off, a day off on the wrong barber, a new barber not se
 withdrawal not saved, customers given the screen, the owner unable to cancel, two Hebrew
 explanations lost. **11 of 11 caught.**
 
+## Under load (perf/barber/booking_race.js)
+
+The booking race, kept alive for the whole run: every user aims at the same fresh time
+in each 200ms window. Gates - all correctness, all kept under `stress`: no unexpected
+status, no 5xx, no 201 that cannot be read back, no two overlapping bookings for one barber
+in the database at the end, and no barber left unbooked. Mutation check: against a server
+with its booking lock broken, 144 server errors and exit 99; against the fixed server, 101
+races with 101 winners and no 5xx. CI runs it on every push in the barbershop job.
+
 ## Test data prerequisites
 
 The product's three seeded accounts (`owner`, `barber`, `customer`) with the passwords from

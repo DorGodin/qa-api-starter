@@ -35,9 +35,9 @@ def harness(tmp_path, monkeypatch):
     monkeypatch.setenv("ENV", "local")
     monkeypatch.delenv("PERF_REMOTE_OK", raising=False)
 
-    def start(fake, *args):
+    def start(fake, *args, script="perf/write_path.js"):
         monkeypatch.setattr(perf_run.subprocess, "run", fake)
-        monkeypatch.setattr(sys, "argv", ["perf_run.py", "perf/write_path.js", *args])
+        monkeypatch.setattr(sys, "argv", ["perf_run.py", script, *args])
         return perf_run.main()
 
     return start
@@ -147,6 +147,20 @@ def test_another_products_environment_is_refused_because_the_scripts_are_the_dem
     )
     fake = FakeK6(k6_export(), exit_code=0)
 
-    with pytest.raises(SystemExit, match="demo product's endpoints"):
+    with pytest.raises(SystemExit, match="drives the 'demo' product"):
         harness(fake)
     assert fake.command is None
+
+
+def test_a_barbershop_script_is_refused_against_the_demo(harness):
+    fake = FakeK6(k6_export(), exit_code=0)
+
+    with pytest.raises(SystemExit, match="drives the 'barber-booking' product"):
+        harness(fake, script="perf/barber/booking_race.js")
+    assert fake.command is None
+
+
+def test_scripts_belong_to_the_product_of_their_folder():
+    assert perf_run.product_of("perf/barber/booking_race.js") == "barber-booking"
+    assert perf_run.product_of("perf/write_path.js") == "demo"
+    assert perf_run.product_of("perf/barberish.js") == "demo", "a folder prefix is not a folder"

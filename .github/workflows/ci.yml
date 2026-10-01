@@ -148,6 +148,10 @@ jobs:
       - name: the barbershop suites
         env: { ENV: barber }
         run: python -m pytest -q
+      - uses: grafana/setup-k6-action@v1
+      - name: the booking race under load - a double booking or a 5xx fails it
+        env: { ENV: barber }
+        run: python scripts/perf_run.py perf/barber/booking_race.js --profile load -e VUS=10 -e RAMP=2s -e HOLD=8s
       - name: install the browser
         run: python -m playwright install --with-deps chromium
       - name: the booking page, in a real browser

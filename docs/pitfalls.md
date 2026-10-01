@@ -459,3 +459,33 @@ frame. Believing it would have meant "fixing" a page that worked.
 
 **Rule:** when a screenshot and the page disagree, read the page's state (the DOM, the
 API) before acting on either. A screenshot is evidence of what was painted, at some moment.
+
+## 2026-10-01 — A load test for a race that raced nothing, and passed a broken server
+
+The first barbershop load script drew booking targets at random from a pool of 24 times.
+The pool filled in the first second, during the ramp, while one or two users were active;
+for the rest of the run every request was a refusal, which writes nothing and needs no
+lock. Run against a server with its booking lock deliberately broken, it passed.
+
+**Rule:** a load test for a race must keep the race alive: every user aims at the same
+fresh target in each short window, and the target moves on, for the whole run. And a load
+test is mutation-tested like any other test - break the thing it guards and watch it fail.
+
+## 2026-10-01 — Under stress, the correctness gates were silently dropped
+
+`perf/lib/profiles.js` returned only `server_errors` under the stress profile, dropping the
+script's correctness gates (`wrong_totals`, `budget_rejections`) along with its latency
+ones. The README promised the opposite. `k6 inspect -e PROFILE=stress` showed it.
+
+**Rule:** `thresholds(latency, correctness)` takes the two groups apart, and stress drops
+only the first. Check what a profile really gates with `k6 inspect`, not with the README.
+
+## 2026-10-01 — A failed rm cut a command chain, and the load test hit an empty port
+
+`rm -f dir/*.db* && start the server && …` - zsh refused the unmatched glob, the `&&`
+stopped, the server never started, and k6 ran against nothing. Its correctness gates read
+zero, because nothing had run; only the setup error and `barbers_never_booked` showed it.
+
+**Rule:** remove a directory rather than a glob (`rm -rf dir; mkdir -p dir`), confirm a
+server is up before running against it, and give every load test a gate that fails when
+it exercised nothing.

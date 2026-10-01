@@ -39,6 +39,23 @@ from utils.perf_history import TREND_STATS, append, normalise  # noqa: E402
 
 REPORTS = ROOT / "reports"
 
+# Which product each folder of k6 scripts drives; a script in no listed folder is
+# the demo's. One product's script against another product's environment would
+# only measure 404s, and record them as a load test.
+SCRIPT_PRODUCTS = {"perf/barber": "barber-booking"}
+
+
+def product_of(script: str) -> str:
+    path = Path(script)
+    path = (path if path.is_absolute() else ROOT / path).resolve()
+    try:
+        relative = path.relative_to(ROOT).as_posix()
+    except ValueError:
+        return "demo"
+    return next(
+        (product for folder, product in SCRIPT_PRODUCTS.items() if relative.startswith(folder + "/")), "demo"
+    )
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(
@@ -59,10 +76,11 @@ def main() -> int:
     base_url = config["url"].rstrip("/")
     if "prod" in base_url:
         raise SystemExit(f"refusing to load test {base_url}: the URL names prod")
-    if config["product"] != "demo":
+    drives = product_of(args.script)
+    if config["product"] != drives:
         raise SystemExit(
-            f"the scripts in perf/ exercise the demo product's endpoints; ENV={config['env']} is "
-            f"{config['product']!r}. Write that product's own k6 script before load testing it."
+            f"{args.script} drives the {drives!r} product; ENV={config['env']} is {config['product']!r}. "
+            "Run it against its own product, or write that product's own k6 script."
         )
     if config["auth"]["type"] != "password_token":
         raise SystemExit(

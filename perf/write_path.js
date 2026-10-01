@@ -34,14 +34,15 @@ const wrongTotals = new Counter("wrong_totals");
 
 export const options = {
   stages: stages(),
-  thresholds: thresholds({
-    "http_req_duration{name:POST /orders}": ["p(95)<400", "p(99)<900"],
-    "http_req_duration{name:POST /orders/:id/submit}": ["p(95)<500", "p(99)<1000"],
+  thresholds: thresholds(
+    {
+      "http_req_duration{name:POST /orders}": ["p(95)<400", "p(99)<900"],
+      "http_req_duration{name:POST /orders/:id/submit}": ["p(95)<500", "p(99)<1000"],
+    },
     // Money math and the budget rule are correctness, not performance. They are
     // gates at every profile, including stress.
-    wrong_totals: ["count==0"],
-    budget_rejections: ["count==0"],
-  }),
+    { wrong_totals: ["count==0"], budget_rejections: ["count==0"] },
+  ),
 };
 
 export function setup() {

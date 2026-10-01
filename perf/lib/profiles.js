@@ -62,18 +62,26 @@ export function track(response) {
   return response;
 }
 
-// Stress deliberately pushes past capacity, so latency and error RATE stop
-// being defects there - queueing and 429s are the expected answer. Asserting
-// them anyway would mean a stress run is red by design, which trains everyone
-// to ignore it. What stays asserted is that the API degrades cleanly.
-export function thresholds(extra = {}) {
+// Two kinds of gate, kept apart because stress treats them differently.
+//
+// `latency` - how fast, how often refused. Stress pushes past capacity on
+// purpose, so there queueing and refusals are the expected answer, not defects;
+// asserting them anyway makes every stress run red by design, which trains
+// everyone to ignore it. Under stress these are dropped.
+//
+// `correctness` - a wrong total, a double booking, a 5xx. Those are defects at
+// any load, so they are kept under every profile. The first version of this
+// function returned only server_errors under stress and silently dropped the
+// script's correctness gates with the latency ones.
+export function thresholds(latency = {}, correctness = {}) {
+  const always = { server_errors: ["rate==0"], ...correctness };
   if (profileName() === "stress") {
-    return { server_errors: ["rate==0"] };
+    return always;
   }
   return {
-    server_errors: ["rate==0"],
+    ...always,
     http_req_failed: ["rate<0.01"],
     checks: ["rate>0.99"],
-    ...extra,
+    ...latency,
   };
 }

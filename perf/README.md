@@ -26,6 +26,38 @@ functional suites assert, on every iteration, at every load level:
 
 **A p95 that looks fine while totals come back wrong is not a pass.**
 
+## The barbershop: `barber/booking_race.js`
+
+Each folder of scripts belongs to one product (`SCRIPT_PRODUCTS` in `scripts/perf_run.py`);
+`perf/barber/` is the barbershop's, and running it against another product is refused.
+
+It is a race, kept alive. Every user aims at the same fresh time during a 200ms window,
+and the target moves on every window - so the race for a time is run again and again, at
+full concurrency, for the whole run. It creates its own barbers, service and customers in
+`setup()` and touches nothing else, so point it at a disposable copy: it leaves data behind.
+
+| Gate | Fails the run when |
+|---|---|
+| `unexpected_status` | anything but a 201 or a clean 409 |
+| `server_errors` | any 5xx - on SQLite, that is what an unlocked race looks like |
+| `lost_bookings` | a 201 whose booking cannot be read back |
+| `double_bookings` | two overlapping confirmed bookings for one barber, checked in the database at the end |
+| `barbers_never_booked` | a barber got no booking at all - the run did not test what it claims |
+
+All five are correctness, so they hold under every profile, `stress` included.
+
+**Why the race is kept alive.** The first version drew targets at random from a small
+pool. The pool filled in the first second, during the ramp, and every later request was a
+refusal - which writes nothing, needs no lock, and cannot race. Against a server with its
+booking lock deliberately broken, it **passed**. The rewritten script, against the same
+broken server: 144 server errors and 287 unexpected statuses, exit 99. Against the fixed
+one: 101 races, 101 winners, 17,270 clean refusals, p95 62ms, no 5xx.
+
+```bash
+make perf-barber                       # ENV=barber
+make perf-barber PROFILE=stress VUS=50
+```
+
 ## The profiles — what shape the load takes
 
 `PROFILE` selects the ramp. The same script answers four different questions.
@@ -40,8 +72,11 @@ functional suites assert, on every iteration, at every load level:
 `stress` is gated differently on purpose: it deliberately pushes past capacity, so
 latency and error *rate* stop being defects there — queueing and 429s are the
 correct answer to too much traffic. Asserting them anyway would make every stress
-run red by design, which trains everyone to ignore it. Under `stress` the only
-gates left are the correctness ones above.
+run red by design, which trains everyone to ignore it. A script passes its gates to
+`thresholds(latency, correctness)` in two groups: under `stress` the latency group is
+dropped and the correctness group is kept. Check it with `k6 inspect -e PROFILE=stress`.
+The first version returned only `server_errors` under stress and quietly dropped every
+correctness gate along with the latency ones.
 
 ## Running
 
