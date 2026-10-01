@@ -13,8 +13,8 @@ jobs:
     name: unit (no API, no network)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.13" }
       - run: pip install -r requirements.lock.txt
       - run: PYTHONPATH=. pytest --unit tests/unit
@@ -23,8 +23,8 @@ jobs:
     name: product suites + edge cases
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.13" }
       - run: pip install -r requirements.lock.txt
       - name: start demo API
@@ -37,8 +37,8 @@ jobs:
     name: browser suite (playwright)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.13" }
       - run: pip install -r requirements.lock.txt
       - run: python -m playwright install --with-deps chromium
@@ -52,8 +52,8 @@ jobs:
     name: perf smoke + load + write path (k6)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.13" }
       - run: pip install -r requirements.lock.txt
       - name: start demo API
@@ -76,7 +76,7 @@ jobs:
       - name: keep this run's numbers
         # always(): the run that crossed a threshold is the one whose numbers you want.
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: perf-${{ github.run_id }}
           path: |
@@ -90,8 +90,8 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.13" }
       - run: pip install -r requirements.lock.txt
       - name: start demo API
@@ -109,7 +109,7 @@ jobs:
         run: python scripts/dashboard.py
       - name: keep this run's numbers
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: perf-heavy-${{ github.run_id }}
           path: |
@@ -133,10 +133,10 @@ jobs:
     # which of the two is right.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
         with: { repository: DorGodin/barber-booking-api, path: barber-booking-api }
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with: { python-version: "3.13" }
       - name: start the barbershop, two workers, no test hooks
         working-directory: barber-booking-api
@@ -202,7 +202,7 @@ jobs:
         run: python -m pytest --ui tests/barber_ui/test_journeys.py -q -rs --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber/image
       - name: keep the video and trace of any page test that failed
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: barber-ui-failures-${{ github.run_id }}
           path: reports/ui-barber
@@ -217,10 +217,10 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
         with: { repository: DorGodin/barber-booking-api, path: barber-booking-api }
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with: { python-version: "3.13" }
       - name: the product's own virtualenv
         working-directory: barber-booking-api
@@ -235,7 +235,7 @@ jobs:
         run: python scripts/mutate.py --product barber-booking-api
       - name: keep the report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mutation-${{ github.run_id }}
           path: reports/mutation-barber-booking-api.json
@@ -246,8 +246,8 @@ jobs:
     name: llm evaluation (deepeval)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.13" }
       - run: pip install -r requirements.lock.txt
       - name: start demo API
@@ -260,7 +260,7 @@ jobs:
     name: docker compose
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: build and run the suites in containers
         run: docker compose run --rm tests
       - name: stop
@@ -277,8 +277,8 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

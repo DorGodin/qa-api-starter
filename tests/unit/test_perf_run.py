@@ -34,6 +34,8 @@ def harness(tmp_path, monkeypatch):
     monkeypatch.setattr(perf_run, "REPORTS", tmp_path)
     monkeypatch.setenv("ENV", "local")
     monkeypatch.delenv("PERF_REMOTE_OK", raising=False)
+    # These tests are about what a run records; a caller's QA_NO_RECORD would skip it.
+    monkeypatch.delenv("QA_NO_RECORD", raising=False)
 
     def start(fake, *args, script="perf/write_path.js"):
         monkeypatch.setattr(perf_run.subprocess, "run", fake)
