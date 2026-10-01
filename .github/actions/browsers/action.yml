@@ -1,0 +1,25 @@
+name: install the browsers
+description: >-
+  Playwright's browsers, cached by the lock (which pins the Playwright version), and
+  their system packages. A cached browser is not downloaded again; the system
+  packages always are, and they are what has hung - so each attempt is limited and
+  retried once.
+inputs:
+  browsers:
+    description: the engines to install, e.g. "chromium" or "chromium webkit"
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache@v6
+      with:
+        path: ~/.cache/ms-playwright
+        key: ms-playwright-${{ runner.os }}-${{ inputs.browsers }}-${{ hashFiles('requirements.lock.txt') }}
+    - name: install ${{ inputs.browsers }}
+      shell: bash
+      # Usually under two minutes. The system packages once hung for an hour, and
+      # with no limit GitHub waits six. A hang does not fail on its own, so `||`
+      # alone would never retry it: each attempt gets six minutes.
+      run: >-
+        timeout 360 python -m playwright install --with-deps ${{ inputs.browsers }}
+        || timeout 360 python -m playwright install --with-deps ${{ inputs.browsers }}

@@ -36,12 +36,14 @@ jobs:
   ui:
     name: browser suite (playwright)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
-        with: { python-version: "3.13" }
+        with: { python-version: "3.13", cache: pip, cache-dependency-path: requirements.lock.txt }
       - run: pip install -r requirements.lock.txt
-      - run: python -m playwright install --with-deps chromium
+      - uses: ./.github/actions/browsers
+        with: { browsers: chromium }
       - name: start demo API
         run: |
           python -m uvicorn demo_api.app:app --host 127.0.0.1 --port 8000 &
@@ -119,37 +121,18 @@ jobs:
           retention-days: 30
 
   barber:
-    name: barbershop - a second product, in its own repository
-    timeout-minutes: 45
-    env:
-      # One definition of how the image is started, used to start it and to redeploy it.
-      BARBER_IMAGE_RUN: >-
-        docker run -d --name barber-image -p 8103:8100
-        --env-file barber-booking-api/.env.example -e DATABASE_URL=sqlite:////data/barber.db
-        -v barber-data:/data barber-booking
+    name: barbershop - API, load and the mutation catalogue
     # The same framework, pointed at a product it shares no code with, through
     # config alone. It tests the barbershop's main as it is today: when that
-    # product changes a rule, this job is meant to go red until someone decides
-    # which of the two is right.
+    # product changes a rule, these jobs are meant to go red until someone
+    # decides which of the two is right. Split in three jobs that run at once -
+    # this one, the page tests on three screens, and the image - instead of one
+    # job doing all of it in a row.
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/checkout@v7
-        with: { repository: DorGodin/barber-booking-api, path: barber-booking-api }
-      - uses: actions/setup-python@v7
-        with: { python-version: "3.13" }
-      - name: start the barbershop, two workers, no test hooks
-        working-directory: barber-booking-api
-        run: |
-          python -m venv .venv
-          .venv/bin/pip install -q -r requirements.lock.txt
-          cp .env.example .env
-          set -a; . ./.env; set +a
-          # The same copy `make run-test` starts: port 8101, its own database file.
-          DATABASE_URL=sqlite:///./barber-test.db .venv/bin/python -m uvicorn app.main:create_app --factory --port 8101 --workers 2 &
-          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8101/health && exit 0; sleep 1; done
-          echo "the barbershop never became healthy"; exit 1
-      - run: pip install -r requirements.lock.txt
+      - uses: ./.github/actions/start-barbershop
       - name: the mutation catalogue still matches the product
         # Seconds. A product change that moves code under a mutant's anchor must
         # update the catalogue in the same change, or the nightly run tests nothing.
@@ -164,29 +147,59 @@ jobs:
       - name: the booking race under load - a double booking or a 5xx fails it
         env: { ENV: barber }
         run: python scripts/perf_run.py perf/barber/booking_race.js --profile load -e VUS=10 -e RAMP=2s -e HOLD=8s
-      - name: install the browsers - Chromium, and WebKit for Safari
-        # Usually two minutes. The system packages it installs have hung for an
-        # hour once, and with no limit GitHub waits six. Each attempt gets six
-        # minutes - a hang does not fail on its own, so `||` alone would never
-        # retry it - and a second attempt, then the step fails.
-        timeout-minutes: 14
-        run: timeout 360 python -m playwright install --with-deps chromium webkit || timeout 360 python -m playwright install --with-deps chromium webkit
-      - name: the booking page, in a real browser
+
+  barber-pages:
+    name: barbershop pages - ${{ matrix.screen }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      # Every screen reports, even when another one is red.
+      fail-fast: false
+      matrix:
+        include:
+          - { screen: desktop, browsers: chromium, args: "" }
+          - { screen: iPhone (WebKit - Safari's engine), browsers: webkit, args: '--browser webkit --device "iPhone 13"' }
+          - { screen: Android, browsers: chromium, args: '--browser chromium --device "Pixel 7"' }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/start-barbershop
+      - uses: ./.github/actions/browsers
+        with: { browsers: "${{ matrix.browsers }}" }
+      - name: every page test, on this screen
         env: { ENV: barber }
-        run: python -m pytest --ui tests/barber_ui -q --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber
-      - name: the booking page on an iPhone - every page test, on Safari's engine
-        env: { ENV: barber }
-        run: python -m pytest --ui tests/barber_ui -q --browser webkit --device "iPhone 13" --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber/iphone
-      - name: the booking page on an Android phone - every page test
-        env: { ENV: barber }
-        run: python -m pytest --ui tests/barber_ui -q --browser chromium --device "Pixel 7" --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber/android
+        run: python -m pytest --ui tests/barber_ui -q ${{ matrix.args }} --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber
+      - name: keep the video and trace of any page test that failed
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: barber-pages-${{ strategy.job-index }}-${{ github.run_id }}
+          path: reports/ui-barber
+          if-no-files-found: ignore
+          retention-days: 14
+
+  barber-image:
+    name: barbershop image - the journeys, a redeploy included
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # One definition of how the image is started, used to start it and to redeploy it.
+      BARBER_IMAGE_RUN: >-
+        docker run -d --name barber-image -p 8103:8100
+        --env-file barber-booking-api/.env.example -e DATABASE_URL=sqlite:////data/barber.db
+        -v barber-data:/data barber-booking
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/start-barbershop
+        with: { serve: "false" }
+      - uses: ./.github/actions/browsers
+        with: { browsers: chromium }
       - name: build the barbershop's image - what would be deployed - and start it
-        # The page tests above run the product from source. A journey against the
-        # image is the one that proves what ships: its dependencies, its user,
-        # its database path. DATABASE_URL is set again because .env.example points
-        # at ./barber.db, which the image's non-root user cannot write - compose
-        # sets it the same way. The data lives on a named volume, as it would
-        # where it is deployed.
+        # The page tests run the product from source. A journey against the image
+        # is the one that proves what ships: its dependencies, its user, its
+        # database path. DATABASE_URL is set again because .env.example points at
+        # ./barber.db, which the image's non-root user cannot write - compose sets
+        # it the same way. The data lives on a named volume, as it would where it
+        # is deployed.
         run: |
           docker build -q -t barber-booking barber-booking-api
           $BARBER_IMAGE_RUN
@@ -199,12 +212,12 @@ jobs:
           # books, redeploys, and checks the account, the booking and the sign-in
           # all survived.
           REDEPLOY_COMMAND: docker rm -f barber-image && $BARBER_IMAGE_RUN
-        run: python -m pytest --ui tests/barber_ui/test_journeys.py -q -rs --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber/image
-      - name: keep the video and trace of any page test that failed
+        run: python -m pytest --ui tests/barber_ui/test_journeys.py -q -rs --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber
+      - name: keep the video and trace of any journey that failed
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: barber-ui-failures-${{ github.run_id }}
+          name: barber-image-${{ github.run_id }}
           path: reports/ui-barber
           if-no-files-found: ignore
           retention-days: 14
@@ -216,12 +229,18 @@ jobs:
     # named for it must go red. Too slow for a pull request.
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
       - uses: actions/checkout@v7
         with: { repository: DorGodin/barber-booking-api, path: barber-booking-api }
       - uses: actions/setup-python@v7
-        with: { python-version: "3.13" }
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            requirements.lock.txt
+            barber-booking-api/requirements.lock.txt
       - name: the product's own virtualenv
         working-directory: barber-booking-api
         run: |
@@ -229,7 +248,8 @@ jobs:
           .venv/bin/pip install -q -r requirements.lock.txt
       - run: pip install -r requirements.lock.txt
       # WebKit for the ui-webkit mutants: defects only Safari has survive a Chromium run.
-      - run: python -m playwright install --with-deps chromium webkit
+      - uses: ./.github/actions/browsers
+        with: { browsers: chromium webkit }
       - uses: grafana/setup-k6-action@v1
       - name: every mutant must be caught
         run: python scripts/mutate.py --product barber-booking-api

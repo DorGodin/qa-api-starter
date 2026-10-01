@@ -1,0 +1,38 @@
+name: start the barbershop
+description: >-
+  Check out barber-booking-api, start it from source on 8101 with its own database
+  (the copy `make run-test` starts), and install this framework - every barbershop
+  job begins the same way, so it is written once.
+inputs:
+  serve:
+    description: start the barbershop from source ("false" for a job that runs its image instead)
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v7
+      with: { repository: DorGodin/barber-booking-api, path: barber-booking-api }
+    - uses: actions/setup-python@v7
+      with:
+        python-version: "3.13"
+        # Both locks are the cache key, so a new pin downloads once and every
+        # later run installs from the cache.
+        cache: pip
+        cache-dependency-path: |
+          requirements.lock.txt
+          barber-booking-api/requirements.lock.txt
+    - name: start the barbershop, two workers, no test hooks
+      if: inputs.serve == 'true'
+      shell: bash
+      working-directory: barber-booking-api
+      run: |
+        python -m venv .venv
+        .venv/bin/pip install -q -r requirements.lock.txt
+        cp .env.example .env
+        set -a; . ./.env; set +a
+        DATABASE_URL=sqlite:///./barber-test.db .venv/bin/python -m uvicorn app.main:create_app --factory --port 8101 --workers 2 &
+        for i in $(seq 1 60); do curl -sf http://127.0.0.1:8101/health && exit 0; sleep 1; done
+        echo "the barbershop never became healthy"; exit 1
+    - name: install this framework
+      shell: bash
+      run: pip install -q -r requirements.lock.txt
