@@ -59,3 +59,47 @@ def test_one_customer_double_submitting_without_a_key_books_once(
 
     assert codes == [201, 409], codes
     assert bookings.listing(persona=me)["total"] == 1
+
+
+def test_sign_ins_and_sign_outs_at_once_never_answer_with_a_server_error(api, customers, new_customer):
+    """Every sign-in writes - it records or clears a failure - and so does every
+    sign-out. Without the write lock two workers deadlocked in SQLite and one
+    answered 500: an owner signing in while a customer on the same page signed out."""
+    accounts = []
+    for _ in range(8):
+        payload = customers.build_signup_payload()
+        customers.create(payload).assert_ok(201)
+        accounts.append(payload)
+    sessions = [new_customer() for _ in range(8)]
+
+    def sign_in(account, password):
+        return api.request(
+            "POST", "/auth/token", persona=None, json={"username": account["username"], "password": password}
+        )
+
+    calls = [lambda a=a: sign_in(a, a["password"]) for a in accounts]
+    calls += [lambda a=a: sign_in(a, "not-the-password") for a in accounts]
+    calls += [lambda p=p: api.request("POST", "/auth/logout", persona=p) for p in sessions]
+    codes = sorted(r.status_code for r in at_once(calls))
+
+    assert [c for c in codes if c >= 500] == [], f"a sign-in or sign-out met a locked database: {codes}"
+
+
+def test_the_owner_saving_while_customers_book_never_answers_with_a_server_error(
+    barbers, bookings, services, haircut, new_customer, shop_tz
+):
+    barber = barbers.create_fake_barber()
+    day = local_day(shop_tz, 5)
+    people = [new_customer() for _ in range(8)]
+    calls = [
+        lambda n=n: bookings.book(
+            barber["id"], haircut["id"], at_local(shop_tz, day, f"{9 + n}:00"), persona=people[n]
+        )
+        for n in range(8)
+    ]
+    calls += [lambda: barbers.set_hours(barber["id"], barbers.build_hours()) for _ in range(8)]
+    calls += [lambda: services.create(services.build_service_payload(), persona="owner") for _ in range(8)]
+
+    codes = sorted(r.status_code for r in at_once(calls))
+
+    assert [c for c in codes if c >= 500] == [], f"an owner's save met a locked database: {codes}"

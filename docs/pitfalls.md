@@ -673,3 +673,15 @@ none, so it failed for half an hour every night and passed the rest of the day.
 **Rule:** a random value shared across tests needs a space too large to collide in, not one
 that is usually large enough. A test that reads "today" must hold at every hour of the day:
 check what it needs (two times), not that something is there.
+
+## 2026-10-01 — A message that said why found a server error
+
+The page tests' sign-in step only waited for the booking screen; a refused sign-in read as a
+slow page. Once it raised with the page's own message, the next CI failure said "500" - and the
+barbershop's sign-in, sign-out and owner's saves turned out to deadlock in SQLite under
+concurrent requests. `tests/barber/test_concurrency.py` now fires sign-ins, failed sign-ins and
+sign-outs at once, and the owner's saves during bookings; both failed with dozens of 500s
+against the unfixed server and pass against the fixed one.
+
+**Rule:** a page-object step that waits for an outcome waits for the failure outcome too and
+reports it. "Timed out" is a symptom; the message on the screen is usually the diagnosis.

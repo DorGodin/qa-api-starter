@@ -814,3 +814,10 @@ mutants:
   changes:
   - find: '  too_many_signups: (_, data) =>'
     replace: '  too_many_signups_off: (_, data) =>'
+- name: a sign-in writes without the write lock, and sign-ins at once answer 500
+  file: app/login_limits.py
+  catches:
+  - api
+  changes:
+  - find: "    with write_lock(session):\n        session.execute(delete(LoginFailure).where(LoginFailure.username == username, LoginFailure.ip == ip))\n"
+    replace: "    session.execute(delete(LoginFailure).where(LoginFailure.username == username, LoginFailure.ip == ip))\n    session.commit()\n"

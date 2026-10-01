@@ -11,11 +11,11 @@ Clone it, run it, then point it at your own product.
 has just gone, and it leaves their screen. Recorded from the UI suite against the barbershop —
 `make ui-barber-watch K="looking"` runs it in front of you.*
 
-**556 tests, in CI on every push** — 411 against the demo API that ships in this repository,
-in six groups, and 145 against a second product in its own repository,
+**558 tests, in CI on every push** — 411 against the demo API that ships in this repository,
+in six groups, and 147 against a second product in its own repository,
 [barber-booking-api](https://github.com/DorGodin/barber-booking-api), reached only through its
 URL, its page tests on a desktop, an iPhone (WebKit, Safari's engine) and an Android phone. On top
-of them: load tests whose thresholds fail the pipeline, and **99 mutants** — rules
+of them: load tests whose thresholds fail the pipeline, and **100 mutants** — rules
 of the product broken on purpose, each of which a named suite must catch, run every night
 (`make mutate`).
 
@@ -394,7 +394,7 @@ runs these suites on every push.
 
 A green suite proves the product passes it. It does not prove the suite would fail if the
 product broke: a test can assert nothing and stay green. So `mutants/barber-booking.yml` holds
-99 rules of the barbershop broken on purpose — the booking lock, back-to-back slots, closing
+100 rules of the barbershop broken on purpose — the booking lock, back-to-back slots, closing
 time, daylight saving, the 24 hour cutoff, the Hebrew, the popup, the owner's screen, the phone
 layout, answers that arrive late — and
 for each one, the suite that must notice.
@@ -547,10 +547,10 @@ every helper that writes data must guard production. Claude Code reads it automa
 ## מה זה
 
 תשתית מוכנה לבדיקות API בפייתון ו-pytest. היא מגיעה עם API קטן לדוגמה, אז הבדיקות רצות
-מהרגע שמשכפלים את הריפו. **556 בדיקות, ב-CI בכל push** — 411 על ה-API לדוגמה שבתוך הריפו, בשש
-קבוצות, ו-145 על מוצר שני בריפו משלו, [barber-booking-api](https://github.com/DorGodin/barber-booking-api),
+מהרגע שמשכפלים את הריפו. **558 בדיקות, ב-CI בכל push** — 411 על ה-API לדוגמה שבתוך הריפו, בשש
+קבוצות, ו-147 על מוצר שני בריפו משלו, [barber-booking-api](https://github.com/DorGodin/barber-booking-api),
 שהן מכירות רק דרך הכתובת שלו, ובדיקות המסך שלו רצות על מחשב, על אייפון (WebKit, המנוע של Safari) ועל
-אנדרואיד. מעל זה: בדיקות עומס שהספים שלהן מפילים את הפייפליין, ו-**99 מוטציות** —
+אנדרואיד. מעל זה: בדיקות עומס שהספים שלהן מפילים את הפייפליין, ו-**100 מוטציות** —
 חוקים של המוצר שנשברים בכוונה, וכל אחד מהם חייב להיתפס על ידי סוויטה מסוימת, בהרצה לילית (`make mutate`).
 
 המטרה: להגיע למקום עבודה חדש ולא לבנות מאפס את מה שלוקח שבועות — שכבת האובייקטים, ניהול
@@ -882,7 +882,7 @@ Tab אחת, והחצים כדי לזוז — החץ השמאלי הוא השעה
 ## הבדיקות באמת תופסות משהו? — בדיקות מוטציה
 
 סוויטה ירוקה מוכיחה שהמוצר עובר אותה. היא לא מוכיחה שהיא תיכשל אם המוצר יישבר: בדיקה יכולה לא
-לבדוק כלום ולהישאר ירוקה. לכן `mutants/barber-booking.yml` מחזיק 99 חוקים של המספרה שנשברים בכוונה —
+לבדוק כלום ולהישאר ירוקה. לכן `mutants/barber-booking.yml` מחזיק 100 חוקים של המספרה שנשברים בכוונה —
 הנעילה של ההזמנה, תורים צמודים, שעת הסגירה, שעון קיץ, 24 השעות, העברית, החלון הקופץ, מסך הבעלים,
 הפריסה בטלפון, תשובות שמגיעות באיחור —
 ולכל אחד, הסוויטה שחייבת לשים לב.
