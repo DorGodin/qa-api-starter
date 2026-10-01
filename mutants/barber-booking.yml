@@ -655,3 +655,83 @@ mutants:
   changes:
   - find: '        "connect-src ''self''; "'
     replace: '        "connect-src *; "'
+- name: every time is its own Tab stop again
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    button.tabIndex = box.children.length === 0 ? 0 : -1;'
+    replace: '    button.tabIndex = 0;'
+- name: the arrows do nothing in the times
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: $("slots").addEventListener("keydown", (e) => {
+    replace: $("slots").addEventListener("keydown-off", (e) => {
+- name: the arrows go the wrong way on a right-to-left page
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: 'const STEP = { ArrowLeft: 1, ArrowDown: 1, ArrowRight: -1, ArrowUp: -1 };'
+    replace: 'const STEP = { ArrowLeft: -1, ArrowDown: 1, ArrowRight: 1, ArrowUp: -1 };'
+- name: closing the popup drops the focus to the top of the page
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if (target) target.focus();\n  else if (inFlight > 0) focusWhenSettled = find;"
+    replace: '  else if (inFlight > 0) focusWhenSettled = find;'
+- name: a popup closed before the list is drawn leaves the focus nowhere
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  else if (inFlight > 0) focusWhenSettled = find;
+
+      '
+    replace: ''
+- name: a cancellation drops the focus to the top of the page
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    if (row && document.activeElement === document.body) row.focus();
+
+      '
+    replace: ''
+- name: a booking in the list cannot take the focus
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    row.tabIndex = -1;
+
+      '
+    replace: ''
+- name: the times are not a radio group to a screen reader
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    button.setAttribute("role", "radio");
+
+      '
+    replace: ''
+- name: no visible ring where the focus is
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  :focus-visible { outline:3px solid var(--brand); outline-offset:2px; }'
+    replace: '  :focus-visible { outline:none; }'
+  - find: '  input:focus, select:focus { outline:3px solid var(--brand); outline-offset:2px; }'
+    replace: '  input:focus, select:focus { outline:none; }'
+- name: checkboxes too small to hit with a mouse
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  input[type="checkbox"] { width:24px; height:24px; display:inline-block;'
+    replace: '  input[type="checkbox"] { width:auto; display:inline-block;'

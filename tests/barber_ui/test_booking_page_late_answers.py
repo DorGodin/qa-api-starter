@@ -127,3 +127,19 @@ def test_an_answer_for_the_person_who_signed_out_never_lands_in_the_page_they_le
     expect(shop.by("slot")).to_have_count(0)
     expect(shop.by("booking-row")).to_have_count(0)
     assert errors == [], f"the page threw on an answer for someone no longer signed in: {errors}"
+
+
+def test_a_popup_closed_before_the_list_is_drawn_still_sends_the_focus_to_the_new_booking(
+    signed_in, ui_barber, ui_haircut, shop_tz
+):
+    signed_in.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 9)).pick("14:00")
+
+    held = Held(signed_in.page, lambda url: "/bookings?" in url, limit=1)
+    signed_in.by("book").click()
+    expect(signed_in.by("popup")).to_be_visible()
+    signed_in.page.keyboard.press("Escape")
+    expect(signed_in.by("popup")).to_be_hidden()
+    held.release()
+    signed_in.settled()
+
+    expect(signed_in.row_at("14:00")).to_be_focused()

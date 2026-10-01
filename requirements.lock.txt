@@ -5,6 +5,7 @@ annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1
 attrs==26.1.0
+axe-playwright-python==0.1.8
 backoff==2.2.1
 certifi==2026.7.22
 cfgv==3.5.0

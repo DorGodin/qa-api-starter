@@ -11,11 +11,11 @@ Clone it, run it, then point it at your own product.
 has just gone, and it leaves their screen. Recorded from the UI suite against the barbershop —
 `make ui-barber-watch K="looking"` runs it in front of you.*
 
-**530 tests, in CI on every push** — 404 against the demo API that ships in this repository,
-in six groups, and 126 against a second product in its own repository,
+**534 tests, in CI on every push** — 404 against the demo API that ships in this repository,
+in six groups, and 130 against a second product in its own repository,
 [barber-booking-api](https://github.com/DorGodin/barber-booking-api), reached only through its
 URL, its page tests on a desktop, an iPhone (WebKit, Safari's engine) and an Android phone. On top
-of them: load tests whose thresholds fail the pipeline, and **78 mutants** — rules
+of them: load tests whose thresholds fail the pipeline, and **88 mutants** — rules
 of the product broken on purpose, each of which a named suite must catch, run every night
 (`make mutate`).
 
@@ -284,7 +284,7 @@ what — and daylight saving, on whichever transition falls inside the booking w
 
 **And the booking page, in a real browser.** The barbershop serves a booking page at `/` —
 in Hebrew, right to left — and `tests/barber_ui/` drives it the way a customer and the
-owner do. 79 tests: twenty on the owner's management screen (hours, days off, a new barber,
+owner do. 83 tests: twenty on the owner's management screen (hours, days off, a new barber,
 prices in shekels, withdrawing a service — each checked from the customer's side), four on
 the popup every booking answers in (green when booked, red "השעה כבר
 תפוסה" when someone was faster, and modal: nothing behind it can be pressed), six are about
@@ -338,6 +338,17 @@ exactly the script and style the page serves, by hash; in the browser, a whole b
 owner's screen run with no violation, and a script slipped past the escaping does not run. Each
 rule has a mutant — thirteen, all caught.
 
+**And for people who do not use a mouse.** `test_booking_page_accessibility.py` runs axe-core
+against WCAG 2.2 AA on every screen — sign-in, a time chosen, the popup, the owner's screen — and
+then does what axe cannot: a whole booking and its cancellation from the keyboard alone, checking
+where the focus lands after every step, and that every stop on the way shows a ring. Writing it
+found that getting from the chosen time to the book button took a Tab for every time of the day —
+95 of them — and that closing the popup or cancelling dropped the focus to the top of the page.
+The times are now a radio group (one Tab stop, the arrows to move — the left arrow is the next
+time, the page reads right to left), and the focus goes to the new booking. The keyboard tests
+skip WebKit, with the reason: Safari's Tab skips buttons unless the user turns on keyboard
+navigation in macOS, a setting the page cannot change.
+
 **And on a phone.** CI runs every page test three times: on a desktop, on an iPhone in WebKit —
 Safari's engine — and on an Android phone. `test_booking_page_mobile.py` also opens three phones of
 its own, the 320px iPhone SE among them, and checks what only a phone gets wrong: nothing reaches
@@ -366,7 +377,7 @@ runs these suites on every push.
 
 A green suite proves the product passes it. It does not prove the suite would fail if the
 product broke: a test can assert nothing and stay green. So `mutants/barber-booking.yml` holds
-78 rules of the barbershop broken on purpose — the booking lock, back-to-back slots, closing
+88 rules of the barbershop broken on purpose — the booking lock, back-to-back slots, closing
 time, daylight saving, the 24 hour cutoff, the Hebrew, the popup, the owner's screen, the phone
 layout, answers that arrive late — and
 for each one, the suite that must notice.
@@ -516,10 +527,10 @@ every helper that writes data must guard production. Claude Code reads it automa
 ## מה זה
 
 תשתית מוכנה לבדיקות API בפייתון ו-pytest. היא מגיעה עם API קטן לדוגמה, אז הבדיקות רצות
-מהרגע שמשכפלים את הריפו. **530 בדיקות, ב-CI בכל push** — 404 על ה-API לדוגמה שבתוך הריפו, בשש
-קבוצות, ו-126 על מוצר שני בריפו משלו, [barber-booking-api](https://github.com/DorGodin/barber-booking-api),
+מהרגע שמשכפלים את הריפו. **534 בדיקות, ב-CI בכל push** — 404 על ה-API לדוגמה שבתוך הריפו, בשש
+קבוצות, ו-130 על מוצר שני בריפו משלו, [barber-booking-api](https://github.com/DorGodin/barber-booking-api),
 שהן מכירות רק דרך הכתובת שלו, ובדיקות המסך שלו רצות על מחשב, על אייפון (WebKit, המנוע של Safari) ועל
-אנדרואיד. מעל זה: בדיקות עומס שהספים שלהן מפילים את הפייפליין, ו-**78 מוטציות** —
+אנדרואיד. מעל זה: בדיקות עומס שהספים שלהן מפילים את הפייפליין, ו-**88 מוטציות** —
 חוקים של המוצר שנשברים בכוונה, וכל אחד מהם חייב להיתפס על ידי סוויטה מסוימת, בהרצה לילית (`make mutate`).
 
 המטרה: להגיע למקום עבודה חדש ולא לבנות מאפס את מה שלוקח שבועות — שכבת האובייקטים, ניהול
@@ -758,7 +769,7 @@ ENV=barber pytest
 לעשות מה — ושעון קיץ, על המעבר שנופל בתוך חלון ההזמנה, יהיה אשר יהיה.
 
 **וגם מסך ההזמנה, בדפדפן אמיתי.** המספרה מגישה מסך הזמנה בכתובת `/` — בעברית, מימין
-לשמאל — והבדיקות ב-`tests/barber_ui/` מפעילות אותו כמו לקוח וכמו בעל המספרה. 79 בדיקות: עשרים על
+לשמאל — והבדיקות ב-`tests/barber_ui/` מפעילות אותו כמו לקוח וכמו בעל המספרה. 83 בדיקות: עשרים על
 מסך הניהול (שעות, ימי חופש, ספר חדש, מחירים בשקלים, הסתרת שירות — כל אחת נבדקת גם מהצד של הלקוח),
 ארבע על החלון הקופץ
 שכל הזמנה עונה בו (ירוק כשהתור נקבע, אדום "השעה כבר תפוסה" כשמישהו הקדים, והוא חוסם את הדף
@@ -806,6 +817,15 @@ make ui-barber-journeys                 # רק המסעות מקצה לקצה
 ובדפדפן, הזמנה שלמה ומסך הבעלים רצים בלי אף הפרה, ו-script שעבר את ה-escaping לא רץ. לכל חוק יש
 מוטציה — שלוש עשרה, וכולן נתפסו.
 
+**וגם בשביל מי שלא משתמש בעכבר.** `test_booking_page_accessibility.py` מריץ axe-core מול WCAG 2.2 AA
+על כל מסך — כניסה, שעה שנבחרה, החלון הקופץ ומסך הבעלים — ואז עושה את מה ש-axe לא יכול: הזמנה שלמה
+וביטול שלה מהמקלדת בלבד, עם בדיקה לאן עובר המיקוד אחרי כל צעד, ושלכל עצירה בדרך יש מסגרת מיקוד
+גלויה. כתיבת הבדיקות גילתה שכדי להגיע מהשעה שנבחרה לכפתור ההזמנה צריך היה Tab על כל שעה ביום —
+95 כאלה — ושסגירת החלון הקופץ או ביטול הפילו את המיקוד לראש הדף. עכשיו השעות הן קבוצת radio (עצירת
+Tab אחת, והחצים כדי לזוז — החץ השמאלי הוא השעה הבאה, כי הדף מימין לשמאל), והמיקוד עובר להזמנה
+החדשה. בדיקות המקלדת מדלגות על WebKit, עם הסיבה: ה-Tab של Safari מדלג על כפתורים אלא אם המשתמש הפעיל
+ניווט מקלדת בהגדרות של macOS, הגדרה שהדף לא יכול לשנות.
+
 **וגם בטלפון.** ה-CI מריץ כל בדיקת מסך שלוש פעמים: על מחשב, על אייפון ב-WebKit — המנוע של Safari —
 ועל אנדרואיד. בנוסף, `test_booking_page_mobile.py` פותח שלושה טלפונים משלו, ביניהם האייפון SE ברוחב
 320px, ובודק את מה שרק טלפון מקלקל: ששום דבר לא חורג מקצה המסך, שכל מה שלוחצים עליו גדול מספיק
@@ -829,7 +849,7 @@ make ui-barber-journeys                 # רק המסעות מקצה לקצה
 ## הבדיקות באמת תופסות משהו? — בדיקות מוטציה
 
 סוויטה ירוקה מוכיחה שהמוצר עובר אותה. היא לא מוכיחה שהיא תיכשל אם המוצר יישבר: בדיקה יכולה לא
-לבדוק כלום ולהישאר ירוקה. לכן `mutants/barber-booking.yml` מחזיק 78 חוקים של המספרה שנשברים בכוונה —
+לבדוק כלום ולהישאר ירוקה. לכן `mutants/barber-booking.yml` מחזיק 88 חוקים של המספרה שנשברים בכוונה —
 הנעילה של ההזמנה, תורים צמודים, שעת הסגירה, שעון קיץ, 24 השעות, העברית, החלון הקופץ, מסך הבעלים,
 הפריסה בטלפון, תשובות שמגיעות באיחור —
 ולכל אחד, הסוויטה שחייבת לשים לב.

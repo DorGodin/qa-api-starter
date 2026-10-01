@@ -602,3 +602,21 @@ anywhere lock the real owner out of their own shop. A lock anyone can set is a d
 **Rule:** count an account's failures per address, with a separate, higher limit per address for
 password spraying. And a test that fails a sign-in on purpose comes from an address of its own,
 or the suites lock the machine they run on.
+
+## 2026-10-01 — A focus race that only a slow database showed
+
+On the test copy, closing the popup at once left the focus nowhere: the new booking's row was not
+drawn yet. Against the mutation runner's fresh database the list drew first, so the mutant that
+removed the fix survived - the race was there, the run was too fast to lose it.
+
+**Rule:** where the focus goes after an answer from the server is a race; force it with `Held`
+(hold the answer, act, release), never rely on the run being slow enough to show it.
+
+## 2026-10-01 — A keyboard test that chose a time before every Tab
+
+The mutant that made every time its own Tab stop survived: choosing a time resets the tab order,
+and the test always chose with the arrows before pressing Tab. The real case - Tab through the
+times without choosing - was never pressed.
+
+**Rule:** a keyboard test presses Tab in the state a person is in, including before choosing
+anything, and checks where a second Tab and a Shift+Tab land.

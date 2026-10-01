@@ -295,6 +295,16 @@ in the browser. Counted against 127.0.0.1, a few runs in a row lock every test o
 passwords included. The server trusts the header only from 127.0.0.1, which is where the suites
 run; against the Docker image in CI it is ignored, so nothing there may fail a sign-in.
 
+## Accessibility
+
+`tests/barber_ui/test_booking_page_accessibility.py` holds the page to WCAG 2.2 AA with axe-core
+on every screen, and walks a booking and a cancellation with the keyboard alone. axe is a floor,
+not the check: the defects it found here were one checkbox size; the keyboard walk found a Tab
+for every time of the day and the focus falling to the top of the page twice. A new screen or a
+new control gets an axe scan and a keyboard step in the same change. Focus that moves after an
+answer from the server is a race like any other: force the order with `Held`, or a fast run hides
+it.
+
 ## Verifying before committing
 
 Gate a commit on the test command's own exit code - `pytest -q > out.txt; code=$?` - never
