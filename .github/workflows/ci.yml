@@ -76,7 +76,7 @@ jobs:
       - name: keep this run's numbers
         # always(): the run that crossed a threshold is the one whose numbers you want.
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: perf-${{ github.run_id }}
           path: |
@@ -109,7 +109,7 @@ jobs:
         run: python scripts/dashboard.py
       - name: keep this run's numbers
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: perf-heavy-${{ github.run_id }}
           path: |
@@ -202,7 +202,7 @@ jobs:
         run: python -m pytest --ui tests/barber_ui/test_journeys.py -q -rs --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber/image
       - name: keep the video and trace of any page test that failed
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: barber-ui-failures-${{ github.run_id }}
           path: reports/ui-barber
@@ -235,7 +235,7 @@ jobs:
         run: python scripts/mutate.py --product barber-booking-api
       - name: keep the report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mutation-${{ github.run_id }}
           path: reports/mutation-barber-booking-api.json
