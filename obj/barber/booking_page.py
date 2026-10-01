@@ -69,6 +69,13 @@ class BookingPage:
         self.settled()
         return self
 
+    def choose_by_name(self, barber: str, service: str, day: date) -> BookingPage:
+        """The same choice, made the way a customer makes it: by the names on the
+        screen, not by ids taken from somewhere else."""
+        barber_id = self.by("barber").locator("option", has_text=barber).get_attribute("value")
+        service_id = self.by("service").locator("option", has_text=service).get_attribute("value")
+        return self.choose(barber_id, service_id, day)
+
     def times(self) -> list[str]:
         return self.by("slot").all_inner_texts()
 

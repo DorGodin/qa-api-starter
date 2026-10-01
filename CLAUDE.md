@@ -273,6 +273,14 @@ or a longer timeout. Find the order of events that fails, and force it - hold a 
 with `page.route` and release it later (`test_booking_page_late_answers.py`) - so the test fails
 on every run until the product is fixed.
 
+## Journeys
+
+`tests/barber_ui/test_journeys.py` is the one place nothing is prepared through the API. A
+journey does everything on the screen, as the people who use it would, and uses the API only at
+the end, to check what was stored. A journey picks by what a person sees - a barber's name, a
+service's name - never by an id read from another screen: an id taken from the screen under test
+follows that screen's mistake. It runs against the source and, in CI, against the Docker image.
+
 ## Verifying before committing
 
 Gate a commit on the test command's own exit code - `pytest -q > out.txt; code=$?` - never

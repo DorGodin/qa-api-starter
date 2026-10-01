@@ -559,3 +559,14 @@ also caught a real one nobody had noticed: the sign-out button, squeezed by the 
 
 **Rule:** measure what a person sees, not what the engine reports as overflow. A survivor is a
 missing test until it is proven equivalent - prove it in both engines before deciding.
+
+## 2026-10-01 — The journey followed the wrong barber, consistently
+
+With the page broken so that a new barber is not selected after adding him, the first journey
+still passed. It read the barber's id from the owner's screen - the screen under test - set the
+hours, booked and checked, all on whichever barber was selected. And it was usually the right one
+by accident: the list is sorted by name, and a Latin "QA barber ..." sorts before every Hebrew name.
+
+**Rule:** a journey takes no id from the screen it tests; the customer picks by the name the owner
+typed, and the owner's screen is checked to show that name. Test data looks like the real data - a
+Hebrew name in a Hebrew shop - or its quirks, like sorting first, hide defects.

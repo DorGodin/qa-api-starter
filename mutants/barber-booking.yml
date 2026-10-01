@@ -469,3 +469,17 @@ mutants:
 
       '
     replace: ''
+- name: a cancelled booking keeps its time taken
+  file: app/booking_rules.py
+  catches:
+  - ui
+  changes:
+  - find: Booking.status == "confirmed", Booking.start_utc <= window.end
+    replace: Booking.start_utc <= window.end
+- name: a barber's diary is filtered by the wrong person and shows nothing
+  file: app/routers/bookings.py
+  catches:
+  - ui
+  changes:
+  - find: query = query.where(Booking.barber_id == user.id)
+    replace: query = query.where(Booking.customer_id == user.id)

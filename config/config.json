@@ -68,5 +68,16 @@
     "health_path": "/health",
     "test_hooks": false,
     "shop_tz": "Asia/Jerusalem"
+  },
+  "barber-image": {
+    "url": "http://127.0.0.1:8103",
+    "product": "barber-booking",
+    "personas": { "owner": "owner", "barber": "barber", "customer": "customer" },
+    "admin_persona": "owner",
+    "passwords": { "owner": "dev-owner-password", "barber": "dev-barber-password", "customer": "dev-customer-password" },
+    "auth": { "type": "password_token", "path": "/auth/token" },
+    "health_path": "/health",
+    "test_hooks": false,
+    "shop_tz": "Asia/Jerusalem"
   }
 }

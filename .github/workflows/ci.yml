@@ -168,6 +168,21 @@ jobs:
       - name: the booking page on an Android phone - every page test
         env: { ENV: barber }
         run: python -m pytest --ui tests/barber_ui -q --browser chromium --device "Pixel 7" --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber/android
+      - name: build the barbershop's image - what would be deployed - and start it
+        # The page tests above run the product from source. A journey against the
+        # image is the one that proves what ships: its dependencies, its user,
+        # its database path. DATABASE_URL is set again because .env.example points
+        # at ./barber.db, which the image's non-root user cannot write - compose
+        # sets it the same way.
+        working-directory: barber-booking-api
+        run: |
+          docker build -q -t barber-booking .
+          docker run -d --name barber-image -p 8103:8100 --env-file .env.example -e DATABASE_URL=sqlite:////data/barber.db barber-booking
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8103/health && exit 0; sleep 1; done
+          echo "the image never became healthy"; docker logs barber-image; exit 1
+      - name: the journeys, end to end, against that image
+        env: { ENV: barber-image }
+        run: python -m pytest --ui tests/barber_ui/test_journeys.py -q --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber/image
       - name: keep the video and trace of any page test that failed
         if: failure()
         uses: actions/upload-artifact@v4
