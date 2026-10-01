@@ -67,7 +67,7 @@ pytest-xdist==3.8.0
 python-dateutil==2.9.0.post0
 python-discovery==1.6.1
 python-dotenv==1.2.3
-python-slugify==8.0.4
+python-slugify==9.1.2
 PyYAML==6.0.3
 questionary==2.1.1
 referencing==0.37.0
