@@ -12,7 +12,7 @@ import http from "k6/http";
 import { check } from "k6";
 import { Counter, Trend } from "k6/metrics";
 import { BASE_URL, TEST_HOOKS, authHeaders, login } from "./lib/session.js";
-import { stages, thresholds, track } from "./lib/profiles.js";
+import { runShape, stages, thresholds, track } from "./lib/profiles.js";
 
 const LINES = Number(__ENV.LINES || 3);
 const QUANTITY = Number(__ENV.QUANTITY || 2);
@@ -24,13 +24,30 @@ const QUANTITY = Number(__ENV.QUANTITY || 2);
 // its own test data. With that done, budget_rejections stops meaning "we ran
 // out" and starts meaning "the product charged more than it should have" -
 // which is why it is a hard gate below.
+//
+// The balance is sized from the run's shape, not fixed. A fixed 1,000,000 paid
+// for about 66,000 orders, and the nightly 3 minute soak in CI places more:
+// every order after that was a correct refusal, counted as a defect, and the
+// soak was red every night. The bound below assumes no iteration - two round
+// trips - completes in under a millisecond, which no real server reaches.
+//
+// A balance that large cannot run out, so a refusal no longer catches a server
+// that charges too much - it only ever did by accident. teardown() reconciles
+// instead: what left the balance must equal ORDER_COST times the orders that
+// reached submitted, to the cent. An overcharge, a lost update between two
+// concurrent submits, or a submit that charged without moving the order all
+// break that equation.
 const ITEM_PRICE = Number(__ENV.ITEM_PRICE || 2.5);
-const BUDGET = Number(__ENV.BUDGET || 1_000_000);
+const ORDER_COST = ITEM_PRICE * QUANTITY * LINES;
+const MIN_ITERATION_SECONDS = 0.001;
+const { seconds: RUN_SECONDS, peakVUs: PEAK_VUS } = runShape();
+const BUDGET = Number(__ENV.BUDGET || Math.ceil((ORDER_COST * PEAK_VUS * RUN_SECONDS) / MIN_ITERATION_SECONDS));
 
 const createLatency = new Trend("order_create_latency", true);
 const submitLatency = new Trend("order_submit_latency", true);
 const budgetRejections = new Counter("budget_rejections");
 const wrongTotals = new Counter("wrong_totals");
+const unreconciled = new Counter("unreconciled_balance");
 
 export const options = {
   stages: stages(),
@@ -41,7 +58,7 @@ export const options = {
     },
     // Money math and the budget rule are correctness, not performance. They are
     // gates at every profile, including stress.
-    { wrong_totals: ["count==0"], budget_rejections: ["count==0"] },
+    { wrong_totals: ["count==0"], budget_rejections: ["count==0"], unreconciled_balance: ["count==0"] },
   ),
 };
 
@@ -76,6 +93,18 @@ export function setup() {
     throw new Error(`setup could not create the item against ${BASE_URL}: ${item.status} ${item.body}`);
   }
   return { token: login("member"), itemId: item.json("id") };
+}
+
+export function teardown(data) {
+  const admin = login("admin");
+  const submitted = http.get(`${BASE_URL}/orders?status=submitted&limit=1`, authHeaders(admin, "GET /orders")).json("total");
+  const balance = http.get(`${BASE_URL}/me/budget`, authHeaders(data.token, "GET /me/budget")).json("budget");
+  const spentCents = Math.round((BUDGET - balance) * 100);
+  const chargedCents = Math.round(ORDER_COST * submitted * 100);
+  if (spentCents !== chargedCents) {
+    unreconciled.add(1);
+    console.error(`the balance does not reconcile: ${spentCents / 100} left it, ${submitted} submitted orders at ${ORDER_COST} account for ${chargedCents / 100}`);
+  }
 }
 
 export default function (data) {

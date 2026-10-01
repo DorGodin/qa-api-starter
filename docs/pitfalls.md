@@ -501,3 +501,20 @@ and 983 bookings in that screen.
 `ENV=barber` points at the barbershop's test copy on 8101 (`make run-test`, its own database
 file), never at the copy a person uses. Proven after the change: all the barbershop runs -
 API, page and load - left the copy on 8100 exactly as it was.
+
+## 2026-10-01 — The nightly soak ran out of money, and the gate called it a defect
+
+`write_path.js` provisioned a fixed 1,000,000. At 15 per order that pays for about 66,000
+orders; the nightly 3 minute soak in CI places more, so every order after that was a correct
+`402` counted as `budget_rejections`, and the soak was red every night it ran. A fixed number
+holds only on the machine and the hold it was chosen on - locally the same soak placed 261,000.
+And with a balance that never runs out, a refusal could not have caught an overcharge anyway:
+that only ever worked by accident.
+This is the 2026-09-30 entry above, again: its rule said "sized for the run", and the fix
+that followed it was a constant.
+
+**Rule:** size test data from the run's own shape (`runShape()` in `perf/lib/profiles.js`:
+peak users times duration, at an iteration no faster than a millisecond), never a constant.
+Assert money by reconciling it - what left the balance equals the price times what was
+charged for - not by waiting to see whether it runs out. Proven against a demo copy that
+charges double: zero refusals, and `unreconciled_balance` failed the run.

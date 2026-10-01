@@ -40,6 +40,28 @@ const SHAPES = {
   ],
 };
 
+// How long a run lasts and how many users it peaks at, from the stages
+// themselves - so anything sized to the run follows the profile and HOLD
+// instead of being a number someone has to remember to raise.
+const UNIT_SECONDS = { ms: 0.001, s: 1, m: 60, h: 3600 };
+
+function seconds(duration) {
+  let total = 0;
+  for (const [, amount, unit] of String(duration).matchAll(/(\d+(?:\.\d+)?)(ms|s|m|h)/g)) {
+    total += Number(amount) * UNIT_SECONDS[unit];
+  }
+  if (total === 0) throw new Error(`cannot read the duration '${duration}'`);
+  return total;
+}
+
+export function runShape() {
+  const shape = stages();
+  return {
+    seconds: shape.reduce((sum, stage) => sum + seconds(stage.duration), 0),
+    peakVUs: Math.max(...shape.map((stage) => stage.target)),
+  };
+}
+
 export const serverErrors = new Rate("server_errors");
 
 export function profileName() {
