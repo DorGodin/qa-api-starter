@@ -12,11 +12,13 @@ from obj.barber.services import Services
 
 BOOKING_WINDOW_DAYS = 60
 CANCEL_CUTOFF_HOURS = 24
+MOVE_CUTOFF_HOURS = 12
 SLOT_MINUTES = 15
 
 __all__ = [
     "BOOKING_WINDOW_DAYS",
     "CANCEL_CUTOFF_HOURS",
+    "MOVE_CUTOFF_HOURS",
     "SLOT_MINUTES",
     "Barbers",
     "Bookings",

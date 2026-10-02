@@ -41,6 +41,16 @@ class Bookings(Base):
             self.log.record(self.resource, resp.as_dict, persona)
         return resp.as_dict
 
+    @staticmethod
+    def build_move_payload(start: datetime | str) -> dict:
+        return {"start": start if isinstance(start, str) else to_iso(start)}
+
+    def move(self, booking_id: str, start: datetime | str, persona: str) -> Response:
+        """The same booking at another time - same barber, service and price."""
+        return self.client.request(
+            "POST", f"{self.path}/{booking_id}/move", persona=persona, json=self.build_move_payload(start)
+        )
+
     def cancel(self, booking_id: str, persona: str) -> Response:
         return self.client.request("POST", f"{self.path}/{booking_id}/cancel", persona=persona)
 

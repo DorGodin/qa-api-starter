@@ -46,12 +46,15 @@ class Barbers(Base):
             "POST", f"{self.path}/{barber_id}/time-off", persona=persona, json={"date": day.isoformat()}
         )
 
-    def availability(self, barber_id: str, day: date, service_id: str, persona: str = "customer") -> Response:
+    def availability(
+        self, barber_id: str, day: date, service_id: str, persona: str = "customer", moving: str | None = None
+    ) -> Response:
+        """`moving`: the booking being moved, whose own time then counts as free."""
+        params = {"date": day.isoformat(), "service_id": service_id}
+        if moving is not None:
+            params["moving"] = moving
         return self.client.request(
-            "GET",
-            f"{self.path}/{barber_id}/availability",
-            persona=persona,
-            params={"date": day.isoformat(), "service_id": service_id},
+            "GET", f"{self.path}/{barber_id}/availability", persona=persona, params=params
         )
 
     def slots(self, barber_id: str, day: date, service_id: str, persona: str = "customer") -> list[dict]:

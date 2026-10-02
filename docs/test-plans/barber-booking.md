@@ -45,6 +45,12 @@ starts over.
 | `test_cancellation.py` | test cancelling twice is assert refused |
 | `test_cancellation.py` | test a barber cannot cancel even their own booking |
 | `test_cancellation.py` | test another customer can neither see nor cancel it |
+| `test_move.py` | test a move is the same booking at the new time and frees the old one |
+| `test_move.py` | test a move to a taken time is refused and the booking stays |
+| `test_move.py` | test the listing for a move offers its own time and the move accepts it |
+| `test_move.py` | test inside the move cutoff only the owner can move |
+| `test_move.py` | test between the two cutoffs a customer can move but not cancel |
+| `test_move.py` | test a barber cannot move and a stranger does not find it |
 | `test_concurrency.py` | test many customers racing for one slot get exactly one booking[same-start] |
 | `test_concurrency.py` | test many customers racing for one slot get exactly one booking[overlapping-starts] |
 | `test_concurrency.py` | test one customer double submitting without a key books once |
@@ -109,6 +115,10 @@ on the screen, and through the API behind it.
 | a customer books a time and sees it | the message, the list, the price, the time gone from the grid, and the stored start |
 | cancelling gives the time back | the list shows cancelled and the grid offers the time again |
 | a late cancellation explains why | the reason, what to do next ("call the shop"), and the booking still there |
+| moving a booking from the list | the same booking id at the new time, barber and service locked while choosing, its own quarter-hour offered, the panel back to booking after |
+| a time taken while moving | told it has just gone, and the booking still at its old time |
+| a late move explains why | the 12-hour rule in Hebrew, and the booking unmoved |
+| stopping a move | the panel back as it was, nothing changed |
 | a double click books once | counted on the wire: one POST, and "Booked" rather than a refusal |
 | signing up signs you straight in | the new account lands on the booking screen |
 | a time taken while you were looking | two windows; the second is told it has just gone, and no longer offered it |

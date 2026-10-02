@@ -698,3 +698,14 @@ was written for.
 seconds and fetches again, five times (`/etc/apt/apt.conf.d/80-stalled-mirrors`); the job's
 `timeout-minutes` stays as the outer limit. A wrapper around a process that starts children
 cannot clean up after them.
+
+## 2026-10-02 — A barbershop change was pushed before the catalogue's anchors were checked
+
+The barbershop's move feature repeated lines from cancellation and moved a function to
+another file. Five mutants here no longer matched their anchor exactly once. It was found
+by `make mutate-check` after the barbershop push, before this repository's nightly CI ran
+against the new `main`.
+
+**Rule:** a change to the barbershop's `app/` is checked with `make mutate-check` before
+it is pushed, and the catalogue fix goes out with it. The check takes seconds; the full
+mutation run stays at the end of the day.

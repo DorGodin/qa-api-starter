@@ -62,7 +62,7 @@ mutants:
               if False:
                   seen =
 - name: somebody else's booking answers 403, not 404
-  file: app/routers/bookings.py
+  file: app/booking_rules.py
   catches:
   - api
   changes:
@@ -77,8 +77,8 @@ mutants:
   catches:
   - api
   changes:
-  - find: if user.role == "customer" and booking.start_utc - now < timedelta
-    replace: if False and booking.start_utc - now < timedelta
+  - find: if user.role == "customer" and booking.start_utc - now < timedelta(hours=config.cancel_cutoff_hours)
+    replace: if False and booking.start_utc - now < timedelta(hours=config.cancel_cutoff_hours)
 - name: a customer can sit in two chairs
   file: app/routers/bookings.py
   catches:
@@ -100,7 +100,7 @@ mutants:
   changes:
   - find: |2-
               if user.role == "customer":
-                  taken += busy(session, window, customer_id=user.id)
+                  taken += busy(session, window, customer_id=user.id, excluding=moving)
     replace: '        pass'
 - name: a barber can cancel
   file: app/routers/bookings.py
@@ -109,10 +109,10 @@ mutants:
   changes:
   - find: |2-
               if user.role == "barber":
-                  raise DomainError(403,
+                  raise DomainError(403, "forbidden", "barbers cannot cancel
     replace: |2-
               if False:
-                  raise DomainError(403,
+                  raise DomainError(403, "forbidden", "barbers cannot cancel
 - name: hidden panels stay on screen
   file: app/static/index.html
   catches:
@@ -148,7 +148,10 @@ mutants:
   - find: |2-
         booking = true;
         $("book").disabled = true;
-    replace: '  booking = true;'
+        const { slot, key } = selected;
+    replace: |2-
+        booking = true;
+        const { slot, key } = selected;
 - name: refusals shown as raw codes
   file: app/static/index.html
   catches:
@@ -821,3 +824,45 @@ mutants:
   changes:
   - find: "    with write_lock(session):\n        session.execute(delete(LoginFailure).where(LoginFailure.username == username, LoginFailure.ip == ip))\n"
     replace: "    session.execute(delete(LoginFailure).where(LoginFailure.username == username, LoginFailure.ip == ip))\n    session.commit()\n"
+- name: a move takes a time another customer already has
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: 'if clashes(wanted, busy(session, wanted, barber_id=booking.barber_id, excluding=booking.id)):'
+    replace: 'if False:'
+- name: a move cannot reach into its own time
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: 'busy(session, wanted, barber_id=booking.barber_id, excluding=booking.id)'
+    replace: 'busy(session, wanted, barber_id=booking.barber_id)'
+- name: a move uses the 24-hour cancellation cutoff instead of its own
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: 'timedelta(hours=config.move_cutoff_hours)'
+    replace: 'timedelta(hours=config.cancel_cutoff_hours)'
+- name: a barber can move a booking
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: 'raise DomainError(403, "forbidden", "barbers cannot move bookings; ask the owner")'
+    replace: 'pass'
+- name: the page lists the times for a move as for a new booking
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  if (moving) params.set("moving", moving.id);'
+    replace: ''
+- name: the page books a second booking instead of moving the first
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  if (moving) return moveSelected();'
+    replace: ''

@@ -156,6 +156,20 @@ class BookingPage:
     def row_at(self, hhmm: str) -> Locator:
         return self.rows().filter(has=self.page.get_by_test_id("booking-when").filter(has_text=hhmm))
 
+    def start_moving(self, hhmm: str) -> BookingPage:
+        """Press "move" on the booking at that time: the panel then offers the
+        times it can move to, with its barber and service fixed."""
+        self.row_at(hhmm).get_by_test_id("move").click()
+        self.settled()
+        expect(self.by("moving")).to_be_visible()
+        return self
+
+    def stop_moving(self) -> BookingPage:
+        self.by("stop-moving").click()
+        self.settled()
+        expect(self.by("moving")).to_be_hidden()
+        return self
+
     def cancel(self, hhmm: str) -> BookingPage:
         self.row_at(hhmm).get_by_test_id("cancel").click()
         self.settled()

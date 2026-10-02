@@ -119,6 +119,8 @@ def test_a_whole_booking_and_its_cancellation_with_the_keyboard_alone(
     expect(shop.row_at("10:45"), "the focus goes to the new booking, not the top of the page").to_be_focused()
 
     page.keyboard.press("Tab")
+    assert focused(page)["testid"] == "move", "the gentler of the two comes first"
+    page.keyboard.press("Tab")
     assert focused(page)["testid"] == "cancel"
     page.keyboard.press("Enter")
     expect(shop.row_at("10:45")).to_have_attribute("data-status", "cancelled")
