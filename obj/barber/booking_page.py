@@ -189,6 +189,12 @@ class OwnerScreen(BookingPage):
         self.settled()
         return self
 
+    def toggle_barber_active(self) -> OwnerScreen:
+        """Take the selected barber out of the shop, or bring them back."""
+        self.by("barber-active-toggle").click()
+        self.settled()
+        return self
+
     def hours_row(self, day: str) -> Locator:
         return self.page.locator(f'[data-testid="hours-row"][data-day="{day}"]')
 

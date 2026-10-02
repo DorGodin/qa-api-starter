@@ -38,6 +38,12 @@ class Barbers(Base):
         self.set_hours(barber["id"], self.build_hours(opening, closing), persona=persona)
         return {**barber, "username": payload["username"], "password": payload["password"]}
 
+    def set_active(self, barber_id: str, active: bool, persona: str = "owner") -> Response:
+        """A barber who leaves is made inactive - never deleted - and can come back."""
+        return self.client.request(
+            "PATCH", f"{self.path}/{barber_id}", persona=persona, json={"active": active}
+        )
+
     def set_hours(self, barber_id: str, hours: dict, persona: str = "owner") -> Response:
         return self.client.request("PUT", f"{self.path}/{barber_id}/hours", persona=persona, json=hours)
 

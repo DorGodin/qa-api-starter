@@ -45,6 +45,12 @@ starts over.
 | `test_cancellation.py` | test cancelling twice is assert refused |
 | `test_cancellation.py` | test a barber cannot cancel even their own booking |
 | `test_cancellation.py` | test another customer can neither see nor cancel it |
+| `test_barbers_leaving.py` | test a barber who left is offered to no one and the owner still sees them |
+| `test_barbers_leaving.py` | test nobody books a barber who left |
+| `test_barbers_leaving.py` | test their bookings stay, say who, and wait for the owner |
+| `test_barbers_leaving.py` | test a barber who left is signed out and cannot sign in |
+| `test_barbers_leaving.py` | test a barber who comes back is bookable again |
+| `test_barbers_leaving.py` | test only the owner decides who has left |
 | `test_guest_bookings.py` | test a guest booking takes the time from everyone else |
 | `test_guest_bookings.py` | test a guest booking cannot take a customer's time |
 | `test_guest_bookings.py` | test the owner is not held to the customers' limit |
@@ -121,6 +127,9 @@ on the screen, and through the API behind it.
 | a customer books a time and sees it | the message, the list, the price, the time gone from the grid, and the stored start |
 | cancelling gives the time back | the list shows cancelled and the grid offers the time again |
 | a late cancellation explains why | the reason, what to do next ("call the shop"), and the booking still there |
+| the owner takes a barber out | the diary kept, the barber marked in the list, no times offered and no error, the button turned round |
+| a barber brought back | offered times again |
+| a customer whose barber left | not offered that barber, and still sees who the booking is with |
 | the owner books a caller by name | the name in the popup and the diary, the field cleared, the time gone, and stored with no customer |
 | the owner presses book with no name | nothing booked, the reason shown, the focus on the name field |
 | a guest's name that looks like HTML | shown as text in the diary, never run |

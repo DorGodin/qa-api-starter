@@ -915,3 +915,52 @@ mutants:
   changes:
   - find: '  const bookable = services.filter((s) => s.active);'
     replace: '  const bookable = services;'
+- name: a barber who left can still be booked
+  file: app/booking_rules.py
+  catches:
+  - api
+  changes:
+  - find: '    if not barber.active:'
+    replace: '    if False:'
+- name: customers are offered barbers who left
+  file: app/routers/barbers.py
+  catches:
+  - api
+  changes:
+  - find: '        query = query.where(User.active.is_(True))'
+    replace: '        pass'
+- name: a barber who left stays signed in
+  file: app/deps.py
+  catches:
+  - api
+  changes:
+  - find: '    if user is None or not user.active:'
+    replace: '    if user is None:'
+- name: a barber who left can sign in
+  file: app/routers/auth.py
+  catches:
+  - api
+  changes:
+  - find: '    if not user.active:'
+    replace: '    if False:'
+- name: a booking no longer says who it is with
+  file: app/views.py
+  catches:
+  - api
+  changes:
+  - find: '        "barber_name": barber_name,'
+    replace: '        "barber_name": None,'
+- name: the owner's screen asks for the times of a barber who left
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  if (left) {'
+    replace: '  if (false) {'
+- name: the diary names a booking's barber from the shop's current list
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '${isolate(b.service_name)} אצל ${isolate(b.barber_name)}${who}'
+    replace: '${isolate(b.service_name)} אצל ${isolate(barberName(b.barber_id))}${who}'
