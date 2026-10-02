@@ -84,8 +84,8 @@ mutants:
   catches:
   - api
   changes:
-  - find: '        if clashes(wanted, busy(session, wanted, customer_id=user.id)):'
-    replace: '        if False:'
+  - find: '        _refuse_clashes(session, wanted, body.barber_id, user.id)'
+    replace: '        _refuse_clashes(session, wanted, body.barber_id, None)'
 - name: a price change reaches back into bookings
   file: app/views.py
   catches:
@@ -165,11 +165,11 @@ mutants:
   - ui
   changes:
   - find: |2-
-          popup(taken ? "השעה כבר תפוסה" : "לא הצלחנו לקבוע את התור", reason, "error");
+          refused(r, slot, "לא הצלחנו לקבוע את התור");
         }
         await refresh();
     replace: |2-
-          popup(taken ? "השעה כבר תפוסה" : "לא הצלחנו לקבוע את התור", reason, "error");
+          refused(r, slot, "לא הצלחנו לקבוע את התור");
           return;
         }
         await refresh();
@@ -261,15 +261,15 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '    popup(taken ? "השעה כבר תפוסה" : "לא הצלחנו לקבוע את התור", reason, "error");'
-    replace: '    popup("✓ התור נקבע", reason, "ok");'
+  - find: '  popup(taken ? "השעה כבר תפוסה" : failedTitle, reason, "error");'
+    replace: '  popup("✓ התור נקבע", reason, "ok");'
 - name: a taken time and any other refusal look the same
   file: app/static/index.html
   catches:
   - ui
   changes:
-  - find: 'taken ? "השעה כבר תפוסה" : "לא הצלחנו לקבוע את התור"'
-    replace: '"לא הצלחנו לקבוע את התור"'
+  - find: 'taken ? "השעה כבר תפוסה" : failedTitle'
+    replace: 'failedTitle'
 - name: the popup's close button does nothing
   file: app/static/index.html
   catches:
@@ -829,15 +829,15 @@ mutants:
   catches:
   - api
   changes:
-  - find: 'if clashes(wanted, busy(session, wanted, barber_id=booking.barber_id, excluding=booking.id)):'
-    replace: 'if False:'
+  - find: '        _refuse_clashes(session, wanted, booking.barber_id, booking.customer_id, excluding=booking.id)'
+    replace: '        pass'
 - name: a move cannot reach into its own time
   file: app/routers/bookings.py
   catches:
   - api
   changes:
-  - find: 'busy(session, wanted, barber_id=booking.barber_id, excluding=booking.id)'
-    replace: 'busy(session, wanted, barber_id=booking.barber_id)'
+  - find: '_refuse_clashes(session, wanted, booking.barber_id, booking.customer_id, excluding=booking.id)'
+    replace: '_refuse_clashes(session, wanted, booking.barber_id, booking.customer_id)'
 - name: a move uses the 24-hour cancellation cutoff instead of its own
   file: app/routers/bookings.py
   catches:
@@ -866,3 +866,52 @@ mutants:
   changes:
   - find: '  if (moving) return moveSelected();'
     replace: ''
+- name: a guest booking takes a time someone already has
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: '        _refuse_clashes(session, wanted, body.barber_id, None)'
+    replace: '        pass'
+- name: a customer can book guests too
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: '    _: User = Depends(require("owner")),'
+    replace: '    _: User = Depends(require("owner", "customer")),'
+- name: a booking with no customer is checked against every booking in the shop
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: '    if customer_id is not None and clashes('
+    replace: '    if clashes('
+- name: the owner's screen books as a customer, without the name
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  if (me.role === "owner") return bookGuest();'
+    replace: ''
+- name: the diary does not say who the guest is
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: 'const who = b.guest_name ? ` · ${isolate(b.guest_name)} (בלי חשבון)` : "";'
+    replace: 'const who = "";'
+- name: a guest's name is written into the diary as HTML
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    detail.textContent = ` · ${isolate(b.service_name)}'
+    replace: '    detail.innerHTML = ` · ${isolate(b.service_name)}'
+- name: the owner's booking choice offers withdrawn services
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  const bookable = services.filter((s) => s.active);'
+    replace: '  const bookable = services;'

@@ -19,11 +19,12 @@ def offered(barbers, barber_id, day, service_id) -> list[str]:
     return [parse_instant(s["start"]).isoformat() for s in barbers.slots(barber_id, day, service_id)]
 
 
-def test_the_owner_gets_the_management_screen_and_no_booking_form(owner_screen):
+def test_the_owner_gets_the_management_screen_and_a_booking_form_that_asks_for_a_name(owner_screen):
     screen = owner_screen()
 
     expect(screen.by("owner")).to_be_visible()
-    expect(screen.by("book-panel")).to_be_hidden()
+    expect(screen.by("book-panel")).to_be_visible()
+    expect(screen.by("guest-field")).to_be_visible()
     expect(screen.by("hours-row")).to_have_count(7)
 
 
@@ -35,6 +36,7 @@ def test_a_customer_and_a_barber_never_get_the_management_screen(shop, account, 
     username, password = credentials("barber")
     shop.sign_in(username, password)
     expect(shop.by("owner")).to_be_hidden()
+    expect(shop.by("book-panel")).to_be_hidden()
 
 
 def test_new_hours_change_what_customers_are_offered(owner_screen, barbers, ui_haircut, shop_tz):

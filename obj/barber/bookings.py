@@ -2,9 +2,13 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from faker import Faker
+
 from obj.base import Base
 from obj.client import Response
 from utils.helpers import to_iso
+
+fake = Faker()
 
 
 class Bookings(Base):
@@ -34,6 +38,19 @@ class Bookings(Base):
             json=self.build_booking_payload(barber_id, service_id, start),
             headers=headers,
         )
+
+    def book_guest(
+        self,
+        barber_id: str,
+        service_id: str,
+        start: datetime | str,
+        guest_name: str | None = None,
+        persona: str = "owner",
+    ) -> Response:
+        """The owner books, by name, someone with no account."""
+        name = guest_name if guest_name is not None else fake.first_name()
+        payload = {**self.build_booking_payload(barber_id, service_id, start), "guest_name": name}
+        return self.client.request("POST", f"{self.path}/guest", persona=persona, json=payload)
 
     def create_booking(self, barber_id: str, service_id: str, start: datetime | str, persona: str) -> dict:
         resp = self.book(barber_id, service_id, start, persona=persona).assert_ok(201)

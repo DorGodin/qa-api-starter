@@ -156,6 +156,11 @@ class BookingPage:
     def row_at(self, hhmm: str) -> Locator:
         return self.rows().filter(has=self.page.get_by_test_id("booking-when").filter(has_text=hhmm))
 
+    def book_for(self, name: str, keep_popup: bool = False) -> BookingPage:
+        """The owner's booking: the guest's name, then the same book button."""
+        self.by("guest-name").fill(name)
+        return self.book(keep_popup=keep_popup)
+
     def start_moving(self, hhmm: str) -> BookingPage:
         """Press "move" on the booking at that time: the panel then offers the
         times it can move to, with its barber and service fixed."""

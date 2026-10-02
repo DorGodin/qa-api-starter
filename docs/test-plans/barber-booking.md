@@ -45,6 +45,12 @@ starts over.
 | `test_cancellation.py` | test cancelling twice is assert refused |
 | `test_cancellation.py` | test a barber cannot cancel even their own booking |
 | `test_cancellation.py` | test another customer can neither see nor cancel it |
+| `test_guest_bookings.py` | test a guest booking takes the time from everyone else |
+| `test_guest_bookings.py` | test a guest booking cannot take a customer's time |
+| `test_guest_bookings.py` | test the owner is not held to the customers' limit |
+| `test_guest_bookings.py` | test a guest needs a real name[empty, spaces, too-long] |
+| `test_guest_bookings.py` | test only the owner books guests and a customer never sees them |
+| `test_guest_bookings.py` | test the owner moves a guest booking past another barber's customer |
 | `test_move.py` | test a move is the same booking at the new time and frees the old one |
 | `test_move.py` | test a move to a taken time is refused and the booking stays |
 | `test_move.py` | test the listing for a move offers its own time and the move accepts it |
@@ -115,6 +121,10 @@ on the screen, and through the API behind it.
 | a customer books a time and sees it | the message, the list, the price, the time gone from the grid, and the stored start |
 | cancelling gives the time back | the list shows cancelled and the grid offers the time again |
 | a late cancellation explains why | the reason, what to do next ("call the shop"), and the booking still there |
+| the owner books a caller by name | the name in the popup and the diary, the field cleared, the time gone, and stored with no customer |
+| the owner presses book with no name | nothing booked, the reason shown, the focus on the name field |
+| a guest's name that looks like HTML | shown as text in the diary, never run |
+| a withdrawn service | not offered for booking, and the screen not left showing an error |
 | moving a booking from the list | the same booking id at the new time, barber and service locked while choosing, its own quarter-hour offered, the panel back to booking after |
 | a time taken while moving | told it has just gone, and the booking still at its old time |
 | a late move explains why | the 12-hour rule in Hebrew, and the booking unmoved |
