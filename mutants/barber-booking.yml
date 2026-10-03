@@ -941,8 +941,12 @@ mutants:
   catches:
   - api
   changes:
-  - find: '    if not user.active:'
-    replace: '    if False:'
+  - find: |2-
+          # Told only to someone who knew the password - it confirms the account.
+          if not user.active:
+    replace: |2-
+          # Told only to someone who knew the password - it confirms the account.
+          if False:
 - name: a booking no longer says who it is with
   file: app/views.py
   catches:
