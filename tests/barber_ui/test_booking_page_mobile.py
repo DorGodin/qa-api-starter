@@ -231,3 +231,11 @@ def test_at_200_percent_zoom_the_page_still_fits_and_books(
         assert fits_on_screen(zoomed.page, zoomed.by("popup")), "the whole answer, at 200%"
     finally:
         context.close()
+
+
+def test_a_signed_in_screen_opens_at_its_top(phone_owner):
+    """The sign-in form sits low on a phone; the screen after it opened scrolled
+    to where the form had been, its first fields under the owner's menu."""
+    phone_owner.settled()
+
+    assert phone_owner.page.evaluate("window.scrollY") == 0

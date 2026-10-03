@@ -72,8 +72,16 @@ def test_a_whole_booking_and_its_cancellation_with_the_keyboard_alone(
     phone = customers.new_phone()
     seen = sms_inbox.last_id(phone)
 
-    page.keyboard.press("Tab")
-    assert focused(page)["testid"] == "full-name", "the first Tab reaches the first field"
+    # The shop's contact buttons come first, as they stand first on the screen -
+    # when the shop has any - and then the first field.
+    passed = []
+    for _ in range(8):
+        page.keyboard.press("Tab")
+        if focused(page)["testid"] == "full-name":
+            break
+        passed.append(focused(page)["testid"])
+    assert focused(page)["testid"] == "full-name", f"Tab never reached the first field: {passed}"
+    assert all(t.startswith("shop-") for t in passed), f"something before the first field: {passed}"
     page.keyboard.type("דנה מקלדת")
     page.keyboard.press("Tab")
     page.keyboard.type(phone)

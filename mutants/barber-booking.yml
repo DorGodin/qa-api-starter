@@ -436,10 +436,15 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '  @media (max-width: 760px) { [data-section] { scroll-margin-top:72px; } }
-
-      '
-    replace: ''
+  - find: ' [data-section] { scroll-margin-top:72px; } }'
+    replace: ' }'
+- name: a field the keyboard reaches on a phone lands under the owner's menu
+  file: app/static/index.html
+  catches:
+  - ui-webkit
+  changes:
+  - find: '{ html { scroll-padding-top:72px; }'
+    replace: '{'
 - name: a row squeezes its button below the width of its own label
   file: app/static/index.html
   catches:
@@ -626,8 +631,8 @@ mutants:
 
       '
     replace: ''
-  - find: "        html = PAGE.read_text(encoding=\"utf-8\")\n        return HTMLResponse(html, headers={\"Content-Security-Policy\": page_policy(html)})"
-    replace: "        html = PAGE.read_text(encoding=\"utf-8\")\n        return HTMLResponse(html)"
+  - find: "        )\n        return HTMLResponse(html, headers={\"Content-Security-Policy\": page_policy(html)})"
+    replace: "        )\n        return HTMLResponse(html)"
 - name: inline scripts are allowed, so an injected one runs
   file: app/main.py
   catches:
@@ -647,7 +652,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '        "img-src data:; "'
+  - find: '        "img-src ''self'' data:; "'
     replace: '        "img-src ''self''; "'
 - name: the page may send what it reads to any site
   file: app/main.py
@@ -1034,3 +1039,10 @@ mutants:
   changes:
   - find: 'autocomplete="one-time-code"'
     replace: 'autocomplete="off"'
+- name: the screen after sign-in opens scrolled to where the form was
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  window.scrollTo(0, 0);'
+    replace: ''
