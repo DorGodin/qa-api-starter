@@ -31,6 +31,12 @@ def plain(text: str) -> str:
     return text.translate(BIDI_CONTROLS).replace("\u00a0", " ")
 
 
+def greeting(display_name: str) -> re.Pattern:
+    """How the page greets a customer: by first name, with the name isolated."""
+    first = display_name.split()[0]
+    return re.compile(rf"^שלום [\u2066-\u2069]*{re.escape(first)}[\u2066-\u2069]*$")
+
+
 def a_device(browser, **context_args):
     """A browser context that is a different person's device: an address of its
     own, as the barbershop counts sign-ups and failed sign-ins by address."""

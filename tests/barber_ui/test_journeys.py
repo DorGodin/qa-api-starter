@@ -24,7 +24,7 @@ from datetime import datetime, timedelta
 import pytest
 from playwright.sync_api import expect
 
-from obj.barber.booking_page import BookingPage, OwnerScreen, a_device
+from obj.barber.booking_page import BookingPage, OwnerScreen, a_device, greeting
 from obj.barber.customers import Customers
 from utils.local_time import at_local, local_day, parse_instant
 
@@ -227,14 +227,14 @@ def test_on_a_shared_device_the_next_person_finds_nothing_of_the_one_before(
 
     second = new_account(run_id, "second")
     signed_up(device, second, navigate=False)
-    expect(device.by("display-name")).to_contain_text(second["name"])
+    expect(device.by("display-name")).to_have_text(greeting(second["name"]))
     expect(device.by("no-bookings")).to_be_visible()
     expect(device.by("booking-row")).to_have_count(0)
     device.choose_by_name(barber["name"], service, day).pick("11:00").book()
 
     device.reload()
     expect(device.by("app")).to_be_visible()
-    expect(device.by("display-name")).to_contain_text(second["name"])
+    expect(device.by("display-name")).to_have_text(greeting(second["name"]))
     expect(device.row_at("11:00")).to_have_attribute("data-status", "confirmed")
 
     device.by("logout").click()

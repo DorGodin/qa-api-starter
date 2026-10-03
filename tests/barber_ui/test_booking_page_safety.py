@@ -25,11 +25,14 @@ def test_times_are_shown_on_the_shop_clock_whatever_the_browsers_time_zone(
 
 
 def test_a_name_that_looks_like_html_is_shown_as_text_and_never_run(shop, customers):
-    payload = customers.build_signup_payload(display_name='<img src=x onerror="window.__ran=1">')
+    # No spaces: a customer is greeted by first name, so the whole tag has to be
+    # one word to reach the screen. A slash separates attributes as a space does.
+    tag = "<img/src=x/onerror=window.__ran=1>"
+    payload = customers.build_signup_payload(display_name=tag)
 
     shop.sign_up(payload["display_name"], payload["username"], payload["password"])
 
-    expect(shop.by("display-name")).to_contain_text('<img src=x onerror="window.__ran=1">')
+    expect(shop.by("display-name")).to_contain_text(tag)
     assert shop.page.evaluate("window.__ran") is None, "a display name was executed as code"
 
 

@@ -125,8 +125,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: $("display-name").textContent = `${isolate(me.display_name)}
-    replace: $("display-name").innerHTML = `${isolate(me.display_name)}
+  - find: '  $("display-name").textContent = me.role === "customer"'
+    replace: '  $("display-name").innerHTML = me.role === "customer"'
 - name: times shown on the browser's clock
   file: app/static/index.html
   catches:
@@ -1119,3 +1119,35 @@ mutants:
   changes:
   - find: '  @media (prefers-reduced-motion: reduce) { .mini { transition:none; } }'
     replace: ''
+- name: a customer is greeted by full name
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    ? `שלום ${isolate(firstName(me.display_name))}`'
+    replace: '    ? `שלום ${isolate(me.display_name)}`'
+- name: the staff are greeted like customers, without their role
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  $("display-name").textContent = me.role === "customer"'
+    replace: '  $("display-name").textContent = true'
+- name: the booked popup is green again
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  dialog[data-kind="ok"] .band { background:var(--ink); }'
+    replace: '  dialog[data-kind="ok"] .band { background:var(--ok); }'
+- name: a booking is announced twice, under the list as well
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: |2-
+          // only repeated them. An earlier refusal is cleared.
+          say("", "ok");
+    replace: |2-
+          // only repeated them. An earlier refusal is cleared.
+          say(`נקבע: ${booked}`, "ok");

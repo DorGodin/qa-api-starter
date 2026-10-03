@@ -131,7 +131,9 @@ on the screen, and through the API behind it.
 |---|---|
 | signing in replaces the form | the sign-in form is really gone, not only marked hidden |
 | the Book button appears only after a time is chosen | a hidden panel stays hidden |
-| a customer books a time and sees it | the message, the list, the price, the time gone from the grid, and the stored start |
+| a customer books a time and sees it | the popup, no repeat of it under the list, the list, the price, the time gone from the grid, and the stored start |
+| the greeting | a customer greeted `שלום` and their first name, the full name kept on the account; the staff see their name and role instead |
+| the booked popup | black like the page's buttons, white words |
 | cancelling gives the time back | the list shows cancelled and the grid offers the time again |
 | a late cancellation explains why | the reason, what to do next ("call the shop"), and the booking still there |
 | the shop's header | the brand and the tab title from the shop's settings, a named button for each contact link set and none for the rest, the poles and scissors hidden from screen readers and still for reduced motion |
@@ -139,7 +141,7 @@ on the screen, and through the API behind it.
 | the contact buttons | at the foot of the page, after the sign-in |
 | a signed-in phone screen | opens at its top, not where the sign-in form had been |
 | the slim bar on a phone | scrolled with the keyboard open, the brand shrinks to a slim bar at the very top and leaves when scrolled back; a field reached by the keyboard is not under it; the owner's menu sticks under it, not behind it; hidden from screen readers and without a slide for reduced motion |
-| a first sign-in by code | name and phone, the code screen showing only the last four digits, the code, and the account named as given |
+| a first sign-in by code | name and phone, the code screen showing only the last four digits, the code, the greeting by first name, and the account named in full as given |
 | a wrong code | the tries left, the boxes marked invalid, and לכיסא locked until a digit changes |
 | the third wrong code | locked for good until a new code |
 | a new code | offered only after the countdown |

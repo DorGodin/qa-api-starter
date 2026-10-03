@@ -1,8 +1,10 @@
 """Signing in with a code on the page: name and phone, then the four digits
 from the SMS - read from the fake provider's inbox, as from a phone."""
 
+import requests
 from playwright.sync_api import expect
 
+from obj.barber.booking_page import greeting
 from obj.barber.customers import Customers
 from tests.barber_ui.test_booking_page_accessibility import violations
 
@@ -23,7 +25,7 @@ def wrong(code: str) -> str:
     return f"{(int(code) + 1) % 10_000:04d}"
 
 
-def test_a_first_sign_in_by_code_opens_the_account_under_the_name_given(shop, sms_inbox):
+def test_a_first_sign_in_by_code_opens_the_account_under_the_name_given(shop, sms_inbox, env_config):
     phone, code = to_code_screen(shop, sms_inbox, name="יעל לוי")
 
     sent_to = shop.text(shop.by("code-sent-to"))
@@ -32,7 +34,16 @@ def test_a_first_sign_in_by_code_opens_the_account_under_the_name_given(shop, sm
     shop.by("code").fill(code)
 
     expect(shop.by("app")).to_be_visible()
-    expect(shop.by("display-name")).to_contain_text("יעל לוי")
+    expect(shop.by("display-name")).to_have_text(greeting("יעל לוי"))
+    me = requests.get(
+        env_config["url"].rstrip("/") + "/me",
+        headers={"Authorization": f"Bearer {shop.session_token()}"},
+        timeout=10,
+    )
+    assert me.status_code == 200, me.text
+    assert (
+        me.json()["display_name"] == "יעל לוי"
+    ), "greeted by first name, but the account keeps the full name"
 
 
 def test_a_wrong_code_says_how_many_tries_are_left_and_locks_the_button_until_a_digit_changes(

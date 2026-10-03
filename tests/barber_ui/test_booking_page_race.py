@@ -31,7 +31,7 @@ def test_a_time_taken_while_you_were_looking_is_explained(
     first.book()
     second.book()
 
-    expect(first.message()).to_contain_text("נקבע:")
+    expect(first.message()).to_have_text("")
     expect(second.message()).to_contain_text("מישהו בדיוק קבע את 10:00")
     assert first.last_popup["kind"] == "ok" and "התור נקבע" in first.last_popup["title"]
     assert second.last_popup == {**second.last_popup, "kind": "error", "title": "השעה כבר תפוסה"}
