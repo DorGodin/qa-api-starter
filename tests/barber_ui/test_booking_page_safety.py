@@ -133,7 +133,7 @@ def test_signing_out_with_no_connection_still_signs_this_device_out(shop, accoun
     shop.by("logout").click()
     shop.reload()
 
-    expect(shop.by("login-form")).to_be_visible()
+    expect(shop.by("code-request-form")).to_be_visible()
     expect(shop.by("app")).to_be_hidden()
 
 

@@ -205,7 +205,7 @@ def test_on_a_shared_device_the_next_person_finds_nothing_of_the_one_before(
     expect(device.row_at("10:00")).to_have_attribute("data-status", "confirmed")
 
     device.by("logout").click()
-    expect(device.by("login-form")).to_be_visible()
+    expect(device.by("code-request-form")).to_be_visible()
     left = values_left_in_the_page(device)
     for value in (first["name"], first["username"], first["password"]):
         assert not any(value in item for item in left), f"{value!r} is still in the page after signing out"
@@ -225,7 +225,7 @@ def test_on_a_shared_device_the_next_person_finds_nothing_of_the_one_before(
 
     device.by("logout").click()
     device.reload()
-    expect(device.by("login-form")).to_be_visible()
+    expect(device.by("code-request-form")).to_be_visible()
     expect(device.by("app")).to_be_hidden()
 
 

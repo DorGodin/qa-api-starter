@@ -119,7 +119,7 @@ def test_a_remembered_sign_in_the_server_no_longer_accepts_is_dropped_on_refresh
 
     shop.reload()
 
-    expect(shop.by("login-form")).to_be_visible()
+    expect(shop.by("code-request-form")).to_be_visible()
     expect(shop.by("app")).to_be_hidden()
     assert (
         shop.page.evaluate("() => sessionStorage.getItem('barber.session')") is None

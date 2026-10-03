@@ -46,7 +46,17 @@ class BookingPage:
 
     def open(self) -> BookingPage:
         self.page.goto(self.base_url + "/")
+        self.unfold_password_sign_in()
         expect(self.by("login-form")).to_be_visible()
+        return self
+
+    def unfold_password_sign_in(self) -> BookingPage:
+        """The page signs in by SMS code now; the username and password form is
+        folded away under it until every account has a phone. Until these suites
+        sign in by code too, they unfold it."""
+        fold = self.by("password-sign-in")
+        if fold.count() and fold.get_attribute("open") is None:
+            fold.locator("summary").click()
         return self
 
     def reload(self) -> BookingPage:
