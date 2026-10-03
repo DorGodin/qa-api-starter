@@ -118,3 +118,18 @@ def test_the_code_screen_offers_no_password_sign_in_and_changing_the_number_brin
     expect(shop.by("password-sign-in")).to_be_hidden()
     shop.by("change-phone").click()
     expect(shop.by("password-sign-in")).to_be_visible()
+
+
+def test_a_cursor_blinks_in_the_box_the_next_digit_goes_to(shop, sms_inbox):
+    to_code_screen(shop, sms_inbox)
+    shop.by("code").press_sequentially("12")
+
+    caret = (
+        shop.page.locator(".code-boxes span")
+        .nth(2)
+        .evaluate(
+            "b => { const a = getComputedStyle(b, '::after'); return [a.content, a.width, a.animationName]; }"
+        )
+    )
+
+    assert caret == ['""', "2px", "caret"], f"no blinking cursor in the third box: {caret}"

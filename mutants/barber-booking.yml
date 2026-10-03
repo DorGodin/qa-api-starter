@@ -1077,3 +1077,10 @@ mutants:
   changes:
   - find: '  $("password-sign-in").hidden = true;'
     replace: ''
+- name: the code boxes show no cursor
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  .code-wrap:focus-within .code-boxes span.now:empty::after {'
+    replace: '  .code-wrap:focus-within .code-boxes span.now:empty::before {'
