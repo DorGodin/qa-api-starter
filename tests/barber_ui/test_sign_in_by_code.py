@@ -44,6 +44,10 @@ def test_a_wrong_code_says_how_many_tries_are_left_and_locks_the_button_until_a_
 
     expect(shop.by("code-error")).to_contain_text("נשארו 2 ניסיונות")
     expect(shop.by("code")).to_have_attribute("aria-invalid", "true")
+    borders = shop.page.locator(".code-boxes span").evaluate_all(
+        "bs => bs.map(b => getComputedStyle(b).borderTopColor)"
+    )
+    assert len(set(borders)) == 1, f"after a wrong code every box is red, the next one included: {borders}"
     expect(shop.by("verify-code")).to_be_disabled()
     expect(shop.by("code-locked-hint")).to_be_visible()
     shop.by("code").press("Backspace")
