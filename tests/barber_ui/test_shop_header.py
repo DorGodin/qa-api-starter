@@ -5,6 +5,8 @@ every link set or none."""
 import requests
 from playwright.sync_api import expect
 
+from tests.barber_ui.test_booking_page_accessibility import violations
+
 NAMES = {
     "whatsapp": "וואטסאפ",
     "phone": "התקשרות",
@@ -61,3 +63,24 @@ def test_the_poles_stand_still_for_whoever_asked_for_less_motion(browser, env_co
         assert animation == "none", animation
     finally:
         context.close()
+
+
+def test_the_privacy_policy_is_one_step_from_the_sign_in_screen(shop):
+    shop.open()
+
+    shop.by("privacy-link").click()
+
+    expect(shop.page.get_by_role("heading", level=1)).to_have_text("מדיניות פרטיות")
+    expect(shop.page.get_by_text("חוק הגנת הפרטיות")).to_be_visible()
+    assert "{{" not in shop.page.content(), "a placeholder was left on the privacy policy"
+    assert violations(shop.page) == [], "the privacy policy"
+
+
+def test_the_ways_to_reach_the_shop_come_after_the_sign_in_not_before_it(shop, env_config):
+    if not shop_info(env_config)["links"]:
+        return
+    shop.open()
+
+    first_button = shop.page.locator("footer .action").first
+    form_bottom = shop.by("code-request-form").bounding_box()
+    assert first_button.bounding_box()["y"] > form_bottom["y"] + form_bottom["height"]

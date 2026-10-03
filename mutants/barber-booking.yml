@@ -762,17 +762,21 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '<footer><a href="/accessibility" data-testid="accessibility-link">הצהרת נגישות</a></footer>
-
-      '
+  - find: '    <a href="/accessibility" data-testid="accessibility-link">הצהרת נגישות</a>'
     replace: ''
 - name: the statement is served with its placeholders unfilled
   file: app/main.py
   catches:
   - ui
   changes:
-  - find: '            html = html.replace("{{" + name + "}}", html_text.escape(value))'
-    replace: '            pass'
+  - find: |2-
+              html = STATEMENT.read_text(encoding="utf-8")
+              for name, value in values.items():
+                  html = html.replace("{{" + name + "}}", html_text.escape(value))
+    replace: |2-
+              html = STATEMENT.read_text(encoding="utf-8")
+              for name, value in values.items():
+                  pass
 - name: a customer may hold any number of bookings ahead
   file: app/routers/bookings.py
   catches:
@@ -1046,3 +1050,23 @@ mutants:
   changes:
   - find: '  window.scrollTo(0, 0);'
     replace: ''
+- name: the privacy policy is not linked from the page
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    <a href="/privacy" data-testid="privacy-link">מדיניות פרטיות</a>'
+    replace: ''
+- name: the privacy policy is served with its placeholders unfilled
+  file: app/main.py
+  catches:
+  - ui
+  changes:
+  - find: |2-
+              html = PRIVACY.read_text(encoding="utf-8")
+              for name, value in values.items():
+                  html = html.replace("{{" + name + "}}", html_text.escape(value))
+    replace: |2-
+              html = PRIVACY.read_text(encoding="utf-8")
+              for name, value in values.items():
+                  pass

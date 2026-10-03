@@ -135,6 +135,8 @@ on the screen, and through the API behind it.
 | cancelling gives the time back | the list shows cancelled and the grid offers the time again |
 | a late cancellation explains why | the reason, what to do next ("call the shop"), and the booking still there |
 | the shop's header | the brand and the tab title from the shop's settings, a named button for each contact link set and none for the rest, the poles and scissors hidden from screen readers and still for reduced motion |
+| the privacy policy | one step from the sign-in screen, every placeholder filled, WCAG 2.2 AA |
+| the contact buttons | at the foot of the page, after the sign-in |
 | a signed-in phone screen | opens at its top, not where the sign-in form had been |
 | a first sign-in by code | name and phone, the code screen showing only the last four digits, the code, and the account named as given |
 | a wrong code | the tries left, the boxes marked invalid, and לכיסא locked until a digit changes |
