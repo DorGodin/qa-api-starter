@@ -751,3 +751,12 @@ back, line by line, before the first run caught all three.
 
 **Rule:** read every new or rewritten test file in full before running it, and treat any
 `or True`, `if False`, unused computation or assertion that cannot fail as a bug in the test.
+
+## 2026-10-03 — a commit chained after a failed check with `;`
+
+`make mutate-check; git commit ...` committed even though the anchor check had failed - a
+style change had moved a mutant's anchor. It was caught in the output and fixed in the next
+commit, but the catalogue sat broken in one commit of history.
+
+**Rule:** a check that gates a commit is chained with `&&`, never `;` - the commit runs only
+when the check exits 0.

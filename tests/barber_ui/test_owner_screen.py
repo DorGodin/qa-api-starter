@@ -10,7 +10,7 @@ from playwright.sync_api import expect
 from utils.local_time import at_local, local_day, next_weekday, parse_instant
 
 SHOP_HOURS = {day: ["10:00", "19:00"] for day in ("sun", "mon", "tue", "wed", "thu")} | {
-    "fri": None,
+    "fri": ["10:00", "14:00"],
     "sat": None,
 }
 

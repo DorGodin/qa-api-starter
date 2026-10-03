@@ -107,6 +107,22 @@ def test_the_month_turns_only_within_the_booking_window(signed_in, ui_barber, ui
         expect(signed_in.day(last + timedelta(days=1))).to_have_accessible_name(re.compile("לא ניתן לקבוע$"))
 
 
+def test_a_day_already_over_cannot_be_chosen(signed_in, ui_barber, ui_haircut, shop_tz):
+    yesterday = local_day(shop_tz, -1)
+    signed_in.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 1))
+    if yesterday.month != local_day(shop_tz, 0).month:
+        expect(signed_in.by("prev-month")).to_be_disabled()
+        return
+    signed_in.show_month_of(yesterday)
+
+    signed_in.day(yesterday).click(force=True)
+    signed_in.settled()
+
+    expect(signed_in.day(yesterday)).to_have_attribute("aria-disabled", "true")
+    expect(signed_in.day(yesterday)).to_have_accessible_name(re.compile("לא ניתן לקבוע$"))
+    assert signed_in.chosen_day() == local_day(shop_tz, 1)
+
+
 def test_the_screen_opens_on_a_day_with_a_time_to_offer(signed_in):
     if signed_in.by("days").locator("td.free").count() == 0:
         return

@@ -1228,3 +1228,24 @@ mutants:
   changes:
   - find: '  @media (max-width: 760px) { .slots { grid-template-columns: repeat(4, minmax(0, 1fr)); gap:6px; } }'
     replace: ''
+- name: Friday closes at seven like the other days
+  file: app/routers/barbers.py
+  catches:
+  - api
+  changes:
+  - find: FRIDAY_CLOSE = "14:00"
+    replace: FRIDAY_CLOSE = "19:00"
+- name: the shop stays closed on Friday
+  file: app/routers/barbers.py
+  catches:
+  - api
+  changes:
+  - find: '    return [SHOP_OPEN, FRIDAY_CLOSE] if day == "fri" else None'
+    replace: '    return None'
+- name: bookings open two months ahead again
+  file: .env.example
+  catches:
+  - api
+  changes:
+  - find: BOOKING_WINDOW_DAYS=30
+    replace: BOOKING_WINDOW_DAYS=60

@@ -202,3 +202,15 @@ def test_every_slot_the_listing_offers_can_actually_be_booked(
     ]
 
     assert results == [201] * len(results), f"offered slots that were then refused: {results}"
+
+
+def test_a_new_barber_starts_on_the_shop_hours_friday_until_two(barbers):
+    created = barbers.create(barbers.build_barber_payload(), persona="owner").assert_ok(201).as_dict
+
+    hours = barbers.hours(created["id"])
+
+    assert {day: tuple(span) for day, span in hours.items() if span} == {
+        **dict.fromkeys(("sun", "mon", "tue", "wed", "thu"), ("10:00", "19:00")),
+        "fri": ("10:00", "14:00"),
+    }
+    assert hours["sat"] is None
