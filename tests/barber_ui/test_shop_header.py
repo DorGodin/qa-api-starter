@@ -51,7 +51,10 @@ def test_the_poles_and_the_scissors_are_decoration_a_screen_reader_never_meets(s
     shop.open()
 
     for decoration in (".pole.right", ".pole.left", ".cut", '[data-testid="legal-scissors"]'):
-        expect(shop.page.locator(decoration)).to_have_attribute("aria-hidden", "true")
+        found = shop.page.locator(decoration)
+        assert found.count() >= 1, decoration
+        for i in range(found.count()):
+            expect(found.nth(i)).to_have_attribute("aria-hidden", "true")
 
 
 def test_the_poles_stand_still_for_whoever_asked_for_less_motion(browser, env_config):
