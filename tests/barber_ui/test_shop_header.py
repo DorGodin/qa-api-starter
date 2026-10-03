@@ -50,7 +50,7 @@ def test_every_way_to_reach_the_shop_is_a_named_button_and_nothing_else_is(shop,
 def test_the_poles_and_the_scissors_are_decoration_a_screen_reader_never_meets(shop):
     shop.open()
 
-    for decoration in (".pole.right", ".pole.left", ".cut"):
+    for decoration in (".pole.right", ".pole.left", ".cut", '[data-testid="legal-scissors"]'):
         expect(shop.page.locator(decoration)).to_have_attribute("aria-hidden", "true")
 
 
