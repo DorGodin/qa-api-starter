@@ -1084,3 +1084,38 @@ mutants:
   changes:
   - find: '  .code-wrap:focus-within .code-boxes span.now:empty::after {'
     replace: '  .code-wrap:focus-within .code-boxes span.now:empty::before {'
+- name: the slim bar never comes in
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  .mini.on { visibility:visible; transform:none; }'
+    replace: '  .mini.on { }'
+- name: the slim bar stands over the brand from the start
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '$("mini-brand").classList.toggle("on", !brand.isIntersecting && brand.boundingClientRect.top < 52),'
+    replace: '$("mini-brand").classList.toggle("on", true),'
+- name: a screen reader meets the brand twice
+  file: app/identity.py
+  catches:
+  - ui
+  changes:
+  - find: 'aria-hidden="true" data-testid="mini-brand"'
+    replace: 'data-testid="mini-brand"'
+- name: the owner's menu sticks behind the slim bar
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  .owner-nav { position:sticky; top:52px;'
+    replace: '  .owner-nav { position:sticky; top:0;'
+- name: the slim bar slides for whoever asked for less motion
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  @media (prefers-reduced-motion: reduce) { .mini { transition:none; } }'
+    replace: ''

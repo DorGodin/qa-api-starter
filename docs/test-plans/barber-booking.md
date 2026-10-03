@@ -138,6 +138,7 @@ on the screen, and through the API behind it.
 | the privacy policy | one step from the sign-in screen, every placeholder filled, WCAG 2.2 AA |
 | the contact buttons | at the foot of the page, after the sign-in |
 | a signed-in phone screen | opens at its top, not where the sign-in form had been |
+| the slim bar on a phone | scrolled with the keyboard open, the brand shrinks to a slim bar at the very top and leaves when scrolled back; a field reached by the keyboard is not under it; the owner's menu sticks under it, not behind it; hidden from screen readers and without a slide for reduced motion |
 | a first sign-in by code | name and phone, the code screen showing only the last four digits, the code, and the account named as given |
 | a wrong code | the tries left, the boxes marked invalid, and לכיסא locked until a digit changes |
 | the third wrong code | locked for good until a new code |

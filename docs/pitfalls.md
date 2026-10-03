@@ -731,3 +731,13 @@ refused again, the error never cleared. Seven runs in eight passed.
 **Rule:** after an action that adds a row, address the new row by what identifies it (its
 total, its name) so the locator waits for it - never `.first`/`.last` of a list that is still
 changing.
+
+## 2026-10-03 — a check run in the middle of an animation
+
+The slim bar slid in while fading from see-through to solid. axe measured the owner's screen
+while the bar was still half see-through and failed it on contrast; a position check read the
+bar 30px above its place, still sliding. Both were real readings of a moment, not of the page.
+
+**Rule:** a test that measures something that animates waits for the end state first
+(`page.wait_for_function` with a function, not a string - the page's CSP refuses string
+evaluation), and a design that must pass contrast never fades text in: it slides, solid.

@@ -50,20 +50,30 @@ def test_every_way_to_reach_the_shop_is_a_named_button_and_nothing_else_is(shop,
 def test_the_poles_and_the_scissors_are_decoration_a_screen_reader_never_meets(shop):
     shop.open()
 
-    for decoration in (".pole.right", ".pole.left", ".cut", '[data-testid="legal-scissors"]'):
+    for decoration in (
+        ".pole.right",
+        ".pole.left",
+        ".cut",
+        '[data-testid="legal-scissors"]',
+        '[data-testid="mini-brand"]',
+    ):
         found = shop.page.locator(decoration)
         assert found.count() >= 1, decoration
         for i in range(found.count()):
             expect(found.nth(i)).to_have_attribute("aria-hidden", "true")
 
 
-def test_the_poles_stand_still_for_whoever_asked_for_less_motion(browser, env_config):
+def test_the_poles_and_the_slim_bar_stand_still_for_whoever_asked_for_less_motion(browser, env_config):
     context = browser.new_context(reduced_motion="reduce")
     page = context.new_page()
     page.goto(env_config["url"].rstrip("/") + "/")
     try:
         animation = page.locator(".pole.right").evaluate("e => getComputedStyle(e).animationName")
         assert animation == "none", animation
+        slide = page.locator('[data-testid="mini-brand"]').evaluate(
+            "e => getComputedStyle(e).transitionDuration"
+        )
+        assert set(slide.split(", ")) == {"0s"}, f"the slim bar slides in over {slide}"
     finally:
         context.close()
 

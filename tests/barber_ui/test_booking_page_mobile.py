@@ -201,6 +201,10 @@ def test_the_owner_jumps_to_each_section_without_scrolling_through_the_rest(phon
     assert (
         heading.bounding_box()["y"] >= nav.bounding_box()["y"] + nav.bounding_box()["height"] - 1
     ), "the section's title is not hidden under the menu that stays on top"
+    slim = phone_owner.by("mini-brand").bounding_box()
+    assert (
+        nav.bounding_box()["y"] >= slim["y"] + slim["height"] - 1
+    ), "the menu stands under the slim bar, not behind it"
 
 
 def test_a_new_service_added_on_a_phone_is_offered_to_customers(phone_owner, services):
@@ -239,3 +243,45 @@ def test_a_signed_in_screen_opens_at_its_top(phone_owner):
     phone_owner.settled()
 
     assert phone_owner.page.evaluate("window.scrollY") == 0
+
+
+# The height left above a phone's keyboard: an iPhone 13 with the number pad open.
+KEYBOARD_OPEN = 470
+
+
+def test_the_brand_shrinks_to_a_slim_bar_once_it_scrolls_away_and_comes_back_at_the_top(phone_shop):
+    """Scrolled, the round picture was cut in half at the top of the screen. Now
+    a slim bar with the brand comes in over it, and leaves at the top."""
+    page = phone_shop.page
+    page.set_viewport_size({"width": page.viewport_size["width"], "height": KEYBOARD_OPEN})
+    phone_shop.open()
+    slim = phone_shop.by("mini-brand")
+    expect(slim).to_be_hidden()
+
+    page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+
+    expect(slim).to_be_visible()
+    expect(slim).to_have_text(phone_shop.by("shop-brand").inner_text())
+    page.wait_for_function(
+        "() => document.querySelector('[data-testid=mini-brand]').getBoundingClientRect().top === 0",
+        timeout=2000,
+    )
+
+    page.evaluate("window.scrollTo(0, 0)")
+
+    expect(slim).to_be_hidden()
+
+
+def test_a_field_the_keyboard_reaches_is_not_under_the_slim_bar(phone_shop):
+    page = phone_shop.page
+    page.set_viewport_size({"width": page.viewport_size["width"], "height": KEYBOARD_OPEN})
+    phone_shop.open()
+    page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+    slim = phone_shop.by("mini-brand")
+    expect(slim).to_be_visible()
+
+    phone_shop.by("full-name").focus()
+
+    field = phone_shop.by("full-name").bounding_box()
+    covered_to = slim.bounding_box()["height"] if slim.is_visible() else 0
+    assert field["y"] >= covered_to, "the name field is hidden under the slim bar"
