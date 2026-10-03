@@ -19,6 +19,7 @@ from tests.barber.conftest import (  # noqa: F401
     new_customer,
     services,
     shop_tz,
+    sms_inbox,
 )
 
 
@@ -33,14 +34,12 @@ def ui_haircut(services):  # noqa: F811
 
 
 @pytest.fixture
-def account(customers):  # noqa: F811
-    """A customer of this test's own, created through the API and also logged in
-    as a persona, so the test can check through the API what the page did."""
-    payload = customers.build_signup_payload()
-    customers.create(payload, persona=None).assert_ok(201)
-    persona = f"customer-{payload['username']}"
-    customers.client.register_persona(persona, payload["username"], payload["password"])
-    return {**payload, "persona": persona}
+def account(customers, sms_inbox):  # noqa: F811
+    """A customer of this test's own, signed in by an SMS code through the API -
+    a persona, so the test can check through the API what the page did, and a
+    token the page resumes with."""
+    signed_in = customers.sign_in_by_code(sms_inbox)
+    return {**signed_in, "display_name": signed_in["name"]}
 
 
 @pytest.fixture
@@ -50,7 +49,7 @@ def shop(page, env_config) -> BookingPage:
 
 @pytest.fixture
 def signed_in(shop, account) -> BookingPage:
-    return shop.sign_in(account["username"], account["password"])
+    return shop.sign_in_as(account)
 
 
 @pytest.fixture

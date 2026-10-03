@@ -138,7 +138,7 @@ def test_the_sign_in_screen_fits_and_its_fields_do_not_zoom(phone_shop):
 def test_the_booking_screen_fits_a_phone_with_the_times_on_it(
     phone_shop, account, ui_barber, ui_haircut, shop_tz
 ):
-    phone_shop.sign_in(account["username"], account["password"])
+    phone_shop.sign_in_as(account)
     phone_shop.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 3))
     expect(phone_shop.by("slot").first).to_be_visible()
     booking, bookings = (
@@ -158,7 +158,7 @@ def test_a_customer_books_by_touch_and_the_answer_fits_on_the_screen(
     phone_shop, account, barbers, ui_haircut, shop_tz
 ):
     barber = barbers.create_fake_barber()
-    phone_shop.sign_in(account["username"], account["password"])
+    phone_shop.sign_in_as(account)
     phone_shop.choose(barber["id"], ui_haircut["id"], local_day(shop_tz, 3))
 
     phone_shop.by("slot").filter(has_text="10:00").first.tap()
@@ -221,7 +221,7 @@ def test_at_200_percent_zoom_the_page_still_fits_and_books(
     context = a_device(browser, viewport={"width": 550, "height": 380}, device_scale_factor=2, locale="he-IL")
     try:
         zoomed = BookingPage(context.new_page(), env_config["url"])
-        zoomed.sign_in(account["username"], account["password"])
+        zoomed.sign_in_as(account)
         zoomed.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 6)).pick("15:30")
 
         assert sideways_overflow(zoomed.page) == []

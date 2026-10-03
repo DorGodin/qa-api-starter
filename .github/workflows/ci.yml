@@ -191,6 +191,7 @@ jobs:
         docker run -d --name barber-image -p 8103:8100
         --env-file barber-booking-api/.env.example -e DATABASE_URL=sqlite:////data/barber.db
         -e FORWARDED_ALLOW_IPS=*
+        --add-host=host.docker.internal:host-gateway -e SMS_URL=http://host.docker.internal:8109/messages
         -v barber-data:/data barber-booking
     steps:
       - uses: actions/checkout@v7

@@ -114,7 +114,7 @@ def test_an_answer_for_the_person_who_signed_out_never_lands_in_the_page_they_le
 ):
     errors = []
     shop.page.on("pageerror", lambda error: errors.append(error))
-    shop.sign_in(account["username"], account["password"])
+    shop.sign_in_as(account)
     shop.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 8)).pick("10:00").book()
     expect(shop.rows()).to_have_count(1)
 

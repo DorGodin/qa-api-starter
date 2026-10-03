@@ -54,6 +54,7 @@
     "admin_persona": "owner",
     "passwords": { "owner": "dev-owner-password", "barber": "dev-barber-password", "customer": "dev-customer-password" },
     "auth": { "type": "password_token", "path": "/auth/token" },
+    "sms_inbox": "http://127.0.0.1:8109",
     "health_path": "/health",
     "test_hooks": false,
     "shop_tz": "Asia/Jerusalem"
@@ -65,6 +66,7 @@
     "admin_persona": "owner",
     "passwords": { "owner": "dev-owner-password", "barber": "dev-barber-password", "customer": "dev-customer-password" },
     "auth": { "type": "password_token", "path": "/auth/token" },
+    "sms_inbox": "http://127.0.0.1:8109",
     "health_path": "/health",
     "test_hooks": false,
     "shop_tz": "Asia/Jerusalem"
@@ -76,6 +78,8 @@
     "admin_persona": "owner",
     "passwords": { "owner": "dev-owner-password", "barber": "dev-barber-password", "customer": "dev-customer-password" },
     "auth": { "type": "password_token", "path": "/auth/token" },
+    "sms_inbox": "http://127.0.0.1:8109",
+    "sms_inbox_bind": "0.0.0.0",
     "health_path": "/health",
     "test_hooks": false,
     "shop_tz": "Asia/Jerusalem",

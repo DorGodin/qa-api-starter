@@ -7,12 +7,19 @@ customers it needs. Two runs, or two suites, never book into each other.
 
 from __future__ import annotations
 
+import subprocess
+import sys
+import time
+from pathlib import Path
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 import pytest
+import requests
 
 from obj.barber import Barbers, Bookings, Customers, Services
 from obj.barber.customers import new_device_address
+from obj.barber.sms_inbox import SmsInbox
 
 
 @pytest.fixture
@@ -31,6 +38,46 @@ def shop_tz(env_config) -> ZoneInfo:
             f"ENV={env_config['env']} has no shop_tz; the barbershop suites need the shop's time zone"
         )
     return ZoneInfo(env_config["shop_tz"])
+
+
+@pytest.fixture(scope="session")
+def sms_inbox(env_config):
+    """The fake SMS provider the barbershop sends its codes to (utils/fake_sms.py),
+    started for the run when nothing answers on its port, and stopped after."""
+    url = env_config.get("sms_inbox")
+    if not url:
+        raise KeyError(f"ENV={env_config['env']} has no sms_inbox; the barbershop signs in by SMS code")
+    try:
+        requests.get(f"{url}/health", timeout=1).raise_for_status()
+        yield SmsInbox(url)
+        return
+    except requests.RequestException:
+        pass
+    proc = subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "utils.fake_sms",
+            "--port",
+            str(urlparse(url).port),
+            "--host",
+            env_config.get("sms_inbox_bind", "127.0.0.1"),
+        ],
+        cwd=Path(__file__).resolve().parents[2],
+    )
+    try:
+        for _ in range(50):
+            try:
+                if requests.get(f"{url}/health", timeout=1).ok:
+                    break
+            except requests.RequestException:
+                time.sleep(0.1)
+        else:
+            raise RuntimeError(f"the fake SMS provider did not start on {url}")
+        yield SmsInbox(url)
+    finally:
+        proc.terminate()
+        proc.wait(timeout=10)
 
 
 @pytest.fixture(scope="session")
@@ -72,6 +119,7 @@ def trim(services) -> dict:
 
 
 @pytest.fixture
-def new_customer(customers):
-    """A customer of the test's own, logged in: call it once per customer needed."""
-    return customers.sign_up_as_persona
+def new_customer(customers, sms_inbox):
+    """A customer of the test's own, signed in by an SMS code as a customer is:
+    call it once per customer needed. Returns the persona's name."""
+    return lambda: customers.sign_in_by_code(sms_inbox)["persona"]

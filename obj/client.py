@@ -114,6 +114,14 @@ class ApiClient:
             self._active = name
         return headers
 
+    def register_persona_headers(self, name: str, headers: dict[str, str]) -> dict[str, str]:
+        """A persona whose sign-in the caller already did - by an SMS code, say,
+        which no username and password strategy can."""
+        self._headers[name] = dict(headers)
+        if self._active is None:
+            self._active = name
+        return self._headers[name]
+
     def login_personas(self) -> ApiClient:
         """Every persona the environment declares, each with its own password."""
         env = self._config["env"]

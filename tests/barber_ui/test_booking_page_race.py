@@ -16,17 +16,14 @@ from utils.local_time import local_day
 
 
 def test_a_time_taken_while_you_were_looking_is_explained(
-    new_context, env_config, customers, bookings, barbers, ui_haircut, shop_tz
+    new_context, env_config, customers, bookings, barbers, ui_haircut, shop_tz, sms_inbox
 ):
     contested = barbers.create_fake_barber(opening="09:00", closing="13:00")
     day = local_day(shop_tz, 3)
     screens = []
     for _ in range(2):
-        payload = customers.build_signup_payload()
-        customers.create(payload, persona=None).assert_ok(201)
-        screen = BookingPage(new_context().new_page(), env_config["url"]).sign_in(
-            payload["username"], payload["password"]
-        )
+        account = customers.sign_in_by_code(sms_inbox)
+        screen = BookingPage(new_context().new_page(), env_config["url"]).sign_in_as(account)
         screen.choose(contested["id"], ui_haircut["id"], day).pick("10:00")
         screens.append(screen)
     first, second = screens

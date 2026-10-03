@@ -46,6 +46,40 @@ class Customers(Base):
             data, persona=persona, headers={"X-Forwarded-For": new_device_address(), **(headers or {})}
         )
 
+    @staticmethod
+    def new_phone() -> str:
+        """A mobile number of the test's own: 05 and eight random digits."""
+        return f"05{secrets.randbelow(10**8):08d}"
+
+    def request_code(self, phone: str, full_name: str, address: str | None = None):
+        return self.client.request(
+            "POST",
+            "/auth/otp",
+            persona=None,
+            json={"full_name": full_name, "phone": phone},
+            headers={"X-Forwarded-For": address or new_device_address()},
+        )
+
+    def verify_code(self, phone: str, code: str):
+        return self.client.request(
+            "POST", "/auth/otp/verify", persona=None, json={"phone": phone, "code": code}
+        )
+
+    def sign_in_by_code(self, inbox, full_name: str | None = None, phone: str | None = None) -> dict:
+        """Sign in the way a customer does now: a code by SMS, read from the fake
+        provider's inbox. The first time opens the account. Registered as a
+        persona of its own; the token is kept too, for a browser to resume with."""
+        phone = phone or self.new_phone()
+        full_name = full_name or f"{fake.first_name()} {fake.last_name()}"
+        seen = inbox.last_id(phone)
+        self.request_code(phone, full_name).assert_ok(202)
+        token = (
+            self.verify_code(phone, inbox.code_for(phone, after=seen)).assert_ok(200).as_dict["access_token"]
+        )
+        persona = f"customer-{phone}"
+        self.client.register_persona_headers(persona, {"Authorization": f"Bearer {token}"})
+        return {"name": full_name, "phone": phone, "persona": persona, "token": token}
+
     def sign_up_as_persona(self, persona: str | None = None) -> str:
         """Sign up a new customer and log them in as a persona of their own."""
         payload = self.build_signup_payload()

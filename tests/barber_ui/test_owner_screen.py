@@ -29,7 +29,7 @@ def test_the_owner_gets_the_management_screen_and_a_booking_form_that_asks_for_a
 
 
 def test_a_customer_and_a_barber_never_get_the_management_screen(shop, account, credentials):
-    shop.sign_in(account["username"], account["password"])
+    shop.sign_in_as(account)
     expect(shop.by("owner")).to_be_hidden()
 
     shop.by("logout").click()

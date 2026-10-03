@@ -59,7 +59,7 @@ def test_a_customer_is_not_offered_the_barber_but_still_sees_who_their_booking_i
     )
     barbers.set_active(leaving["id"], False).assert_ok(200)
 
-    signed_in = shop.sign_in(account["username"], account["password"])
+    signed_in = shop.sign_in_as(account)
 
     offered = signed_in.by("barber").locator("option").evaluate_all("os => os.map(o => o.value)")
     assert leaving["id"] not in offered

@@ -25,6 +25,7 @@ import pytest
 from playwright.sync_api import expect
 
 from obj.barber.booking_page import BookingPage, OwnerScreen, a_device
+from obj.barber.customers import Customers
 from utils.local_time import at_local, local_day, parse_instant
 
 WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
@@ -50,6 +51,11 @@ def run_id() -> str:
 
 
 def new_account(run_id: str, who: str) -> dict:
+    return {"name": f"QA {who} {run_id}", "phone": Customers.new_phone()}
+
+
+def new_barber(run_id: str, who: str) -> dict:
+    # Staff still sign in with a username and a password, until they have phones.
     return {
         "name": f"QA {who} {run_id}",
         "username": f"qa-journey-{run_id}-{who}",
@@ -57,11 +63,18 @@ def new_account(run_id: str, who: str) -> dict:
     }
 
 
-def signed_up(screen: BookingPage, account: dict, navigate: bool = True) -> BookingPage:
-    screen.sign_up(account["name"], account["username"], account["password"], navigate=navigate)
-    expect(screen.by("app")).to_be_visible()
-    screen.settled()
-    return screen
+@pytest.fixture
+def signed_up(sms_inbox):
+    """A person opening their account on the screen: name, phone, the code from
+    the SMS - the first sign-in opens it."""
+
+    def _sign_up(screen: BookingPage, account: dict, navigate: bool = True) -> BookingPage:
+        screen.sign_in_by_code(account["name"], account["phone"], sms_inbox, navigate=navigate)
+        expect(screen.by("app")).to_be_visible()
+        screen.settled()
+        return screen
+
+    return _sign_up
 
 
 def quarter_hours(first: str, last: str) -> list[str]:
@@ -76,7 +89,7 @@ def open_a_barber(owner: OwnerScreen, run_id: str, weekday: str, opening: str, c
     # A Hebrew name, as the shop's barbers have. The list is sorted by name, and
     # a Latin "QA ..." sorts first - which hid a new barber not being selected,
     # because the first barber happened to be the new one.
-    barber = {**new_account(run_id, "barber"), "name": f"תומר {run_id}"}
+    barber = {**new_barber(run_id, "barber"), "name": f"תומר {run_id}"}
     owner.add_barber(barber["name"], barber["username"], barber["password"])
     expect(owner.message()).to_have_attribute("data-kind", "ok")
     expect(owner.by("barber").locator("option:checked")).to_have_text(barber["name"])
@@ -93,7 +106,7 @@ def add_a_service(owner: OwnerScreen, name: str, minutes: int, price: str) -> st
 
 
 def test_a_shop_opened_on_the_screen_is_booked_cancelled_and_booked_again(
-    person, run_id, credentials, customers, bookings, shop_tz
+    person, run_id, credentials, customers, bookings, shop_tz, signed_up
 ):
     day = local_day(shop_tz, 7)
     weekday = WEEKDAYS[day.weekday()]
@@ -135,9 +148,10 @@ def test_a_shop_opened_on_the_screen_is_booked_cancelled_and_booked_again(
     expect(owner.page.locator('[data-testid="booking-row"][data-status="confirmed"]')).to_have_count(1)
     expect(owner.page.locator('[data-testid="booking-row"][data-status="cancelled"]')).to_have_count(1)
 
-    for account in (first_account, second_account):
-        customers.client.register_persona(
-            f"journey-{account['username']}", account["username"], account["password"]
+    # Each customer's own view, through the sign-in their screen holds.
+    for screen, account in ((first, first_account), (second, second_account)):
+        customers.client.register_persona_headers(
+            f"journey-{account['phone']}", {"Authorization": f"Bearer {screen.session_token()}"}
         )
     stored = bookings.listing(persona="owner", barber_id=barber["id"])["content"]
     assert sorted(b["status"] for b in stored) == ["cancelled", "confirmed"]
@@ -146,15 +160,15 @@ def test_a_shop_opened_on_the_screen_is_booked_cancelled_and_booked_again(
         b["service_id"] == service_id and b["price_minor"] == 7250 for b in stored
     ), "the price the owner typed"
     assert [
-        b["status"] for b in bookings.listing(persona=f"journey-{first_account['username']}")["content"]
+        b["status"] for b in bookings.listing(persona=f"journey-{first_account['phone']}")["content"]
     ] == ["cancelled"]
     assert [
-        b["status"] for b in bookings.listing(persona=f"journey-{second_account['username']}")["content"]
+        b["status"] for b in bookings.listing(persona=f"journey-{second_account['phone']}")["content"]
     ] == ["confirmed"]
 
 
 def test_a_day_off_given_on_the_screen_closes_the_day_and_taking_it_back_reopens_it(
-    person, run_id, credentials, shop_tz
+    person, run_id, credentials, shop_tz, signed_up
 ):
     day = local_day(shop_tz, 9)
     weekday = WEEKDAYS[day.weekday()]
@@ -190,7 +204,7 @@ def values_left_in_the_page(screen: BookingPage) -> list[str]:
 
 
 def test_on_a_shared_device_the_next_person_finds_nothing_of_the_one_before(
-    person, run_id, credentials, shop_tz
+    person, run_id, credentials, shop_tz, signed_up
 ):
     day = local_day(shop_tz, 7)
     owner = person(OwnerScreen).sign_in(*credentials("owner"))
@@ -207,7 +221,7 @@ def test_on_a_shared_device_the_next_person_finds_nothing_of_the_one_before(
     device.by("logout").click()
     expect(device.by("code-request-form")).to_be_visible()
     left = values_left_in_the_page(device)
-    for value in (first["name"], first["username"], first["password"]):
+    for value in (first["name"], first["phone"]):
         assert not any(value in item for item in left), f"{value!r} is still in the page after signing out"
     expect(device.by("booking-row")).to_have_count(0)
 
@@ -230,7 +244,7 @@ def test_on_a_shared_device_the_next_person_finds_nothing_of_the_one_before(
 
 
 def test_what_the_owner_changes_reaches_each_customer_the_way_it_should(
-    person, run_id, credentials, bookings, shop_tz
+    person, run_id, credentials, bookings, shop_tz, signed_up
 ):
     day = local_day(shop_tz, 7)
     owner = person(OwnerScreen).sign_in(*credentials("owner"))
@@ -289,7 +303,9 @@ def healthy(env_config, seconds: int = 90) -> None:
     raise RuntimeError(f"{env_config['url']} did not come back within {seconds}s of the redeploy")
 
 
-def test_accounts_bookings_and_a_sign_in_survive_a_redeploy(person, run_id, credentials, env_config, shop_tz):
+def test_accounts_bookings_and_a_sign_in_survive_a_redeploy(
+    person, run_id, credentials, env_config, shop_tz, signed_up, sms_inbox
+):
     command = os.environ.get("REDEPLOY_COMMAND")
     if not command and env_config.get("redeploy"):
         pytest.fail(f"{env_config['url']} must be redeployed by this test, and REDEPLOY_COMMAND is not set")
@@ -310,7 +326,7 @@ def test_accounts_bookings_and_a_sign_in_survive_a_redeploy(person, run_id, cred
     customer.reload()
     expect(customer.by("app")).to_be_visible()
     expect(customer.row_at("10:00")).to_have_attribute("data-status", "confirmed")
-    again = person().sign_in(account["username"], account["password"])
+    again = person().sign_in_by_code(account["name"], account["phone"], sms_inbox)
     expect(again.row_at("10:00")).to_be_visible()
     owner.reload()
     owner.select_barber(barber["id"])

@@ -8,6 +8,7 @@ would take.
 
 from __future__ import annotations
 
+import re
 from datetime import date
 
 from playwright.sync_api import Locator, Page, expect
@@ -45,9 +46,9 @@ class BookingPage:
         return self.page.get_by_test_id(testid)
 
     def open(self) -> BookingPage:
+        """The signed-out screen, as anyone arriving sees it: the code sign-in."""
         self.page.goto(self.base_url + "/")
-        self.unfold_password_sign_in()
-        expect(self.by("login-form")).to_be_visible()
+        expect(self.by("code-request-form")).to_be_visible()
         return self
 
     def unfold_password_sign_in(self) -> BookingPage:
@@ -71,6 +72,7 @@ class BookingPage:
         on a shared device does: a navigation would wipe what the last one left."""
         if navigate:
             self.open()
+        self.unfold_password_sign_in()
         self.page.get_by_label(USERNAME, exact=True).first.fill(username)
         self.page.get_by_label(PASSWORD, exact=True).first.fill(password)
         self.by("login").click()
@@ -86,9 +88,53 @@ class BookingPage:
         self.settled()
         return self
 
+    def sign_in_as(self, account: dict) -> BookingPage:
+        """Open the page already signed in as an account made through the API:
+        the page's own remembered sign-in, as when a customer comes back. The
+        code sign-in itself is driven by sign_in_by_code, in its own tests."""
+        self.page.goto(self.base_url + "/")
+        self.page.evaluate("token => sessionStorage.setItem('barber.session', token)", account["token"])
+        return self.reload()
+
+    def sign_in_by_code(self, name: str, phone: str, inbox, navigate: bool = True) -> BookingPage:
+        """Sign in as a person does: name and phone, then the code from the SMS.
+        A code asked for too soon after the last one is refused with how long
+        to wait - the product's rule, honoured here rather than loosened for tests."""
+        if navigate:
+            self.page.goto(self.base_url + "/")
+        seen = inbox.last_id(phone)
+        self.by("full-name").fill(name)
+        self.by("phone").fill(phone)
+        for _ in range(2):
+            self.by("send-code").click()
+            expect(
+                self.page.locator(
+                    '[data-testid="code-form"]:visible, [data-testid="code-request-error"]:visible'
+                ).first
+            ).to_be_visible()
+            if self.by("code-form").is_visible():
+                break
+            wait = re.search(r"בעוד (\d+) שניות", self.text(self.by("code-request-error")))
+            if wait is None:
+                raise AssertionError(f"no code was sent: {self.text(self.by('code-request-error'))}")
+            self.page.wait_for_timeout((int(wait.group(1)) + 1) * 1000)
+        self.by("code").fill(inbox.code_for(phone, after=seen))
+        expect(
+            self.page.locator('[data-testid="app"]:visible, [data-testid="code-error"]:visible').first
+        ).to_be_visible()
+        if self.by("code-error").is_visible():
+            raise AssertionError(f"the code was refused: {self.text(self.by('code-error'))}")
+        self.settled()
+        return self
+
+    def session_token(self) -> str:
+        """The sign-in this page holds - for checking through the API what it did."""
+        return self.page.evaluate("() => sessionStorage.getItem('barber.session')")
+
     def sign_up(self, name: str, username: str, password: str, navigate: bool = True) -> BookingPage:
         if navigate:
             self.open()
+        self.unfold_password_sign_in()
         self.page.get_by_label(YOUR_NAME, exact=True).fill(name)
         self.by("signup-username").fill(username)
         self.by("signup-password").fill(password)

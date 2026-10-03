@@ -7,7 +7,7 @@ from utils.local_time import at_local, local_day, parse_instant
 
 
 def test_signing_in_replaces_the_form_with_the_booking_screen(shop, account):
-    shop.sign_in(account["username"], account["password"])
+    shop.sign_in_as(account)
 
     expect(shop.by("login-form")).to_be_hidden()
     expect(shop.by("app")).to_be_visible()
@@ -54,7 +54,7 @@ def test_a_late_cancellation_explains_why_and_keeps_the_booking(
     # The barber exists before the customer signs in: the page reads the list
     # of barbers once, at sign-in, as a customer's page would.
     soon = barbers.create_fake_barber()
-    signed_in = shop.sign_in(account["username"], account["password"])
+    signed_in = shop.sign_in_as(account)
     today = local_day(shop_tz, 0)
     signed_in.choose(soon["id"], ui_haircut["id"], today)
     # Late in the evening today has one time left, or none: then tomorrow's first

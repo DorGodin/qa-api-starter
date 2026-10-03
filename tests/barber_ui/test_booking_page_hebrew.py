@@ -44,7 +44,7 @@ def test_times_keep_their_own_order_inside_the_right_to_left_page(signed_in, ui_
 
 def test_a_latin_name_inside_a_hebrew_sentence_is_isolated(shop, account, barbers, ui_haircut, shop_tz):
     latin = barbers.create_fake_barber()
-    shop.sign_in(account["username"], account["password"])
+    shop.sign_in_as(account)
     shop.choose(latin["id"], ui_haircut["id"], local_day(shop_tz, 3)).pick("10:00")
 
     confirm = shop.by("confirm-text").inner_text()
@@ -80,7 +80,7 @@ def test_no_english_from_the_server_ever_reaches_the_customer(
     shop.page.set_extra_http_headers({"X-Forwarded-For": fresh_address()})
 
     owner, _ = credentials("owner")
-    shop.open()
+    shop.open().unfold_password_sign_in()
     shop.page.get_by_label("שם משתמש", exact=True).first.fill(owner)
     shop.page.get_by_label("סיסמה", exact=True).first.fill("wrong-password")
     shop.by("login").click()
@@ -92,7 +92,7 @@ def test_no_english_from_the_server_ever_reaches_the_customer(
     said["invalid sign-up"] = shop.text(shop.by("signup-error"))
 
     contested = barbers.create_fake_barber()
-    shop.sign_in(account["username"], account["password"])
+    shop.sign_in_as(account)
     day = local_day(shop_tz, 4)
     shop.choose(contested["id"], ui_haircut["id"], day).pick("11:00")
     rival = customers.sign_up_as_persona()

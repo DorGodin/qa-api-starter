@@ -50,7 +50,7 @@ def test_a_refusal_that_is_not_a_taken_time_says_it_could_not_book(
     shop, account, bookings, barbers, ui_haircut, shop_tz
 ):
     first, second = barbers.create_fake_barber(), barbers.create_fake_barber()
-    shop.sign_in(account["username"], account["password"])
+    shop.sign_in_as(account)
     day = local_day(shop_tz, 9)
     shop.choose(second["id"], ui_haircut["id"], day).pick("12:00")
     # While the customer looks, they book 12:00 somewhere else - in another tab.
@@ -74,7 +74,7 @@ def test_a_third_booking_ahead_is_refused_saying_how_many_may_be_held(
         bookings.create_booking(
             barber["id"], ui_haircut["id"], at_local(shop_tz, day, hhmm), persona=account["persona"]
         )
-    shop.sign_in(account["username"], account["password"])
+    shop.sign_in_as(account)
 
     shop.choose(barber["id"], ui_haircut["id"], day).pick("13:00").book()
 

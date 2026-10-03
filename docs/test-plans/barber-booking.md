@@ -45,6 +45,13 @@ starts over.
 | `test_cancellation.py` | test cancelling twice is assert refused |
 | `test_cancellation.py` | test a barber cannot cancel even their own booking |
 | `test_cancellation.py` | test another customer can neither see nor cancel it |
+| `test_sign_in_with_code.py` | test the first sign-in opens the account and shows only the last four digits |
+| `test_sign_in_with_code.py` | test the same phone however it is typed is the same account |
+| `test_sign_in_with_code.py` | test wrong codes count down and the third uses the code up |
+| `test_sign_in_with_code.py` | test a code signs in once |
+| `test_sign_in_with_code.py` | test the same code sent six times at once signs in exactly once |
+| `test_sign_in_with_code.py` | test one address gets only so many codes an hour |
+| `test_sign_in_with_code.py` | test only a mobile number gets a code |
 | `test_barbers_leaving.py` | test a barber who left is offered to no one and the owner still sees them |
 | `test_barbers_leaving.py` | test nobody books a barber who left |
 | `test_barbers_leaving.py` | test their bookings stay, say who, and wait for the owner |
@@ -127,6 +134,14 @@ on the screen, and through the API behind it.
 | a customer books a time and sees it | the message, the list, the price, the time gone from the grid, and the stored start |
 | cancelling gives the time back | the list shows cancelled and the grid offers the time again |
 | a late cancellation explains why | the reason, what to do next ("call the shop"), and the booking still there |
+| a first sign-in by code | name and phone, the code screen showing only the last four digits, the code, and the account named as given |
+| a wrong code | the tries left, the boxes marked invalid, and לכיסא locked until a digit changes |
+| the third wrong code | locked for good until a new code |
+| a new code | offered only after the countdown |
+| changing the number | back to the first step with what was typed |
+| a landline number | explained in Hebrew, no code sent |
+| the code field | one-time-code and numeric, so a phone fills it from the SMS |
+| the code screen | WCAG 2.2 AA, a wrong code included |
 | the owner takes a barber out | the diary kept, the barber marked in the list, no times offered and no error, the button turned round |
 | a barber brought back | offered times again |
 | a customer whose barber left | not offered that barber, and still sees who the booking is with |
@@ -215,6 +230,18 @@ status, no 5xx, no 201 that cannot be read back, no two overlapping bookings for
 in the database at the end, and no barber left unbooked. Mutation check: against a server
 with its booking lock broken, 144 server errors and exit 99; against the fixed server, 101
 races with 101 winners and no 5xx. CI runs it on every push in the barbershop job.
+
+## Sign-in codes: the fake SMS provider
+
+The barbershop sends its codes to `SMS_URL`. Every copy the suites start - `make run-test`,
+the CI action, the mutation runner, the image - points it at `utils/fake_sms.py` on 8109, and
+the `sms_inbox` fixture starts that provider for the run when nothing answers there, and stops
+it after. A test reads a code from the inbox the way a person reads their phone; the product
+has no hook for it. A customer is made by `customers.sign_in_by_code`, and a page opens signed
+in through the product's own remembered sign-in (`sign_in_as`) - one code per phone, since a
+phone gets a new code only once a minute. The code sign-in itself is driven end to end by
+`sign_in_by_code` and `test_sign_in_by_code.py`. Staff still sign in with a password until they
+have phones.
 
 ## Test data prerequisites
 

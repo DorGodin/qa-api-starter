@@ -13,7 +13,7 @@ def test_times_are_shown_on_the_shop_clock_whatever_the_browsers_time_zone(
     shop, account, barbers, ui_haircut, shop_tz
 ):
     nine_to_seven = barbers.create_fake_barber(opening="09:00", closing="19:00")
-    shop.sign_in(account["username"], account["password"])
+    shop.sign_in_as(account)
     assert shop.page.evaluate("Intl.DateTimeFormat().resolvedOptions().timeZone") == "America/New_York"
 
     shop.choose(nine_to_seven["id"], ui_haircut["id"], local_day(shop_tz, 3))
@@ -38,7 +38,7 @@ def test_a_wrong_password_and_an_unknown_user_look_the_same(page, env_config, cr
     page.set_extra_http_headers({"X-Forwarded-For": fresh_address()})
     answers = []
     for username in (owner, "nobody-at-all"):
-        screen = BookingPage(page, env_config["url"]).open()
+        screen = BookingPage(page, env_config["url"]).open().unfold_password_sign_in()
         page.get_by_label(USERNAME, exact=True).first.fill(username)
         page.get_by_label(PASSWORD, exact=True).first.fill("wrong-password")
         screen.by("login").click()
@@ -51,19 +51,25 @@ def test_a_wrong_password_and_an_unknown_user_look_the_same(page, env_config, cr
 
 def test_every_field_has_a_label_a_screen_reader_can_read(shop, account):
     shop.open()
+    for label in ("שם מלא", "מספר טלפון"):
+        expect(shop.page.get_by_label(label, exact=True)).to_be_visible()
+    shop.unfold_password_sign_in()
     for label in (USERNAME, PASSWORD, YOUR_NAME):
         expect(shop.page.get_by_label(label, exact=True).first).to_be_visible()
 
-    shop.sign_in(account["username"], account["password"])
+    shop.sign_in_as(account)
     for label in (BARBER, SERVICE, DATE):
         expect(shop.page.get_by_label(label, exact=True)).to_be_visible()
     # Booked, taken, cancelled: every outcome is announced, not only painted.
     expect(shop.page.get_by_role("status")).to_have_count(1)
 
 
-def test_too_many_wrong_passwords_are_refused_in_hebrew_with_how_long_to_wait(shop, account, fresh_address):
+def test_too_many_wrong_passwords_are_refused_in_hebrew_with_how_long_to_wait(shop, customers, fresh_address):
+    # The password sign-in, while staff still use it: an account made the old way.
+    account = customers.build_signup_payload()
+    customers.create(account, persona=None).assert_ok(201)
     shop.page.set_extra_http_headers({"X-Forwarded-For": fresh_address()})
-    shop.open()
+    shop.open().unfold_password_sign_in()
     for password in ["not-the-password"] * 5 + [account["password"]]:
         shop.page.get_by_label(USERNAME, exact=True).first.fill(account["username"])
         shop.page.get_by_label(PASSWORD, exact=True).first.fill(password)
@@ -85,7 +91,7 @@ def test_a_whole_booking_and_the_owners_screen_run_without_a_single_policy_viola
     page, env_config, account, credentials, ui_barber, ui_haircut, shop_tz
 ):
     page.add_init_script(WATCH_POLICY)
-    shop = BookingPage(page, env_config["url"]).sign_in(account["username"], account["password"])
+    shop = BookingPage(page, env_config["url"]).sign_in_as(account)
     shop.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 3)).pick("12:00").book()
     expect(shop.row_at("12:00")).to_be_visible()
     shop.by("logout").click()
@@ -97,7 +103,7 @@ def test_a_whole_booking_and_the_owners_screen_run_without_a_single_policy_viola
 
 def test_a_script_that_gets_past_the_escaping_is_still_not_run(page, env_config, account):
     page.add_init_script(WATCH_POLICY)
-    BookingPage(page, env_config["url"]).sign_in(account["username"], account["password"])
+    BookingPage(page, env_config["url"]).sign_in_as(account)
 
     page.evaluate(
         """() => {
@@ -114,7 +120,7 @@ def test_a_script_that_gets_past_the_escaping_is_still_not_run(page, env_config,
 
 
 def test_signing_out_on_the_page_ends_the_sign_in_on_the_server_too(shop, account, api):
-    shop.sign_in(account["username"], account["password"])
+    shop.sign_in_as(account)
     token = shop.page.evaluate("() => sessionStorage.getItem('barber.session')")
 
     with shop.page.expect_response(lambda r: "/auth/logout" in r.url and r.status == 204):
@@ -127,7 +133,7 @@ def test_signing_out_on_the_page_ends_the_sign_in_on_the_server_too(shop, accoun
 
 
 def test_signing_out_with_no_connection_still_signs_this_device_out(shop, account):
-    shop.sign_in(account["username"], account["password"])
+    shop.sign_in_as(account)
     shop.page.route("**/auth/logout", lambda route: route.abort())
 
     shop.by("logout").click()

@@ -968,3 +968,69 @@ mutants:
   changes:
   - find: '${isolate(b.service_name)} אצל ${isolate(b.barber_name)}${who}'
     replace: '${isolate(b.service_name)} אצל ${isolate(barberName(b.barber_id))}${who}'
+- name: any code signs in
+  file: app/routers/auth.py
+  catches:
+  - api
+  changes:
+  - find: '        elif not hmac.compare_digest(record.code_hash, _code_hash(config.secret_key, phone, body.code)):'
+    replace: '        elif False:'
+- name: wrong codes are not counted
+  file: app/routers/auth.py
+  catches:
+  - api
+  changes:
+  - find: '            record.attempts += 1'
+    replace: '            pass'
+- name: a phone gets codes back to back
+  file: app/routers/auth.py
+  catches:
+  - api
+  changes:
+  - find: '        if by_phone and now - by_phone[-1] < timedelta(seconds=config.otp_resend_seconds):'
+    replace: '        if False:'
+- name: there is no limit on codes an hour
+  file: app/routers/auth.py
+  catches:
+  - api
+  changes:
+  - find: '            if len(sent) >= cap:'
+    replace: '            if False:'
+- name: a code signs in more than once
+  file: app/routers/auth.py
+  catches:
+  - api
+  changes:
+  - find: |2-
+                  record.used_at = now
+                  user = session.scalar(select(User).where(User.phone == phone))
+    replace: |2-
+                  user = session.scalar(select(User).where(User.phone == phone))
+- name: the answer to a code request shows the whole number
+  file: app/routers/auth.py
+  catches:
+  - api
+  changes:
+  - find: '        "phone_last4": phone[-4:],'
+    replace: '        "phone_last4": phone,'
+- name: a wrong code leaves the button working
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  $("verify-code").disabled = blocked;'
+    replace: '  $("verify-code").disabled = false;'
+- name: the code screen shows the whole number
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    showCodeStep(r.data.phone_last4, r.data.resend_after_seconds);'
+    replace: '    showCodeStep(otp.phone, r.data.resend_after_seconds);'
+- name: the code field cannot be filled from the SMS
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: 'autocomplete="one-time-code"'
+    replace: 'autocomplete="off"'

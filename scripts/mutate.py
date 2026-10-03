@@ -208,6 +208,8 @@ class ProductServer:
             **os.environ,
             **env_example(self.product),
             "DATABASE_URL": f"sqlite:///{self.workdir / 'm.db'}",
+            # Its codes go to the fake SMS provider the suites read them from.
+            "SMS_URL": "http://127.0.0.1:8109/messages",
         }
         self.proc = subprocess.Popen(
             [

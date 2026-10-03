@@ -65,7 +65,7 @@ def test_a_late_move_is_explained_in_hebrew(shop, bookings, account, barbers, ui
     start = t.replace(second=0, microsecond=0) + timedelta(minutes=15 - t.minute % 15)
     booking = bookings.create_booking(soon["id"], ui_haircut["id"], to_iso(start), persona=account["persona"])
     hhmm = booking["start_local"][11:16]
-    signed_in = shop.sign_in(account["username"], account["password"])
+    signed_in = shop.sign_in_as(account)
 
     signed_in.start_moving(hhmm)
     signed_in.pick(signed_in.times()[-1]).book()

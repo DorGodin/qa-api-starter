@@ -50,7 +50,7 @@ def test_every_screen_meets_wcag_2_2_aa(shop, account, credentials, ui_barber, u
     shop.open()
     assert violations(shop.page) == [], "the sign-in screen"
 
-    shop.sign_in(account["username"], account["password"])
+    shop.sign_in_as(account)
     shop.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 4)).pick("13:00")
     assert violations(shop.page) == [], "the booking screen, a time chosen"
 
@@ -65,17 +65,22 @@ def test_every_screen_meets_wcag_2_2_aa(shop, account, credentials, ui_barber, u
 
 
 def test_a_whole_booking_and_its_cancellation_with_the_keyboard_alone(
-    page, env_config, account, barbers, ui_haircut, shop_tz, keyboard
+    page, env_config, customers, sms_inbox, barbers, ui_haircut, shop_tz, keyboard
 ):
     ten_to_twelve = barbers.create_fake_barber(opening="10:00", closing="12:00")
     shop = BookingPage(page, env_config["url"]).open()
+    phone = customers.new_phone()
+    seen = sms_inbox.last_id(phone)
 
     page.keyboard.press("Tab")
-    assert focused(page)["testid"] == "username", "the first Tab reaches the first field"
-    page.keyboard.type(account["username"])
+    assert focused(page)["testid"] == "full-name", "the first Tab reaches the first field"
+    page.keyboard.type("דנה מקלדת")
     page.keyboard.press("Tab")
-    page.keyboard.type(account["password"])
+    page.keyboard.type(phone)
     page.keyboard.press("Enter")
+    expect(shop.by("code-form")).to_be_visible()
+    assert focused(page)["testid"] == "code", "the focus moves to the code"
+    page.keyboard.type(sms_inbox.code_for(phone, after=seen))
     expect(shop.by("app")).to_be_visible()
     shop.settled()
     shop.choose(ten_to_twelve["id"], ui_haircut["id"], local_day(shop_tz, 5))
@@ -154,7 +159,7 @@ def test_every_stop_on_the_way_shows_where_the_focus_is(signed_in, keyboard):
 def test_the_accessibility_statement_is_one_step_from_every_screen_and_says_what_the_law_asks(shop, account):
     shop.open()
     expect(shop.by("accessibility-link")).to_be_visible()
-    shop.sign_in(account["username"], account["password"])
+    shop.sign_in_as(account)
     expect(shop.by("accessibility-link")).to_be_visible()
 
     shop.by("accessibility-link").click()
