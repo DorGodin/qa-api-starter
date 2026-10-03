@@ -150,13 +150,42 @@ class BookingPage:
     def choose(self, barber_id: str, service_id: str, day: date) -> BookingPage:
         """Pick barber, service and day, and wait until the times for exactly that
         choice are on screen."""
+        self.by("barber").select_option(value=barber_id)
+        self.by("service").select_option(value=service_id)
+        self.settled()
+        return self.choose_day(day)
+
+    def day(self, day: date) -> Locator:
+        """That day in the calendar - once its month is the one shown."""
+        return self.by("days").locator(f'td[data-date="{day.isoformat()}"]')
+
+    def show_month_of(self, day: date) -> BookingPage:
+        """Turn the calendar to the month of that day, a month at a time, as a
+        person does."""
+        for _ in range(4):
+            shown = self.by("days").locator("td[data-date]").first.get_attribute("data-date")[:7]
+            wanted = day.isoformat()[:7]
+            if shown == wanted:
+                return self
+            self.by("next-month" if wanted > shown else "prev-month").click()
+            self.settled()
+        raise AssertionError(f"the calendar never reached {day:%Y-%m}")
+
+    def choose_day(self, day: date) -> BookingPage:
+        """Press that day in the calendar and wait for its times. A day with no
+        time to offer cannot be pressed: the times shown stay those of the day
+        already chosen, refreshed."""
+        self.show_month_of(day)
+        cell = self.day(day)
+        if cell.get_attribute("aria-disabled") == "true":
+            return self
         with self.page.expect_response(lambda r: "/availability" in r.url and day.isoformat() in r.url):
-            self.by("barber").select_option(value=barber_id)
-            self.by("service").select_option(value=service_id)
-            self.by("date").fill(day.isoformat())
-            self.by("date").dispatch_event("change")
+            cell.click()
         self.settled()
         return self
+
+    def chosen_day(self) -> date:
+        return date.fromisoformat(self.by("date").input_value())
 
     def choose_by_name(self, barber: str, service: str, day: date) -> BookingPage:
         """The same choice, made the way a customer makes it: by the names on the

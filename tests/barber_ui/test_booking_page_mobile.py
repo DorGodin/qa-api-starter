@@ -154,6 +154,28 @@ def test_the_booking_screen_fits_a_phone_with_the_times_on_it(
     assert zooming_fields(phone_shop.page) == []
 
 
+# A day in the month's calendar is a seventh of the panel wide: on the narrowest
+# phone less than a finger's 44px, so it is held to WCAG 2.5.8's 24px - and made
+# a full finger tall.
+DAY_WIDTH, DAY_HEIGHT = 24, 44
+
+
+def test_every_day_of_the_month_is_big_enough_to_tap(phone_shop, account, ui_barber, ui_haircut, shop_tz):
+    phone_shop.sign_in_as(account)
+    phone_shop.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 3))
+
+    sizes = (
+        phone_shop.by("days")
+        .locator("td[data-date]")
+        .evaluate_all(
+            "cells => cells.map(c => [c.dataset.date, c.getBoundingClientRect().width, c.getBoundingClientRect().height])"
+        )
+    )
+
+    small = [(d, round(w), round(h)) for d, w, h in sizes if w < DAY_WIDTH or h < DAY_HEIGHT]
+    assert small == [], f"days too small to tap: {small}"
+
+
 def test_a_customer_books_by_touch_and_the_answer_fits_on_the_screen(
     phone_shop, account, barbers, ui_haircut, shop_tz
 ):

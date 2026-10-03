@@ -41,6 +41,8 @@ starts over.
 | `test_booking_rules.py` | test nothing is offered or booked on a day off |
 | `test_booking_rules.py` | test a withdrawn service is neither listed nor booked |
 | `test_booking_rules.py` | test every slot the listing offers can actually be booked |
+| `test_month_calendar.py` | test every day counts what its list offers, a booking and a day off included |
+| `test_month_calendar.py` | test months outside the booking window are refused with the reason |
 | `test_cancellation.py` | test a customer cannot cancel inside the cutoff but the owner can |
 | `test_cancellation.py` | test cancelling twice is assert refused |
 | `test_cancellation.py` | test a barber cannot cancel even their own booking |
@@ -132,6 +134,7 @@ on the screen, and through the API behind it.
 | signing in replaces the form | the sign-in form is really gone, not only marked hidden |
 | the Book button appears only after a time is chosen | a hidden panel stays hidden |
 | a customer books a time and sees it | the popup, no repeat of it under the list, the list, the price, the time gone from the grid, and the stored start |
+| the month's calendar | a free day named with the number of times its list then shows; a day off and a full day marked unavailable, a tap on one changing nothing; arrows (left is the next day), Enter and Page Down; the month turning only inside the booking window; the screen opening on a free day; every day at least 24px wide and 44px tall on three phones |
 | the greeting | a customer greeted `שלום` and their first name, the full name kept on the account; the staff see their name and role instead |
 | the booked popup | black like the page's buttons, white words |
 | cancelling gives the time back | the list shows cancelled and the grid offers the time again |

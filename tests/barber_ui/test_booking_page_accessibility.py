@@ -93,7 +93,7 @@ def test_a_whole_booking_and_its_cancellation_with_the_keyboard_alone(
     shop.settled()
     shop.choose(ten_to_twelve["id"], ui_haircut["id"], local_day(shop_tz, 5))
 
-    shop.by("date").focus()
+    shop.by("days").locator('td[tabindex="0"]').focus()
     for _ in range(10):
         page.keyboard.press("Tab")
         if focused(page)["testid"] == "slot":
@@ -148,10 +148,6 @@ def test_every_stop_on_the_way_shows_where_the_focus_is(signed_in, keyboard):
             """() => {
                 const e = document.activeElement;
                 if (e === document.body) return null;
-                // Chromium's own calendar button inside a date field takes the focus
-                // with the field no longer :focus. Chromium rings it itself - seen in
-                // a screenshot - and no style of the page reaches it to measure.
-                if (e.type === "date" && !e.matches(":focus")) return null;
                 const s = getComputedStyle(e);
                 return {what: `${e.tagName.toLowerCase()} ${e.dataset.testid || e.id}`, style: s.outlineStyle, width: parseFloat(s.outlineWidth)};
             }"""

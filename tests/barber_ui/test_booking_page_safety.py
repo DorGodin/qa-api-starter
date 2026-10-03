@@ -1,6 +1,8 @@
 """What the page must never do: show the wrong time, run somebody's name as
 code, or give away which half of a login was wrong."""
 
+import re
+
 import pytest
 from playwright.sync_api import expect
 
@@ -61,8 +63,9 @@ def test_every_field_has_a_label_a_screen_reader_can_read(shop, account):
         expect(shop.page.get_by_label(label, exact=True).first).to_be_visible()
 
     shop.sign_in_as(account)
-    for label in (BARBER, SERVICE, DATE):
+    for label in (BARBER, SERVICE):
         expect(shop.page.get_by_label(label, exact=True)).to_be_visible()
+    expect(shop.page.get_by_role("grid", name=re.compile(f"^{DATE} "))).to_be_visible()
     # Booked, taken, cancelled: every outcome is announced, not only painted.
     expect(shop.page.get_by_role("status")).to_have_count(1)
 

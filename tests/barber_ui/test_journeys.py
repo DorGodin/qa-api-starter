@@ -15,6 +15,7 @@ four people on four phones would be. Under --device, all of them use that phone.
 from __future__ import annotations
 
 import os
+import re
 import secrets
 import subprocess
 import time
@@ -185,6 +186,8 @@ def test_a_day_off_given_on_the_screen_closes_the_day_and_taking_it_back_reopens
     owner.add_day_off(day)
     assert owner.days_off() == [day.isoformat()]
     customer.choose_by_name(barber["name"], service, day)
+    expect(customer.day(day)).to_have_attribute("aria-disabled", "true")
+    expect(customer.day(day)).to_have_accessible_name(re.compile("הספר לא עובד ביום הזה"))
     expect(customer.by("no-slots")).to_be_visible()
     expect(customer.by("slot")).to_have_count(0)
 

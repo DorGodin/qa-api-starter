@@ -16,7 +16,7 @@ from __future__ import annotations
 from playwright.sync_api import expect
 
 from obj.barber.barbers import WEEK
-from utils.local_time import at_local, local_day, local_today, parse_instant
+from utils.local_time import at_local, local_day, parse_instant
 
 
 class Held:
@@ -43,16 +43,16 @@ class Held:
 def test_the_times_for_an_earlier_choice_never_replace_the_times_for_the_day_chosen(
     signed_in, ui_barber, ui_haircut, shop_tz
 ):
-    today, later = local_today(shop_tz), local_day(shop_tz, 7)
     signed_in.by("barber").select_option(value=ui_barber["id"])
     signed_in.by("service").select_option(value=ui_haircut["id"])
     signed_in.settled()
+    earlier, later = signed_in.chosen_day(), local_day(shop_tz, 7)
+    signed_in.show_month_of(later)
 
-    held = Held(signed_in.page, lambda url: "/availability" in url and f"date={today.isoformat()}" in url)
+    held = Held(signed_in.page, lambda url: "/availability" in url and f"date={earlier.isoformat()}" in url)
     signed_in.by("barber").dispatch_event("change")
     with signed_in.page.expect_response(lambda r: "/availability" in r.url and later.isoformat() in r.url):
-        signed_in.by("date").fill(later.isoformat())
-        signed_in.by("date").dispatch_event("change")
+        signed_in.day(later).click()
     held.release()
     signed_in.settled()
 
@@ -119,7 +119,7 @@ def test_an_answer_for_the_person_who_signed_out_never_lands_in_the_page_they_le
     expect(shop.rows()).to_have_count(1)
 
     held = Held(shop.page, lambda url: "/availability" in url or "/bookings?" in url)
-    shop.by("date").dispatch_event("change")
+    shop.by("barber").dispatch_event("change")
     shop.by("logout").click()
     held.release()
     shop.settled()

@@ -741,3 +741,13 @@ bar 30px above its place, still sliding. Both were real readings of a moment, no
 **Rule:** a test that measures something that animates waits for the end state first
 (`page.wait_for_function` with a function, not a string - the page's CSP refuses string
 evaluation), and a design that must pass contrast never fades text in: it slides, solid.
+
+## 2026-10-03 — placeholder lines left in freshly written tests
+
+Three times in one feature a test file was written with a half-thought line left in it - an
+assertion ending in `or True`, an expectation built on `if False else ""`, a variable computed
+and at once overwritten. Each would have passed whatever the product did. Reading the files
+back, line by line, before the first run caught all three.
+
+**Rule:** read every new or rewritten test file in full before running it, and treat any
+`or True`, `if False`, unused computation or assertion that cannot fail as a bug in the test.

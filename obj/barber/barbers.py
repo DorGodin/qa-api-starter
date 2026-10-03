@@ -63,6 +63,21 @@ class Barbers(Base):
             "GET", f"{self.path}/{barber_id}/availability", persona=persona, params=params
         )
 
+    def days(
+        self,
+        barber_id: str,
+        month: str,
+        service_id: str,
+        persona: str = "customer",
+        moving: str | None = None,
+    ) -> Response:
+        """The month's calendar: each bookable day of `month` (YYYY-MM), whether the
+        barber works it and how many times are free."""
+        params = {"month": month, "service_id": service_id}
+        if moving is not None:
+            params["moving"] = moving
+        return self.client.request("GET", f"{self.path}/{barber_id}/days", persona=persona, params=params)
+
     def slots(self, barber_id: str, day: date, service_id: str, persona: str = "customer") -> list[dict]:
         return self.availability(barber_id, day, service_id, persona).assert_ok(200).as_dict["slots"]
 
