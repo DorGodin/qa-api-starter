@@ -1221,3 +1221,10 @@ mutants:
   changes:
   - find: '    if (state === "full") face.append(Object.assign(document.createElement("small"), { textContent: "מלא" }));'
     replace: ''
+- name: the times go back to three wide boxes a row on a phone
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  @media (max-width: 760px) { .slots { grid-template-columns: repeat(4, minmax(0, 1fr)); gap:6px; } }'
+    replace: ''

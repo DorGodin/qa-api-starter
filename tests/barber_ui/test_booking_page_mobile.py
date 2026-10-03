@@ -176,6 +176,21 @@ def test_every_day_of_the_month_is_big_enough_to_tap(phone_shop, account, ui_bar
     assert small == [], f"days too small to tap: {small}"
 
 
+def test_the_times_are_pills_four_to_a_row(phone_shop, account, ui_barber, ui_haircut, shop_tz):
+    phone_shop.sign_in_as(account)
+    phone_shop.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 3))
+
+    boxes = phone_shop.by("slot").evaluate_all(
+        "bs => bs.map(b => { const r = b.getBoundingClientRect(); "
+        "return [Math.round(r.top), r.height, parseFloat(getComputedStyle(b).borderTopLeftRadius)]; })"
+    )
+
+    first_row = [b for b in boxes if b[0] == boxes[0][0]]
+    assert len(first_row) == 4, f"{len(first_row)} times in the first row"
+    not_round = [b for b in boxes if b[2] < b[1] / 2]
+    assert not_round == [], "every time is a pill, its ends fully round"
+
+
 def test_a_customer_books_by_touch_and_the_answer_fits_on_the_screen(
     phone_shop, account, barbers, ui_haircut, shop_tz
 ):
