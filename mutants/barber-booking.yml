@@ -1070,3 +1070,10 @@ mutants:
               html = PRIVACY.read_text(encoding="utf-8")
               for name, value in values.items():
                   pass
+- name: the code screen still offers the password sign-in
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  $("password-sign-in").hidden = true;'
+    replace: ''

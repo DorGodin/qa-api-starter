@@ -87,3 +87,18 @@ def test_the_ways_to_reach_the_shop_come_after_the_sign_in_not_before_it(shop, e
     first_button = shop.page.locator("footer .action").first
     form_bottom = shop.by("code-request-form").bounding_box()
     assert first_button.bounding_box()["y"] > form_bottom["y"] + form_bottom["height"]
+
+
+def test_the_statement_and_the_policy_end_like_every_screen(shop, env_config):
+    base = env_config["url"].rstrip("/")
+    for path in ("/accessibility", "/privacy"):
+        shop.page.goto(base + path)
+
+        cuts = shop.page.locator(".cut")
+        assert cuts.count() == 2, f"{path}: a cut line above the content and one at its foot"
+        for i in range(2):
+            expect(cuts.nth(i)).to_have_attribute("aria-hidden", "true")
+        expect(shop.by("accessibility-link")).to_have_attribute("href", "/accessibility")
+        expect(shop.by("privacy-link")).to_have_attribute("href", "/privacy")
+        expect(shop.by("legal-scissors")).to_have_attribute("aria-hidden", "true")
+        assert violations(shop.page) == [], path
