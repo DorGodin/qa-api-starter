@@ -156,7 +156,7 @@ on the screen, and through the API behind it.
 | the owner presses book with no name | nothing booked, the reason shown, the focus on the name field |
 | a guest's name that looks like HTML | shown as text in the diary, never run |
 | a withdrawn service | not offered for booking, and the screen not left showing an error |
-| moving a booking from the list | the same booking id at the new time, barber and service locked while choosing, its own quarter-hour offered, the panel back to booking after |
+| changing a booking's time (`שינוי מועד`) from the list | the approved wording on the row, the panel, its buttons and the popup; the same booking id at the new time, barber and service locked while choosing, its own quarter-hour offered, the panel back to booking after |
 | a time taken while moving | told it has just gone, and the booking still at its old time |
 | a late move explains why | the 12-hour rule in Hebrew, and the booking unmoved |
 | stopping a move | the panel back as it was, nothing changed |

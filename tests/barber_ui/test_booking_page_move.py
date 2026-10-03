@@ -16,20 +16,24 @@ def test_a_customer_moves_a_booking_and_it_is_the_same_booking_at_the_new_time(
     day = local_day(shop_tz, 5)
     signed_in.choose(ui_barber["id"], ui_haircut["id"], day).pick("11:00").book()
     [before] = bookings.listing(persona=account["persona"])["content"]
+    expect(signed_in.row_at("11:00").get_by_test_id("move")).to_have_text("שינוי מועד")
 
     signed_in.start_moving("11:00")
 
+    expect(signed_in.by("left-title")).to_have_text("שינוי מועד")
+    expect(signed_in.by("moving-text")).to_contain_text("שינוי מועד לתור של")
     expect(signed_in.by("moving-text")).to_contain_text("11:00")
+    expect(signed_in.by("stop-moving")).to_have_text("השארת המועד הקיים")
     expect(signed_in.by("barber")).to_be_disabled()
     expect(signed_in.by("service")).to_be_disabled()
     # The booking's own time is not in its way: a quarter later is offered.
     assert "11:15" in signed_in.times()
 
     signed_in.pick("15:00")
-    expect(signed_in.by("book")).to_have_text("הזזת התור")
+    expect(signed_in.by("book")).to_have_text("אישור המועד החדש")
     signed_in.book()
 
-    assert signed_in.last_popup["title"] == "✓ התור הוזז"
+    assert signed_in.last_popup["title"] == "✓ המועד עודכן"
     expect(signed_in.row_at("15:00")).to_be_visible()
     expect(signed_in.row_at("11:00")).to_have_count(0)
     expect(signed_in.by("moving")).to_be_hidden()
@@ -70,7 +74,7 @@ def test_a_late_move_is_explained_in_hebrew(shop, bookings, account, barbers, ui
     signed_in.start_moving(hhmm)
     signed_in.pick(signed_in.times()[-1]).book()
 
-    assert f"{MOVE_CUTOFF_HOURS} שעות" in signed_in.last_popup["text"]
+    assert f"אפשר לשנות מועד עד {MOVE_CUTOFF_HOURS} שעות לפני" in signed_in.last_popup["text"]
     [kept] = bookings.listing(persona=account["persona"])["content"]
     assert parse_instant(kept["start"]) == start
 

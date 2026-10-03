@@ -1151,3 +1151,17 @@ mutants:
     replace: |2-
           // only repeated them. An earlier refusal is cleared.
           say(`נקבע: ${booked}`, "ok");
+- name: the row's button still says הזזה
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '      move.textContent = "שינוי מועד";'
+    replace: '      move.textContent = "הזזה";'
+- name: the late-move refusal speaks of moving, not of a new time
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  late_move: () => `אפשר לשנות מועד עד'
+    replace: '  late_move: () => `אפשר להזיז תור עד'
