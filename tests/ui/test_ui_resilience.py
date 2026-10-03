@@ -8,6 +8,15 @@ even when the API is fixed the same day.
 from playwright.sync_api import expect
 
 
+def order_row(page, total: str):
+    """The order with that total - waited for, unlike `.last`. Right after
+    "order" the new row may not be drawn yet, and `.last` was still the earlier
+    order: submitted again, refused again, and the error never cleared."""
+    return page.get_by_test_id("order-row").filter(
+        has=page.get_by_test_id("order-total").get_by_text(total, exact=True)
+    )
+
+
 def test_a_failing_catalogue_does_not_leave_a_blank_page(page, ui_base_url, signed_in, items, credentials):
     items.create_fake_item(name="Lamp", price=20.0)
     page = signed_in("member")
@@ -53,11 +62,11 @@ def test_the_error_message_clears_once_the_next_action_succeeds(page, signed_in,
     page = signed_in("member")
 
     page.get_by_test_id("item-row").filter(has_text="Rack").get_by_test_id("order").click()
-    page.get_by_test_id("order-row").last.get_by_test_id("submit").click()
+    order_row(page, "9000.00").get_by_test_id("submit").click()
     expect(page.get_by_test_id("order-error")).to_be_visible()
 
     page.get_by_test_id("item-row").filter(has_text="Pen").get_by_test_id("order").click()
-    page.get_by_test_id("order-row").last.get_by_test_id("submit").click()
+    order_row(page, "3.00").get_by_test_id("submit").click()
     expect(page.get_by_test_id("order-error")).to_be_hidden(), "a stale error is worse than no error"
 
 

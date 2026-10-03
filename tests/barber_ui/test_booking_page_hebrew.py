@@ -9,6 +9,9 @@ from playwright.sync_api import expect
 from utils.local_time import at_local, local_day
 
 LATIN = re.compile(r"[A-Za-z]")
+# How he-IL writes a short weekday: "יום א׳" to "יום ו׳" - and Saturday is
+# "שבת" alone, with no "יום". A test that expected "יום" failed every Saturday.
+HEBREW_WEEKDAY = re.compile(r"^(יום [א-ו]׳|שבת)")
 HEBREW = re.compile(r"[\u0590-\u05FF]")
 FSI, PDI = "\u2068", "\u2069"
 # Up to this width the page stacks its two columns (its @media max-width: 760px).
@@ -66,7 +69,7 @@ def test_dates_are_written_in_hebrew(signed_in, ui_barber, ui_haircut, shop_tz):
 
     when = signed_in.text(signed_in.row_at("15:00").get_by_test_id("booking-when"))
 
-    assert when.startswith("יום"), when
+    assert HEBREW_WEEKDAY.match(when), when
     assert not LATIN.search(when), f"a Latin month or weekday slipped in: {when}"
 
 

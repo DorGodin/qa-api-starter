@@ -709,3 +709,25 @@ against the new `main`.
 **Rule:** a change to the barbershop's `app/` is checked with `make mutate-check` before
 it is pushed, and the catalogue fix goes out with it. The check takes seconds; the full
 mutation run stays at the end of the day.
+
+## 2026-10-03 — A date test failed every Saturday, and took the nightly mutation run with it
+
+`test_dates_are_written_in_hebrew` booked seven days ahead and asserted the date starts with
+`יום`. he-IL writes Sunday to Friday as `יום א׳` … `יום ו׳`, and Saturday as `שבת` alone. On a
+Saturday the booking lands on a Saturday and the test fails - one day in seven. The nightly
+run happened to start on one; the mutation runner then refused to run at all, rightly, because
+the unmodified product already failed a suite.
+
+**Rule:** a test that writes or reads a date asserts the whole set of forms, every weekday
+included, not the form of the day it was written on. When a test books "n days ahead", ask
+which weekday that lands on and whether that day is written differently.
+
+## 2026-10-03 — `.last` read a row that had not been drawn yet
+
+The demo's resilience test clicked "order" and at once submitted `order-row` `.last`. When the
+new row was not drawn yet, `.last` was still the earlier, refused order: submitted again,
+refused again, the error never cleared. Seven runs in eight passed.
+
+**Rule:** after an action that adds a row, address the new row by what identifies it (its
+total, its name) so the locator waits for it - never `.first`/`.last` of a list that is still
+changing.
