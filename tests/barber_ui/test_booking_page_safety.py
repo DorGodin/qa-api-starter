@@ -6,7 +6,7 @@ import re
 import pytest
 from playwright.sync_api import expect
 
-from obj.barber.booking_page import BARBER, DATE, PASSWORD, SERVICE, USERNAME, YOUR_NAME, BookingPage
+from obj.barber.booking_page import BARBER, DATE, PASSWORD, SERVICE, USERNAME, BookingPage
 from utils.local_time import local_day
 
 
@@ -30,9 +30,9 @@ def test_a_name_that_looks_like_html_is_shown_as_text_and_never_run(shop, custom
     # No spaces: a customer is greeted by first name, so the whole tag has to be
     # one word to reach the screen. A slash separates attributes as a space does.
     tag = "<img/src=x/onerror=window.__ran=1>"
-    payload = customers.build_signup_payload(display_name=tag)
+    account = customers.create_account(display_name=tag)
 
-    shop.sign_up(payload["display_name"], payload["username"], payload["password"])
+    shop.sign_in(account["username"], account["password"])
 
     expect(shop.by("display-name")).to_contain_text(tag)
     assert shop.page.evaluate("window.__ran") is None, "a display name was executed as code"
@@ -59,7 +59,7 @@ def test_every_field_has_a_label_a_screen_reader_can_read(shop, account):
     for label in ("שם מלא", "מספר טלפון"):
         expect(shop.page.get_by_label(label, exact=True)).to_be_visible()
     shop.unfold_password_sign_in()
-    for label in (USERNAME, PASSWORD, YOUR_NAME):
+    for label in (USERNAME, PASSWORD):
         expect(shop.page.get_by_label(label, exact=True).first).to_be_visible()
 
     shop.sign_in_as(account)
@@ -146,21 +146,4 @@ def test_signing_out_with_no_connection_still_signs_this_device_out(shop, accoun
     shop.reload()
 
     expect(shop.by("code-request-form")).to_be_visible()
-    expect(shop.by("app")).to_be_hidden()
-
-
-def test_too_many_accounts_from_one_device_are_refused_in_hebrew_with_how_long_to_wait(
-    shop, customers, fresh_address
-):
-    device = fresh_address()
-    shop.page.set_extra_http_headers({"X-Forwarded-For": device})
-    for _ in range(5):
-        customers.create(customers.build_signup_payload(), headers={"X-Forwarded-For": device}).assert_ok(201)
-    payload = customers.build_signup_payload()
-
-    shop.sign_up(payload["display_name"], payload["username"], payload["password"])
-
-    expect(shop.by("signup-error")).to_be_visible()
-    error = shop.text(shop.by("signup-error"))
-    assert "יותר מדי חשבונות" in error and "דקות" in error, error
     expect(shop.by("app")).to_be_hidden()

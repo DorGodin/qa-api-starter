@@ -16,7 +16,7 @@ from playwright.sync_api import Locator, Page, expect
 from obj.barber.customers import new_device_address
 
 # The page is Hebrew. Its field labels, as a person reads them.
-USERNAME, PASSWORD, YOUR_NAME = "שם משתמש", "סיסמה", "השם שלך"
+USERNAME, PASSWORD = "שם משתמש", "סיסמה"
 BARBER, SERVICE, DATE = "ספר", "שירות", "תאריך"
 
 # Unicode direction controls the page puts around names (isolates) and that
@@ -136,16 +136,6 @@ class BookingPage:
     def session_token(self) -> str:
         """The sign-in this page holds - for checking through the API what it did."""
         return self.page.evaluate("() => sessionStorage.getItem('barber.session')")
-
-    def sign_up(self, name: str, username: str, password: str, navigate: bool = True) -> BookingPage:
-        if navigate:
-            self.open()
-        self.unfold_password_sign_in()
-        self.page.get_by_label(YOUR_NAME, exact=True).fill(name)
-        self.by("signup-username").fill(username)
-        self.by("signup-password").fill(password)
-        self.by("signup").click()
-        return self
 
     def show_tab(self, tab: str) -> None:
         """On a customer's phone, booking and the bookings are two tabs at the

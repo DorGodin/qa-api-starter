@@ -169,7 +169,7 @@ on the screen, and through the API behind it.
 | a late move explains why | the 12-hour rule in Hebrew, and the booking unmoved |
 | stopping a move | the panel back as it was, nothing changed |
 | a double click books once | counted on the wire: one POST, and "Booked" rather than a refusal |
-| signing up signs you straight in | the new account lands on the booking screen |
+| an account made through the API signs in on the page | the page has no sign-up form; an account made through `POST /customers` signs in with its password and is greeted by first name |
 | a time taken while you were looking | two windows; the second is told it has just gone, and no longer offered it |
 | times on the shop clock in any browser time zone | a New York browser still sees 09:00 opening and 18:30 last start |
 | a name that looks like HTML | shown as text, never run |
@@ -180,7 +180,7 @@ on the screen, and through the API behind it.
 | a Latin name is isolated | the barber's name sits inside FSI...PDI in the Hebrew sentence |
 | prices the Israeli way | the amount, then the sign - never `₪80` |
 | dates in Hebrew | the weekday and month are Hebrew, with no Latin letters |
-| no English reaches the customer | wrong password, invalid sign-up and a taken slot all answer in Hebrew only |
+| no English reaches the customer | a wrong password and a taken slot both answer in Hebrew only |
 | a booking is confirmed in a popup | green, modal, says the day, time and price, and puts the focus on its close button |
 | the popup closes with its button and with Escape | both close it |
 | nothing behind the popup can be pressed | it is `:modal`, and a click on a time behind it does not land |

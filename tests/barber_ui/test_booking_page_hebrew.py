@@ -90,10 +90,6 @@ def test_no_english_from_the_server_ever_reaches_the_customer(
     expect(shop.by("login-error")).to_be_visible()
     said["wrong password"] = shop.text(shop.by("login-error"))
 
-    shop.sign_up("Some One", "Not A Valid Username", "long-enough-password")
-    expect(shop.by("signup-error")).to_be_visible()
-    said["invalid sign-up"] = shop.text(shop.by("signup-error"))
-
     contested = barbers.create_fake_barber()
     shop.sign_in_as(account)
     day = local_day(shop_tz, 4)

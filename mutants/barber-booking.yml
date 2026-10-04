@@ -818,13 +818,6 @@ mutants:
   changes:
   - find: '  too_many_bookings: (_, data) =>'
     replace: '  too_many_bookings_off: (_, data) =>'
-- name: the sign-up limit is shown as a generic failure
-  file: app/static/index.html
-  catches:
-  - ui
-  changes:
-  - find: '  too_many_signups: (_, data) =>'
-    replace: '  too_many_signups_off: (_, data) =>'
 - name: a sign-in writes without the write lock, and sign-ins at once answer 500
   file: app/login_limits.py
   catches:
