@@ -23,12 +23,15 @@ def test_the_page_is_hebrew_and_its_layout_is_mirrored(signed_in):
     expect(html).to_have_attribute("lang", "he")
     expect(html).to_have_attribute("dir", "rtl")
 
-    booking = signed_in.by("left-panel").bounding_box()
-    bookings = signed_in.by("right-panel").bounding_box()
     if signed_in.page.viewport_size["width"] > PHONE_WIDTH:
+        booking = signed_in.by("left-panel").bounding_box()
+        bookings = signed_in.by("right-panel").bounding_box()
         assert booking["x"] > bookings["x"], "booking comes first, and in Hebrew first is on the right"
     else:
-        assert booking["y"] < bookings["y"], "on a phone the columns stack, and booking comes first - on top"
+        # On a phone they are two tabs at the foot of the screen, and in Hebrew
+        # the first, booking, is on the right.
+        book, mine = signed_in.by("tab-book").bounding_box(), signed_in.by("tab-mine").bounding_box()
+        assert book["x"] > mine["x"], "the booking tab comes first, on the right"
 
 
 def test_times_keep_their_own_order_inside_the_right_to_left_page(signed_in, ui_barber, ui_haircut, shop_tz):

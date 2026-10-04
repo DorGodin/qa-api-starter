@@ -15,6 +15,16 @@ def test_signing_in_replaces_the_form_with_the_booking_screen(shop, account):
     expect(shop.by("display-name")).to_have_text(greeting(account["display_name"]))
 
 
+def test_a_computer_shows_booking_and_the_bookings_side_by_side_without_tabs(signed_in):
+    if signed_in.page.viewport_size["width"] <= 760:
+        expect(signed_in.by("tabbar")).to_be_visible()
+        return
+
+    expect(signed_in.by("tabbar")).to_be_hidden()
+    expect(signed_in.by("left-panel")).to_be_visible()
+    expect(signed_in.by("right-panel")).to_be_visible()
+
+
 def test_the_staff_see_their_name_and_role_not_a_greeting(shop, credentials):
     shop.sign_in(*credentials("owner"))
 

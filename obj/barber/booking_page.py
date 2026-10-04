@@ -147,9 +147,27 @@ class BookingPage:
         self.by("signup").click()
         return self
 
+    def show_tab(self, tab: str) -> None:
+        """On a customer's phone, booking and the bookings are two tabs at the
+        foot of the screen - `book` and `mine` - and a person taps the one they
+        need. Elsewhere both are on the screen, and this does nothing."""
+        button = self.by(f"tab-{tab}")
+        # Behind an open popup nothing can be pressed - a person closes it first.
+        if self.by("popup").is_visible():
+            return
+        # The page may still be moving the focus to the tab it chose itself -
+        # to the new booking, say, once a popup closed with its button or with
+        # Escape. A person waits for the screen to settle.
+        if self.by("app").is_visible():
+            self.page.wait_for_function("() => document.activeElement?.dataset.testid !== 'popup-close'")
+            self.settled()
+        if button.is_visible() and button.get_attribute("aria-current") != "page":
+            button.click()
+
     def choose(self, barber_id: str, service_id: str, day: date) -> BookingPage:
         """Pick barber, service and day, and wait until the times for exactly that
         choice are on screen."""
+        self.show_tab("book")
         self.barber_pill(barber_id).click()
         self.by("service").select_option(value=service_id)
         self.settled()
@@ -201,14 +219,17 @@ class BookingPage:
     def choose_by_name(self, barber: str, service: str, day: date) -> BookingPage:
         """The same choice, made the way a customer makes it: by the names on the
         screen, not by ids taken from somewhere else."""
+        self.show_tab("book")
         barber_id = self.by("barbers").get_by_role("radio", name=barber, exact=True).get_attribute("data-id")
         service_id = self.by("service").locator("option", has_text=service).get_attribute("value")
         return self.choose(barber_id, service_id, day)
 
     def times(self) -> list[str]:
+        self.show_tab("book")
         return self.by("slot").all_inner_texts()
 
     def pick(self, hhmm: str) -> BookingPage:
+        self.show_tab("book")
         self.by("slot").filter(has_text=hhmm).first.click()
         expect(self.by("confirm")).to_be_visible()
         return self
@@ -233,6 +254,10 @@ class BookingPage:
     def close_popup(self) -> BookingPage:
         self.by("popup-close").click()
         expect(self.by("popup")).to_be_hidden()
+        # The browser fires the dialog's close event a task later, and the page
+        # answers it - the focus to the new booking, and its tab. Until then a
+        # test faster than any person could press something the page then undoes.
+        self.page.wait_for_function("() => document.activeElement?.dataset.testid !== 'popup-close'")
         return self
 
     def settled(self) -> None:
@@ -253,6 +278,7 @@ class BookingPage:
         return plain(locator.inner_text())
 
     def rows(self) -> Locator:
+        self.show_tab("mine")
         return self.by("booking-row")
 
     def row_at(self, hhmm: str) -> Locator:

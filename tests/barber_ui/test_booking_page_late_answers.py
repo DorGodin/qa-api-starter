@@ -118,6 +118,7 @@ def test_an_answer_for_the_person_who_signed_out_never_lands_in_the_page_they_le
     shop.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 8)).pick("10:00").book()
     expect(shop.rows()).to_have_count(1)
 
+    shop.show_tab("book")
     held = Held(shop.page, lambda url: "/availability" in url or "/bookings?" in url)
     shop.barber_pill(ui_barber["id"]).click()
     shop.by("logout").click()

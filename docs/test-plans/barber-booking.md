@@ -138,6 +138,7 @@ on the screen, and through the API behind it.
 | the barbers | a pill each by full name, exactly the ones the customer can book, one chosen and one Tab stop; pressing one offers that barber's times; the arrows move to the next barber and choose them; locked while a booking's time is changed; a barber off the day chosen moves the calendar to a free day |
 | the month's calendar | a free day named with the number of times its list then shows; a day off and a full day marked unavailable and grey alike, a tap on one changing nothing; arrows (left is the next day), Enter and Page Down; the month turning only inside the booking window; the screen opening on a free day; every day at least 24px wide and 44px tall on three phones |
 | a day already over | not choosable, named as such, the day chosen unchanged; no turning back to a past month |
+| the tabs on a phone | a customer moves between booking and their bookings, one shown at a time; a new booking opens the bookings with the focus on it; a change of time goes back to booking; a tab pressed while the list still loads is not undone (the list held back to make the race); the page ends above the tabs; the owner has none; a computer shows both side by side |
 | the times on a phone | pills, five to a row, 36px tall, ends fully round, on three phones |
 | the greeting | a customer greeted `שלום` and their first name, the full name kept on the account; the staff see their name and role instead |
 | the booked popup | black like the page's buttons, white words |

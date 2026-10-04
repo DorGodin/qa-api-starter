@@ -686,7 +686,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "  if (target) target.focus();\n  else if (inFlight > 0) focusWhenSettled = find;"
+  - find: "  if (target) focusOn(target);\n  else if (inFlight > 0) focusWhenSettled = find;"
     replace: '  else if (inFlight > 0) focusWhenSettled = find;'
 - name: a popup closed before the list is drawn leaves the focus nowhere
   file: app/static/index.html
@@ -1049,8 +1049,10 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '  window.scrollTo(0, 0);'
-    replace: ''
+  - find: |2-
+        // the screen after it opened scrolled to where the form had been.
+        window.scrollTo(0, 0);
+    replace: '  // the screen after it opened scrolled to where the form had been.'
 - name: the privacy policy is not linked from the page
   file: app/static/index.html
   catches:
@@ -1298,3 +1300,33 @@ mutants:
           await refresh();
         });
       }
+- name: a customer's phone has no tabs
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    [data-testid="app"][data-role="customer"] .tabbar { display:flex;'
+    replace: '    [data-testid="app"][data-role="customer"] .tabbar { display:none;'
+- name: the booking tab still shows the bookings under it
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    [data-role="customer"][data-tab="book"] [data-testid="right-panel"],'
+    replace: '    [data-role="customer"][data-tab="none"] [data-testid="right-panel"],'
+- name: a new booking leaves the customer on the booking tab
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  showTab($("right-panel").contains(target) ? "mine" : "book");'
+    replace: ''
+- name: a focus waiting for the list undoes the tab the customer pressed
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: |2-
+          focusWhenSettled = null;
+          showTab(button.dataset.tab);
+    replace: '    showTab(button.dataset.tab);'

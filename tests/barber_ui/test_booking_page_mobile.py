@@ -15,6 +15,7 @@ import pytest
 from playwright.sync_api import expect
 
 from obj.barber.booking_page import BookingPage, OwnerScreen, a_device
+from tests.barber_ui.test_booking_page_late_answers import Held
 from utils.local_time import local_day
 
 PHONES = ["iPhone SE", "iPhone 13", "Pixel 7"]
@@ -144,14 +145,10 @@ def test_the_booking_screen_fits_a_phone_with_the_times_on_it(
     phone_shop.sign_in_as(account)
     phone_shop.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 3))
     expect(phone_shop.by("slot").first).to_be_visible()
-    booking, bookings = (
-        phone_shop.by("left-panel").bounding_box(),
-        phone_shop.by("right-panel").bounding_box(),
-    )
-
-    assert (
-        booking["y"] + booking["height"] <= bookings["y"]
-    ), "on a phone the two columns stack, booking on top"
+    # On a phone booking and the bookings are two tabs: booking first.
+    expect(phone_shop.by("tab-book")).to_have_attribute("aria-current", "page")
+    expect(phone_shop.by("left-panel")).to_be_visible()
+    expect(phone_shop.by("right-panel")).to_be_hidden()
     assert sideways_overflow(phone_shop.page) == []
     assert too_small_to_tap(phone_shop.page) == []
     assert zooming_fields(phone_shop.page) == []
@@ -326,3 +323,84 @@ def test_a_field_the_keyboard_reaches_is_not_under_the_slim_bar(phone_shop):
     field = phone_shop.by("full-name").bounding_box()
     covered_to = slim.bounding_box()["height"] if slim.is_visible() else 0
     assert field["y"] >= covered_to, "the name field is hidden under the slim bar"
+
+
+def test_a_customer_moves_between_booking_and_their_bookings_by_the_tabs(phone_shop, account):
+    phone_shop.sign_in_as(account)
+    book, mine = phone_shop.by("tab-book"), phone_shop.by("tab-mine")
+
+    expect(book).to_have_attribute("aria-current", "page")
+    expect(phone_shop.by("left-panel")).to_be_visible()
+    expect(phone_shop.by("right-panel")).to_be_hidden()
+
+    mine.tap()
+    expect(mine).to_have_attribute("aria-current", "page")
+    expect(book).not_to_have_attribute("aria-current", "page")
+    expect(phone_shop.by("right-panel")).to_be_visible()
+    expect(phone_shop.by("left-panel")).to_be_hidden()
+
+    book.tap()
+    expect(phone_shop.by("left-panel")).to_be_visible()
+
+
+def test_a_new_booking_opens_the_bookings_tab_with_the_focus_on_it(
+    phone_shop, account, barbers, ui_haircut, shop_tz
+):
+    barber = barbers.create_fake_barber()
+    phone_shop.sign_in_as(account)
+    phone_shop.choose(barber["id"], ui_haircut["id"], local_day(shop_tz, 4)).pick("12:00").book()
+
+    expect(phone_shop.by("tab-mine")).to_have_attribute("aria-current", "page")
+    expect(phone_shop.row_at("12:00")).to_be_focused()
+
+
+def test_changing_a_bookings_time_goes_back_to_the_booking_tab(
+    phone_shop, account, barbers, ui_haircut, shop_tz
+):
+    barber = barbers.create_fake_barber()
+    phone_shop.sign_in_as(account)
+    phone_shop.choose(barber["id"], ui_haircut["id"], local_day(shop_tz, 5)).pick("13:00").book()
+
+    phone_shop.start_moving("13:00")
+
+    expect(phone_shop.by("tab-book")).to_have_attribute("aria-current", "page")
+    expect(phone_shop.by("moving-text")).to_be_visible()
+
+
+def test_the_page_ends_above_the_tabs(phone_shop, account):
+    phone_shop.sign_in_as(account)
+    phone_shop.page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+
+    tabs = phone_shop.by("tabbar").bounding_box()
+    last = phone_shop.by("privacy-link").bounding_box()
+    assert last["y"] + last["height"] <= tabs["y"], "the foot of the page is hidden under the tabs"
+
+
+def test_the_owner_has_no_tabs(phone_owner):
+    expect(phone_owner.by("tabbar")).to_be_hidden()
+    expect(phone_owner.by("left-panel")).to_be_visible()
+    expect(phone_owner.by("right-panel")).to_be_visible()
+
+
+def test_a_tab_pressed_while_the_list_still_loads_is_not_undone(
+    phone_shop, account, barbers, ui_haircut, shop_tz
+):
+    """Closed before the list has the new booking, the popup leaves the focus
+    waiting for it - and that wait once pulled a customer who had already
+    pressed the booking tab back to the list."""
+    barber = barbers.create_fake_barber()
+    phone_shop.sign_in_as(account)
+    phone_shop.choose(barber["id"], ui_haircut["id"], local_day(shop_tz, 6)).pick("14:00")
+    held = Held(phone_shop.page, lambda url: "/bookings?" in url, limit=1)
+
+    phone_shop.by("book").tap()
+    expect(phone_shop.by("popup")).to_be_visible()
+    phone_shop.by("popup-close").tap()
+    expect(phone_shop.by("popup")).to_be_hidden()
+    phone_shop.page.wait_for_function("() => document.activeElement?.dataset.testid !== 'popup-close'")
+    phone_shop.by("tab-book").tap()
+    held.release()
+    phone_shop.settled()
+
+    expect(phone_shop.by("tab-book")).to_have_attribute("aria-current", "page")
+    expect(phone_shop.by("left-panel")).to_be_visible()

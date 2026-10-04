@@ -237,6 +237,7 @@ def test_on_a_shared_device_the_next_person_finds_nothing_of_the_one_before(
     second = new_account(run_id, "second")
     signed_up(device, second, navigate=False)
     expect(device.by("display-name")).to_have_text(greeting(second["name"]))
+    device.show_tab("mine")
     expect(device.by("no-bookings")).to_be_visible()
     expect(device.by("booking-row")).to_have_count(0)
     device.choose_by_name(barber["name"], service, day).pick("11:00").book()
