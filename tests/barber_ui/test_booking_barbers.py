@@ -3,6 +3,8 @@ radio group a keyboard moves through as it does the times."""
 
 from __future__ import annotations
 
+import re
+
 from playwright.sync_api import expect
 
 from utils.local_time import local_day
@@ -47,3 +49,19 @@ def test_the_arrows_move_to_the_next_barber_and_choose_them(signed_in, ui_barber
     expect(signed_in.barber_pill(following)).to_be_focused()
     expect(signed_in.barber_pill(following)).to_have_attribute("aria-checked", "true")
     assert signed_in.by("barber").input_value() == following
+
+
+def test_a_barber_who_does_not_work_the_day_chosen_moves_the_calendar_to_a_free_day(
+    shop, account, barbers, ui_barber, ui_haircut, shop_tz
+):
+    day = local_day(shop_tz, 3)
+    off_that_day = barbers.create_fake_barber()
+    barbers.add_time_off(off_that_day["id"], day).assert_ok(201)
+    screen = shop.sign_in_as(account).choose(ui_barber["id"], ui_haircut["id"], day)
+
+    screen.choose_barber(off_that_day["id"])
+
+    assert screen.chosen_day() != day, "the day the barber is off stayed chosen"
+    expect(screen.day(screen.chosen_day())).to_have_class(re.compile(r"\bfree\b"))
+    expect(screen.by("slot").first).to_be_visible()
+    expect(screen.by("no-slots")).to_be_hidden()

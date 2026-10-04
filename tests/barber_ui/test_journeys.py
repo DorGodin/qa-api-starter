@@ -188,8 +188,14 @@ def test_a_day_off_given_on_the_screen_closes_the_day_and_taking_it_back_reopens
     customer.choose_by_name(barber["name"], service, day)
     expect(customer.day(day)).to_have_attribute("aria-disabled", "true")
     expect(customer.day(day)).to_have_accessible_name(re.compile("הספר לא עובד ביום הזה"))
-    expect(customer.by("no-slots")).to_be_visible()
-    expect(customer.by("slot")).to_have_count(0)
+    # The day off cannot stay chosen: the calendar moves to the barber's next
+    # free day that month - or, with none left in it, says there is no time.
+    if customer.by("days").locator("td.free").count():
+        assert customer.chosen_day() != day
+        expect(customer.day(customer.chosen_day())).to_have_class(re.compile(r"\bfree\b"))
+    else:
+        expect(customer.by("no-slots")).to_be_visible()
+        expect(customer.by("slot")).to_have_count(0)
 
     owner.remove_day_off(day)
     assert owner.days_off() == []

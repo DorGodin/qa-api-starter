@@ -1277,3 +1277,24 @@ mutants:
   changes:
   - find: '    pill.textContent = b.active ? b.display_name : `${b.display_name} (לא פעיל)`;'
     replace: '    pill.textContent = b.display_name;'
+- name: a day with no time stays chosen
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  if (firstFree) await chooseDay(firstFree.date);'
+    replace: ''
+- name: a change of barber leaves the day chosen even when the barber is off it
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: |2-
+          await refresh();
+          await keepAFreeDay();
+        });
+      }
+    replace: |2-
+          await refresh();
+        });
+      }
