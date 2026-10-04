@@ -135,6 +135,7 @@ on the screen, and through the API behind it.
 | signing in replaces the form | the sign-in form is really gone, not only marked hidden |
 | the Book button appears only after a time is chosen | a hidden panel stays hidden |
 | a customer books a time and sees it | the popup, no repeat of it under the list, the list, the price, the time gone from the grid, and the stored start |
+| the barbers | a pill each by full name, exactly the ones the customer can book, one chosen and one Tab stop; pressing one offers that barber's times; the arrows move to the next barber and choose them; locked while a booking's time is changed |
 | the month's calendar | a free day named with the number of times its list then shows; a day off and a full day marked unavailable, a tap on one changing nothing; arrows (left is the next day), Enter and Page Down; the month turning only inside the booking window; the screen opening on a free day; every day at least 24px wide and 44px tall on three phones |
 | a day already over | not choosable, named as such, the day chosen unchanged; no turning back to a past month |
 | the times on a phone | pills, four to a row, ends fully round, on three phones |

@@ -758,5 +758,10 @@ back, line by line, before the first run caught all three.
 style change had moved a mutant's anchor. It was caught in the output and fixed in the next
 commit, but the catalogue sat broken in one commit of history.
 
-**Rule:** a check that gates a commit is chained with `&&`, never `;` - the commit runs only
-when the check exits 0.
+The `&&` that replaced it was no gate either: `make mutate-check 2>&1 | tail -1 && git commit`
+takes the exit code of `tail`, which is 0 whatever `make` returned. Two anchors moved the next
+day and the check printed its refusal - the commit chain would have run on.
+
+**Rule:** a check that gates a commit is chained with `&&`, never `;`, and is never piped -
+redirect its output to a file and read that (`make mutate-check > out.txt 2>&1 && git commit`),
+or `set -o pipefail` first. The commit runs only when the check itself exits 0.

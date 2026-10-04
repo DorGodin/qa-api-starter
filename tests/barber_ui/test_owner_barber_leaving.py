@@ -23,7 +23,7 @@ def test_the_owner_takes_a_barber_out_and_their_diary_stays(
 
     expect(screen.message()).to_contain_text("הוצא מהפעילות")
     expect(screen.message()).to_have_attribute("data-kind", "ok")
-    expect(screen.by("barber").locator("option:checked")).to_contain_text("(לא פעיל)")
+    expect(screen.chosen_barber()).to_contain_text("(לא פעיל)")
     expect(screen.by("barber-left")).to_be_visible()
     expect(screen.by("slot")).to_have_count(0)
     expect(screen.row_at("11:00")).to_be_visible()
@@ -61,6 +61,6 @@ def test_a_customer_is_not_offered_the_barber_but_still_sees_who_their_booking_i
 
     signed_in = shop.sign_in_as(account)
 
-    offered = signed_in.by("barber").locator("option").evaluate_all("os => os.map(o => o.value)")
+    offered = signed_in.by("barber-pill").evaluate_all("ps => ps.map(p => p.dataset.id)")
     assert leaving["id"] not in offered
     expect(signed_in.row_at("12:00")).to_contain_text(leaving["display_name"])

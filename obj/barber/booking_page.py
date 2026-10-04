@@ -150,10 +150,21 @@ class BookingPage:
     def choose(self, barber_id: str, service_id: str, day: date) -> BookingPage:
         """Pick barber, service and day, and wait until the times for exactly that
         choice are on screen."""
-        self.by("barber").select_option(value=barber_id)
+        self.barber_pill(barber_id).click()
         self.by("service").select_option(value=service_id)
         self.settled()
         return self.choose_day(day)
+
+    def barber_pill(self, barber_id: str) -> Locator:
+        return self.by("barbers").locator(f'[data-id="{barber_id}"]')
+
+    def chosen_barber(self) -> Locator:
+        return self.by("barbers").locator('[aria-checked="true"]')
+
+    def choose_barber(self, barber_id: str) -> BookingPage:
+        self.barber_pill(barber_id).click()
+        self.settled()
+        return self
 
     def day(self, day: date) -> Locator:
         """That day in the calendar - once its month is the one shown."""
@@ -190,7 +201,7 @@ class BookingPage:
     def choose_by_name(self, barber: str, service: str, day: date) -> BookingPage:
         """The same choice, made the way a customer makes it: by the names on the
         screen, not by ids taken from somewhere else."""
-        barber_id = self.by("barber").locator("option", has_text=barber).get_attribute("value")
+        barber_id = self.by("barbers").get_by_role("radio", name=barber, exact=True).get_attribute("data-id")
         service_id = self.by("service").locator("option", has_text=service).get_attribute("value")
         return self.choose(barber_id, service_id, day)
 
@@ -276,8 +287,7 @@ class OwnerScreen(BookingPage):
     """The same page, signed in as the owner: hours, days off, barbers, services."""
 
     def select_barber(self, barber_id: str) -> OwnerScreen:
-        self.by("barber").select_option(value=barber_id)
-        self.settled()
+        self.choose_barber(barber_id)
         return self
 
     def toggle_barber_active(self) -> OwnerScreen:

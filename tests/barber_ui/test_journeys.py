@@ -93,7 +93,7 @@ def open_a_barber(owner: OwnerScreen, run_id: str, weekday: str, opening: str, c
     barber = {**new_barber(run_id, "barber"), "name": f"תומר {run_id}"}
     owner.add_barber(barber["name"], barber["username"], barber["password"])
     expect(owner.message()).to_have_attribute("data-kind", "ok")
-    expect(owner.by("barber").locator("option:checked")).to_have_text(barber["name"])
+    expect(owner.chosen_barber()).to_have_text(barber["name"])
     barber["id"] = owner.by("barber").input_value()
     owner.set_day(weekday, opening, closing).save_hours()
     expect(owner.message()).to_have_attribute("data-kind", "ok")

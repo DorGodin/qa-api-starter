@@ -240,8 +240,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: <div class="field"><label for="barber">ספר</label><select id="barber" data-testid="barber"></select></div>
-    replace: <label>ספר <select data-testid="barber"></select></label>
+  - find: <div class="field"><label for="service">שירות</label><select id="service" data-testid="service"></select></div>
+    replace: <label>שירות <select data-testid="service"></select></label>
 - name: no popup at all
   file: app/static/index.html
   catches:
@@ -332,8 +332,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: |2
-          $("barber").value = r.data.id;
+  - find: '    setBarber(r.data.id);'
     replace: ''
 - name: withdrawing a service is not saved
   file: app/static/index.html
@@ -1249,3 +1248,32 @@ mutants:
   changes:
   - find: BOOKING_WINDOW_DAYS=30
     replace: BOOKING_WINDOW_DAYS=60
+- name: no barber pill is ever marked chosen
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    pill.setAttribute("aria-checked", String(on));'
+    replace: '    pill.setAttribute("aria-checked", "false");'
+- name: the arrows move between barbers without choosing one
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  chooseBarber(pills[to].dataset.id);'
+    replace: ''
+- name: the barber can be changed while a booking's time is being changed
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: |2-
+          lockBarber(true);
+    replace: ''
+- name: a barber who left looks like any other in the owner's list
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    pill.textContent = b.active ? b.display_name : `${b.display_name} (לא פעיל)`;'
+    replace: '    pill.textContent = b.display_name;'
