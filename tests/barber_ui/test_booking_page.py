@@ -1,6 +1,9 @@
 """A customer books and cancels through the page, and every result is checked
 twice: on the screen, and through the API behind it."""
 
+from datetime import datetime
+
+import pytest
 from playwright.sync_api import expect
 
 from obj.barber.booking_page import greeting
@@ -23,6 +26,35 @@ def test_a_computer_shows_booking_and_the_bookings_side_by_side_without_tabs(sig
     expect(signed_in.by("tabbar")).to_be_hidden()
     expect(signed_in.by("left-panel")).to_be_visible()
     expect(signed_in.by("right-panel")).to_be_visible()
+
+
+@pytest.mark.browser_context_args(timezone_id="America/New_York")
+@pytest.mark.parametrize(
+    ("hhmm", "words"),
+    [("09:00", "בוקר טוב"), ("13:00", "צהריים טובים"), ("18:30", "ערב טוב"), ("23:00", "לילה טוב")],
+)
+def test_a_customer_is_greeted_for_the_hour_on_the_shops_clock(shop, account, shop_tz, hhmm, words):
+    """The browser is in New York: the greeting follows the shop's hour, not
+    the phone's."""
+    hour, minute = map(int, hhmm.split(":"))
+    shop.page.clock.set_fixed_time(
+        datetime.now(shop_tz).replace(hour=hour, minute=minute, second=0, microsecond=0)
+    )
+
+    shop.sign_in_as(account)
+
+    assert shop.page.evaluate("Intl.DateTimeFormat().resolvedOptions().timeZone") == "America/New_York"
+    expect(shop.by("display-name")).to_have_text(greeting(account["display_name"], words))
+
+
+def test_the_greeting_stands_on_the_right_and_the_way_out_on_the_left(signed_in):
+    name, out = signed_in.by("display-name").bounding_box(), signed_in.by("logout").bounding_box()
+
+    width = signed_in.page.viewport_size["width"]
+    assert name["x"] > out["x"], "in Hebrew the greeting starts the line, on the right"
+    assert name["x"] + name["width"] > width * 0.6, "the greeting stands at the right, not beside the button"
+    assert out["x"] < width * 0.4, "the way out stands at the left"
+    expect(signed_in.by("logout")).to_have_text("יציאה")
 
 
 def test_the_staff_see_their_name_and_role_not_a_greeting(shop, credentials):

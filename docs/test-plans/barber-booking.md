@@ -140,7 +140,7 @@ on the screen, and through the API behind it.
 | a day already over | not choosable, named as such, the day chosen unchanged; no turning back to a past month |
 | the tabs on a phone | a customer moves between booking and their bookings, one shown at a time; a new booking opens the bookings with the focus on it; a change of time goes back to booking; a tab pressed while the list still loads is not undone (the list held back to make the race); the page ends above the tabs; the owner has none; a computer shows both side by side |
 | the times on a phone | pills, five to a row, 36px tall, ends fully round, on three phones |
-| the greeting | a customer greeted `שלום` and their first name, the full name kept on the account; the staff see their name and role instead |
+| the greeting | a customer greeted for the hour on the shop's clock - four hours tried, the browser in New York - and their first name, the full name kept on the account; the greeting at the right, `יציאה` at the left; the staff see their name and role instead |
 | the booked popup | black like the page's buttons, white words |
 | cancelling gives the time back | the list shows cancelled and the grid offers the time again |
 | a late cancellation explains why | the reason, what to do next ("call the shop"), and the booking still there |

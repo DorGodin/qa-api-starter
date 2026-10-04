@@ -31,10 +31,16 @@ def plain(text: str) -> str:
     return text.translate(BIDI_CONTROLS).replace("\u00a0", " ")
 
 
-def greeting(display_name: str) -> re.Pattern:
-    """How the page greets a customer: by first name, with the name isolated."""
+# A customer is greeted for the hour on the shop's clock.
+GREETINGS = ("בוקר טוב", "צהריים טובים", "ערב טוב", "לילה טוב")
+
+
+def greeting(display_name: str, words: str | None = None) -> re.Pattern:
+    """How the page greets a customer: for the hour - `words`, or any of the
+    four - then the first name, isolated."""
     first = display_name.split()[0]
-    return re.compile(rf"^שלום [\u2066-\u2069]*{re.escape(first)}[\u2066-\u2069]*$")
+    said = re.escape(words) if words else "|".join(GREETINGS)
+    return re.compile(rf"^({said}), [\u2066-\u2069]*{re.escape(first)}[\u2066-\u2069]*$")
 
 
 def a_device(browser, **context_args):

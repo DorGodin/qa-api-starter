@@ -1127,8 +1127,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '    ? `שלום ${isolate(firstName(me.display_name))}`'
-    replace: '    ? `שלום ${isolate(me.display_name)}`'
+  - find: '    ? `${greetingNow()}, ${isolate(firstName(me.display_name))}`'
+    replace: '    ? `${greetingNow()}, ${isolate(me.display_name)}`'
 - name: the staff are greeted like customers, without their role
   file: app/static/index.html
   catches:
@@ -1330,3 +1330,24 @@ mutants:
           focusWhenSettled = null;
           showTab(button.dataset.tab);
     replace: '    showTab(button.dataset.tab);'
+- name: the greeting follows the phone's clock, not the shop's
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: 'hourCycle: "h23", timeZone: shop.timezone }'
+    replace: 'hourCycle: "h23" }'
+- name: the morning greeting runs on past noon
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  if (hour >= 5 && hour < 12) return "בוקר טוב";'
+    replace: '  if (hour >= 5 && hour < 14) return "בוקר טוב";'
+- name: the greeting and the way out huddle together on one side
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  [data-testid="whoami"] { flex:1; display:flex;'
+    replace: '  [data-testid="whoami"] { display:flex;'
