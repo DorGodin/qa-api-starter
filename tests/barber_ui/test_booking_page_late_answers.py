@@ -13,6 +13,7 @@ forced, and the test fails every time the page lets a late answer through.
 
 from __future__ import annotations
 
+import pytest
 from playwright.sync_api import expect
 
 from obj.barber.barbers import WEEK
@@ -43,10 +44,9 @@ class Held:
 def test_the_times_for_an_earlier_choice_never_replace_the_times_for_the_day_chosen(
     signed_in, ui_barber, ui_haircut, shop_tz
 ):
-    signed_in.barber_pill(ui_barber["id"]).click()
-    signed_in.by("service").select_option(value=ui_haircut["id"])
-    signed_in.settled()
-    earlier, later = signed_in.chosen_day(), local_day(shop_tz, 7)
+    earlier, later = local_day(shop_tz, 2), local_day(shop_tz, 7)
+    signed_in.choose(ui_barber["id"], ui_haircut["id"], earlier)
+    assert signed_in.chosen_day() == earlier != later
     signed_in.show_month_of(later)
 
     held = Held(signed_in.page, lambda url: "/availability" in url and f"date={earlier.isoformat()}" in url)
@@ -63,11 +63,19 @@ def test_the_times_for_an_earlier_choice_never_replace_the_times_for_the_day_cho
     assert days == {later}, "every time on the screen belongs to the day in the date field"
 
 
-def test_the_hours_of_the_barber_before_never_replace_the_hours_of_the_barber_chosen(owner_screen, barbers):
-    sundays_only = barbers.create_fake_barber()
+@pytest.fixture
+def sundays_only(barbers):
+    barber = barbers.create_fake_barber()
     barbers.set_hours(
-        sundays_only["id"], {"hours": {day: ["10:00", "12:00"] if day == "sun" else None for day in WEEK}}
+        barber["id"], {"hours": {day: ["10:00", "12:00"] if day == "sun" else None for day in WEEK}}
     )
+    yield barber
+    barbers.set_active(barber["id"], False).assert_ok(200)
+
+
+def test_the_hours_of_the_barber_before_never_replace_the_hours_of_the_barber_chosen(
+    owner_screen, barbers, sundays_only
+):
     all_week = barbers.create_fake_barber()
     screen = owner_screen().select_barber(sundays_only["id"])
 

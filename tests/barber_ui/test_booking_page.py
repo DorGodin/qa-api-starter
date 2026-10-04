@@ -133,13 +133,13 @@ def test_the_booked_popup_is_black_like_the_page_buttons(signed_in, ui_barber, u
     assert band.evaluate("e => getComputedStyle(e).color") == "rgb(255, 255, 255)"
 
 
-def test_signing_up_through_the_page_signs_you_straight_in(shop, customers):
-    payload = customers.build_signup_payload()
+def test_an_account_made_through_the_api_signs_in_on_the_page_with_its_password(shop, customers):
+    account = customers.create_account()
 
-    shop.sign_up(payload["display_name"], payload["username"], payload["password"])
+    shop.sign_in(account["username"], account["password"])
 
     expect(shop.by("app")).to_be_visible()
-    expect(shop.by("display-name")).to_have_text(greeting(payload["display_name"]))
+    expect(shop.by("display-name")).to_have_text(greeting(account["display_name"]))
 
 
 def test_a_remembered_sign_in_the_server_no_longer_accepts_is_dropped_on_refresh(shop):

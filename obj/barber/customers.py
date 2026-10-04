@@ -39,6 +39,11 @@ class Customers(Base):
             "display_name": display_name or fake.first_name(),
         }
 
+    def create_account(self, display_name: str | None = None) -> dict:
+        payload = self.build_signup_payload(display_name=display_name)
+        self.create(payload).assert_ok(201)
+        return payload
+
     def create(self, data: dict, persona: str | None = None, headers: dict[str, str] | None = None):
         """A sign-up, from a device of its own unless the caller names one - one
         address may make only a few accounts an hour."""
