@@ -1213,19 +1213,19 @@ mutants:
   changes:
   - find: '  $("prev-month").disabled = shownMonth <= shop.today.slice(0, 7);'
     replace: '  $("prev-month").disabled = false;'
-- name: a full day is drawn like any other
+- name: a full day is drawn like a free one
   file: app/static/index.html
   catches:
   - ui
   changes:
-  - find: '    if (state === "full") face.append(Object.assign(document.createElement("small"), { textContent: "מלא" }));'
-    replace: ''
-- name: the times go back to three wide boxes a row on a phone
+  - find: '  table.cal td.full, table.cal td.closed, table.cal td.out { cursor:default; color:var(--off); }'
+    replace: '  table.cal td.closed, table.cal td.out { cursor:default; color:var(--off); }'
+- name: the times go back to four big pills a row on a phone
   file: app/static/index.html
   catches:
   - ui
   changes:
-  - find: '  @media (max-width: 760px) { .slots { grid-template-columns: repeat(4, minmax(0, 1fr)); gap:6px; } }'
+  - find: '    .slots button { min-height:36px; height:36px; min-width:0; padding:0; font-size:13px; }'
     replace: ''
 - name: Friday closes at seven like the other days
   file: app/routers/barbers.py

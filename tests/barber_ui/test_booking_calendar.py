@@ -45,7 +45,7 @@ def test_a_day_off_cannot_be_chosen_and_the_day_chosen_stays(shop, account, barb
     assert screen.chosen_day() == day
 
 
-def test_a_full_day_says_full_and_is_marked_unavailable(
+def test_a_full_day_is_grey_like_a_closed_one_and_says_full_to_a_screen_reader(
     shop, account, barbers, bookings, ui_haircut, new_customer, shop_tz
 ):
     half_hour = barbers.create_fake_barber(opening="10:00", closing="10:30")
@@ -57,9 +57,12 @@ def test_a_full_day_says_full_and_is_marked_unavailable(
     screen = shop.sign_in_as(account).choose(half_hour["id"], ui_haircut["id"], local_day(shop_tz, 3))
     screen.show_month_of(full)
 
-    expect(screen.day(full)).to_contain_text("מלא")
     expect(screen.day(full)).to_have_attribute("aria-disabled", "true")
     expect(screen.day(full)).to_have_accessible_name(re.compile(", מלא$"))
+    grey = screen.day(full).evaluate("e => getComputedStyle(e).color")
+    closed = screen.by("days").locator("td.out").first.evaluate("e => getComputedStyle(e).color")
+    free = screen.by("days").locator("td.free").first.evaluate("e => getComputedStyle(e).color")
+    assert grey == closed != free, f"full {grey}, out of reach {closed}, free {free}"
 
 
 def test_the_keyboard_moves_through_the_days_and_enter_chooses(signed_in, ui_barber, ui_haircut, shop_tz):

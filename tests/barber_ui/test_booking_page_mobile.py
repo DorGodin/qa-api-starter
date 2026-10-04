@@ -22,6 +22,9 @@ PHONES = ["iPhone SE", "iPhone 13", "Pixel 7"]
 # A finger needs about 44 CSS pixels (Apple's Human Interface Guidelines; WCAG
 # 2.5.5). A checkbox sits beside its words and gets the WCAG 2.5.8 minimum.
 FINGER, CHECKBOX = 44, 24
+# The times are smaller by the owner's choice (2026-10-04): 36px, five to a row,
+# so a day's times fit the screen. Still above WCAG 2.5.8's 24px.
+TIME = 36
 
 # Below 16px, Safari on iOS zooms the whole page in when a field takes the
 # focus, and leaves it zoomed. Only a font size of 16px or more prevents it.
@@ -70,17 +73,17 @@ def sideways_overflow(page) -> list[str]:
 
 def too_small_to_tap(page) -> list[str]:
     return page.evaluate(
-        """([selector, finger, checkbox]) => [...document.querySelectorAll(selector)]
+        """([selector, finger, checkbox, time]) => [...document.querySelectorAll(selector)]
             .filter((el) => el.offsetParent && el.type !== "hidden")
             .map((el) => {
                 const r = el.getBoundingClientRect();
-                const need = el.type === "checkbox" ? checkbox : finger;
+                const need = el.type === "checkbox" ? checkbox : el.dataset.testid === "slot" ? time : finger;
                 const tooSmall = r.height < need || (el.tagName !== "INPUT" && el.tagName !== "SELECT" && r.width < need) || (el.type === "checkbox" && r.width < need);
                 return tooSmall ? `${el.tagName.toLowerCase()} ${el.dataset.testid || el.textContent.trim().slice(0, 12)}: ${Math.round(r.width)}x${Math.round(r.height)}, needs ${need}` : null;
             })
             .filter(Boolean)
             .slice(0, 10)""",
-        [CONTROLS, FINGER, CHECKBOX],
+        [CONTROLS, FINGER, CHECKBOX, TIME],
     )
 
 
@@ -176,7 +179,7 @@ def test_every_day_of_the_month_is_big_enough_to_tap(phone_shop, account, ui_bar
     assert small == [], f"days too small to tap: {small}"
 
 
-def test_the_times_are_pills_four_to_a_row(phone_shop, account, ui_barber, ui_haircut, shop_tz):
+def test_the_times_are_pills_five_to_a_row(phone_shop, account, ui_barber, ui_haircut, shop_tz):
     phone_shop.sign_in_as(account)
     phone_shop.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 3))
 
@@ -186,7 +189,8 @@ def test_the_times_are_pills_four_to_a_row(phone_shop, account, ui_barber, ui_ha
     )
 
     first_row = [b for b in boxes if b[0] == boxes[0][0]]
-    assert len(first_row) == 4, f"{len(first_row)} times in the first row"
+    assert len(first_row) == 5, f"{len(first_row)} times in the first row"
+    assert {round(b[1]) for b in boxes} == {TIME}, "every time is 36px tall"
     not_round = [b for b in boxes if b[2] < b[1] / 2]
     assert not_round == [], "every time is a pill, its ends fully round"
 
