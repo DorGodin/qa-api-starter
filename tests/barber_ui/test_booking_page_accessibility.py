@@ -17,6 +17,7 @@ from playwright.sync_api import expect
 from obj.barber.booking_page import BookingPage
 from utils.local_time import local_day
 
+PHONE_WIDTH = 760
 AXE = Axe()
 WCAG_22_AA = {"runOnly": {"type": "tag", "values": ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]}}
 
@@ -160,10 +161,8 @@ def test_every_stop_on_the_way_shows_where_the_focus_is(signed_in, keyboard):
     assert unmarked == [], f"focused with no visible ring: {unmarked}"
 
 
-def test_the_accessibility_statement_is_one_step_from_every_screen_and_says_what_the_law_asks(shop, account):
+def test_the_accessibility_statement_is_one_step_from_the_sign_in_screen_and_says_what_the_law_asks(shop):
     shop.open()
-    expect(shop.by("accessibility-link")).to_be_visible()
-    shop.sign_in_as(account)
     expect(shop.by("accessibility-link")).to_be_visible()
 
     shop.by("accessibility-link").click()
@@ -180,4 +179,15 @@ def test_the_accessibility_statement_is_one_step_from_every_screen_and_says_what
     assert violations(statement) == [], "the statement itself"
 
     statement.get_by_test_id("back").click()
-    expect(shop.by("app")).to_be_visible()
+    expect(shop.by("code-request-form")).to_be_visible()
+
+
+def test_a_signed_in_customer_has_the_statement_one_step_away_on_a_computer_and_not_on_a_phone(shop, account):
+    shop.sign_in_as(account)
+
+    if shop.page.viewport_size["width"] <= PHONE_WIDTH:
+        expect(shop.by("accessibility-link")).to_be_hidden()
+    else:
+        expect(shop.by("accessibility-link")).to_be_visible()
+        shop.by("accessibility-link").click()
+        expect(shop.page).to_have_url(shop.base_url + "/accessibility")

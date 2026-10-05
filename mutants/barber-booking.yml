@@ -1323,3 +1323,19 @@ mutants:
           focusWhenSettled = null;
           showTab(button.dataset.tab);
     replace: '    showTab(button.dataset.tab);'
+- name: the legal links stay on a signed in customer's phone
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: 'footer .legal { display:none; }'
+    replace: 'footer .legal { display:flex; }'
+  - find: 'footer:not(:has(.actions)) { display:none; }'
+    replace: 'footer:not(:has(.actions)) { display:block; }'
+- name: a signed in customer's phone keeps a foot with nothing in it but the cut line
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: 'footer:not(:has(.actions)) { display:none; }'
+    replace: 'footer:not(:has(.actions)) { display:block; }'
