@@ -205,14 +205,13 @@ def test_a_customer_books_by_touch_and_the_answer_fits_on_the_screen(
     phone_shop.by("book").tap()
     phone_shop.settled()
 
-    popup = phone_shop.by("popup")
-    expect(popup).to_be_visible()
-    expect(popup).to_have_attribute("data-kind", "ok")
-    assert fits_on_screen(phone_shop.page, popup), "the whole answer, and its close button, on the screen"
+    card = phone_shop.by("booking-done")
+    expect(card).to_be_visible()
+    expect(phone_shop.by("popup")).to_be_hidden()
+    assert fits_on_screen(phone_shop.page, card), "the whole answer, and both of its buttons, on the screen"
     assert too_small_to_tap(phone_shop.page) == []
 
-    phone_shop.by("popup-close").tap()
-    expect(popup).to_be_hidden()
+    phone_shop.by("booking-done-mine").tap()
     expect(phone_shop.row_at("10:00")).to_be_visible()
     assert clipped_labels(phone_shop.page) == []
 
@@ -270,8 +269,8 @@ def test_at_200_percent_zoom_the_page_still_fits_and_books(
         assert sideways_overflow(zoomed.page) == []
         zoomed.by("book").click()
         zoomed.settled()
-        expect(zoomed.by("popup")).to_be_visible()
-        assert fits_on_screen(zoomed.page, zoomed.by("popup")), "the whole answer, at 200%"
+        expect(zoomed.by("booking-done-title")).to_be_in_viewport()
+        assert sideways_overflow(zoomed.page) == [], "the answer, at 200%"
     finally:
         context.close()
 
@@ -407,22 +406,34 @@ def test_the_owner_has_no_tabs(phone_owner):
     expect(phone_owner.by("right-panel")).to_be_visible()
 
 
+def test_the_booking_tab_pressed_again_shows_the_form_and_not_the_card(
+    phone_shop, account, barbers, ui_haircut, shop_tz
+):
+    barber = barbers.create_fake_barber()
+    phone_shop.sign_in_as(account)
+    phone_shop.choose(barber["id"], ui_haircut["id"], local_day(shop_tz, 7)).pick("15:00").book()
+
+    phone_shop.show_tab("book")
+
+    expect(phone_shop.by("booking-done")).to_be_hidden()
+    expect(phone_shop.by("book-panel")).to_be_visible()
+
+
 def test_a_tab_pressed_while_the_list_still_loads_is_not_undone(
     phone_shop, account, barbers, ui_haircut, shop_tz
 ):
-    """Closed before the list has the new booking, the popup leaves the focus
-    waiting for it - and that wait once pulled a customer who had already
-    pressed the booking tab back to the list."""
+    """Pressed before the list has the new booking, the card's list button
+    leaves the focus waiting for it - and that wait once pulled a customer who
+    had already pressed the booking tab back to the list."""
     barber = barbers.create_fake_barber()
     phone_shop.sign_in_as(account)
     phone_shop.choose(barber["id"], ui_haircut["id"], local_day(shop_tz, 6)).pick("14:00")
     held = Held(phone_shop.page, lambda url: "/bookings?" in url, limit=1)
 
     phone_shop.by("book").tap()
-    expect(phone_shop.by("popup")).to_be_visible()
-    phone_shop.by("popup-close").tap()
-    expect(phone_shop.by("popup")).to_be_hidden()
-    phone_shop.page.wait_for_function("() => document.activeElement?.dataset.testid !== 'popup-close'")
+    expect(phone_shop.by("booking-done")).to_be_visible()
+    phone_shop.by("booking-done-mine").tap()
+    expect(phone_shop.by("tab-mine")).to_have_attribute("aria-current", "page")
     phone_shop.by("tab-book").tap()
     held.release()
     phone_shop.settled()

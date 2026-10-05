@@ -134,14 +134,14 @@ on the screen, and through the API behind it.
 |---|---|
 | signing in replaces the form | the sign-in form is really gone, not only marked hidden |
 | the Book button appears only after a time is chosen | a hidden panel stays hidden |
-| a customer books a time and sees it | the popup, no repeat of it under the list, the list, the price, the time gone from the grid, and the stored start |
+| a customer books a time and sees it | the card in the panel, no repeat of it under the list, the list, the price, the time gone from the grid, and the stored start |
 | the barbers | a pill each by full name, exactly the ones the customer can book, one chosen and one Tab stop; pressing one offers that barber's times; the arrows move to the next barber and choose them; locked while a booking's time is changed; a barber off the day chosen moves the calendar to a free day |
 | the month's calendar | a free day named with the number of times its list then shows; a day off and a full day marked unavailable and grey alike, a tap on one changing nothing; arrows (left is the next day), Enter and Page Down; the month turning only inside the booking window; the screen opening on a free day; every day at least 24px wide and 44px tall on three phones |
 | a day already over | not choosable, named as such, the day chosen unchanged; no turning back to a past month |
 | the tabs on a phone | a customer moves between booking and their bookings, one shown at a time; a new booking opens the bookings with the focus on it; a change of time goes back to booking; a tab pressed while the list still loads is not undone (the list held back to make the race); the page ends above the tabs; the owner has none; a computer shows both side by side |
 | the times on a phone | pills, five to a row, 36px tall, ends fully round, on three phones |
 | the greeting | a customer greeted `שלום` and their first name, the full name kept on the account; the staff see their name and role instead |
-| the booked popup | black like the page's buttons, white words |
+| the booking card | a tick, the title, the day and time, the service with the barber and the price, and two buttons - the list and another booking |
 | cancelling gives the time back | the list shows cancelled and the grid offers the time again |
 | a late cancellation explains why | the reason, what to do next ("call the shop"), and the booking still there |
 | the shop's header | the brand and the tab title from the shop's settings, a named button for each contact link set and none for the rest, the poles and scissors hidden from screen readers and still for reduced motion |
@@ -166,7 +166,7 @@ on the screen, and through the API behind it.
 | the owner presses book with no name | nothing booked, the reason shown, the focus on the name field |
 | a guest's name that looks like HTML | shown as text in the diary, never run |
 | a withdrawn service | not offered for booking, and the screen not left showing an error |
-| changing a booking's time (`שינוי מועד`) from the list | the approved wording on the row, the panel, its buttons and the popup; the same booking id at the new time, barber and service locked while choosing, its own quarter-hour offered, the panel back to booking after |
+| changing a booking's time (`שינוי מועד`) from the list | the approved wording on the row, the panel, its buttons and the card; the same booking id at the new time, barber and service locked while choosing, its own quarter-hour offered, the panel back to booking after |
 | a time taken while moving | told it has just gone, and the booking still at its old time |
 | a late move explains why | the 12-hour rule in Hebrew, and the booking unmoved |
 | stopping a move | the panel back as it was, nothing changed |
@@ -183,9 +183,9 @@ on the screen, and through the API behind it.
 | prices the Israeli way | the amount, then the sign - never `₪80` |
 | dates in Hebrew | the weekday and month are Hebrew, with no Latin letters |
 | no English reaches the customer | a wrong password and a taken slot both answer in Hebrew only |
-| a booking is confirmed in a popup | green, modal, says the day, time and price, and puts the focus on its close button |
-| the popup closes with its button and with Escape | both close it |
-| nothing behind the popup can be pressed | it is `:modal`, and a click on a time behind it does not land |
+| a booking is confirmed by a card | it stands where the form was, says the day, time, service and price, and takes the focus on its heading |
+| the card leads on | `התורים שלי` goes to the list with the focus on the new booking, `קביעת תור נוסף` brings the form back, and the booking tab pressed again shows the form |
+| a refusal is a modal popup | red, `:modal`, a click on a time behind it does not land, and it closes with its button and with Escape |
 | a refusal that is not a taken time | red "לא הצלחנו לקבוע את התור", with the reason - not the taken-time wording |
 
 **Waiting is on the page's own signal.** The page holds `aria-busy="true"` while it fetches
@@ -199,13 +199,14 @@ double click sending twice, refusals shown as raw codes, a failed booking not re
 the times, outcomes not announced, the late-cancellation reason lost - and for Hebrew: the
 layout left to right, names not isolated, prices the American way, dates in English, the
 server's English shown for an unmapped code, times following the page's direction, labels
-wrapped around their fields - and for the popup: no popup, a popup that is not modal, a
-refusal shown as a success, a taken time worded like any other refusal, a close button that
-does nothing, a success that leaves out the price. **21 of 21 caught.**
+wrapped around their fields - and for the answers: a popup in the card's place, a card that does not take the focus, a list button that does
+nothing before the list is drawn, a booking tab that leaves the card in place, a refusal shown as a success, a taken
+time worded like any other refusal, a close button that does nothing, a card that leaves out the price. **21 of 21 caught.**
 
-`BookingPage.book()` reads the popup, keeps what it said in `last_popup`, and closes it:
-the popup is modal, so a test that went on to press anything behind it would wait for a
-click that can never land. A test about the popup itself passes `keep_popup=True`.
+`BookingPage.book()` reads what answers - the card, or the popup of a refusal or of the owner's booking for a
+caller - keeps it in `last_answer`, and leaves it: the popup closed, the card's `התורים שלי` pressed. A popup is
+modal, so a test that went on to press anything behind it would wait for a click that can never land. A test
+about the answer itself passes `keep_answer=True`.
 
 ```bash
 make ui-barber-watch        # watch in a visible browser

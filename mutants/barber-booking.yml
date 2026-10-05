@@ -277,13 +277,13 @@ mutants:
   changes:
   - find: $("popup-close").addEventListener("click", () => $("popup").close());
     replace: ''
-- name: the success popup leaves out the price
+- name: the booking card leaves out the price
   file: app/static/index.html
   catches:
   - ui
   changes:
-  - find: ${booked} · ${money(r.data.price_minor, r.data.currency)}
-    replace: ${booked}
+  - find: ' · ${money(made.price_minor, made.currency)}'
+    replace: ''
 - name: prices go through a float and are truncated
   file: app/static/index.html
   catches:
@@ -1142,11 +1142,11 @@ mutants:
   - ui
   changes:
   - find: |2-
-          // only repeated them. An earlier refusal is cleared.
+          // the list only repeated them. An earlier refusal is cleared.
           say("", "ok");
     replace: |2-
-          // only repeated them. An earlier refusal is cleared.
-          say(`נקבע: ${booked}`, "ok");
+          // the list only repeated them. An earlier refusal is cleared.
+          say(`נקבע: ${r.data.start_local}`, "ok");
 - name: the row's button still says הזזה
   file: app/static/index.html
   catches:
@@ -1321,8 +1321,8 @@ mutants:
   changes:
   - find: |2-
           focusWhenSettled = null;
-          showTab(button.dataset.tab);
-    replace: '    showTab(button.dataset.tab);'
+          if (button.dataset.tab === "book") hideDone();
+    replace: '    if (button.dataset.tab === "book") hideDone();'
 - name: the legal links stay on a signed in customer's phone
   file: app/static/index.html
   catches:
@@ -1339,3 +1339,43 @@ mutants:
   changes:
   - find: 'footer:not(:has(.actions)) { display:none; }'
     replace: 'footer:not(:has(.actions)) { display:block; }'
+- name: a booking is answered by a popup and not by the card
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    showDone("התור נקבע", r.data);'
+    replace: '    popup("✓ התור נקבע", "", "ok");'
+- name: a moved time is answered by a popup and not by the card
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    showDone("המועד עודכן", r.data);'
+    replace: '    popup("✓ המועד עודכן", "", "ok");'
+- name: the card does not take the focus
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  $("booking-done-title").focus();'
+    replace: ''
+- name: the card's list button does nothing when the list is not drawn yet
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: |2-
+        showTab("mine");
+        window.scrollTo(0, 0);
+        focusWhenSettled = find;
+    replace: |2-
+        showTab("mine");
+        window.scrollTo(0, 0);
+- name: the booking tab leaves the card where the form was
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    if (button.dataset.tab === "book") hideDone();'
+    replace: ''

@@ -33,7 +33,7 @@ def test_a_customer_moves_a_booking_and_it_is_the_same_booking_at_the_new_time(
     expect(signed_in.by("book")).to_have_text("אישור המועד החדש")
     signed_in.book()
 
-    assert signed_in.last_popup["title"] == "✓ המועד עודכן"
+    assert signed_in.last_answer["title"] == "המועד עודכן"
     expect(signed_in.row_at("15:00")).to_be_visible()
     expect(signed_in.row_at("11:00")).to_have_count(0)
     expect(signed_in.by("moving")).to_be_hidden()
@@ -57,8 +57,8 @@ def test_a_time_taken_while_choosing_is_explained_and_the_booking_stays(
 
     signed_in.book()
 
-    assert signed_in.last_popup["title"] == "השעה כבר תפוסה"
-    assert "14:00" in signed_in.last_popup["text"]
+    assert signed_in.last_answer["title"] == "השעה כבר תפוסה"
+    assert "14:00" in signed_in.last_answer["text"]
     [kept] = bookings.listing(persona=account["persona"])["content"]
     assert parse_instant(kept["start"]) == at_local(shop_tz, day, "10:00")
 
@@ -74,7 +74,7 @@ def test_a_late_move_is_explained_in_hebrew(shop, bookings, account, barbers, ui
     signed_in.start_moving(hhmm)
     signed_in.pick(signed_in.times()[-1]).book()
 
-    assert f"אפשר לשנות מועד עד {MOVE_CUTOFF_HOURS} שעות לפני" in signed_in.last_popup["text"]
+    assert f"אפשר לשנות מועד עד {MOVE_CUTOFF_HOURS} שעות לפני" in signed_in.last_answer["text"]
     [kept] = bookings.listing(persona=account["persona"])["content"]
     assert parse_instant(kept["start"]) == start
 
