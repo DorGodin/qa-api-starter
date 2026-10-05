@@ -97,7 +97,7 @@ def test_no_english_from_the_server_ever_reaches_the_customer(
     rival = customers.sign_up_as_persona()
     bookings.create_booking(contested["id"], ui_haircut["id"], at_local(shop_tz, day, "11:00"), persona=rival)
     shop.book()
-    said["slot taken"] = shop.text(shop.message())
+    said["slot taken"] = shop.last_answer["text"]
 
     for situation, text in said.items():
         assert HEBREW.search(text), f"{situation}: nothing was said in Hebrew: {text!r}"

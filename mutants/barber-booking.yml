@@ -261,8 +261,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '  popup(taken ? "השעה כבר תפוסה" : failedTitle, reason, "error");'
-    replace: '  popup("✓ התור נקבע", reason, "ok");'
+  - find: '  popup(taken ? "השעה כבר תפוסה" : failedTitle, reason, "error", {'
+    replace: '  popup("✓ התור נקבע", reason, "ok", {'
 - name: a taken time and any other refusal look the same
   file: app/static/index.html
   catches:
@@ -1379,3 +1379,63 @@ mutants:
   changes:
   - find: '    if (button.dataset.tab === "book") hideDone();'
     replace: ''
+- name: a booking the shop cancelled is hidden from the customer
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: 'b.cancelled_by === "staff" || cancelledHere.has(b.id)'
+    replace: 'cancelledHere.has(b.id)'
+- name: a booking the customer cancelled stays after they leave the app
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '(b.cancelled_by === "staff" || cancelledHere.has(b.id))'
+    replace: '(true)'
+- name: a cancelled booking never leaves the customer's list
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: 'cancelledAge(b) < CANCELLED_SHOWN_MS && '
+    replace: ''
+- name: the line after a customer cancels is green
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: 'me.role === "customer" ? "cancelled" : "ok"'
+    replace: '"ok"'
+- name: a refusal is said again in red behind the card
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: |2-
+        say("", "ok");
+        const taken = r.data && r.data.code === "slot_taken";
+    replace: |2-
+        say(reason, "error");
+        const taken = r.data && r.data.code === "slot_taken";
+- name: a refusal for too many bookings offers no way on
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: 'action: tooMany ? { label: "התורים שלי", run: () => { showTab("mine"); window.scrollTo(0, 0); } } : null,'
+    replace: 'action: null,'
+- name: a refusal for a taken time closes with a plain close label
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: 'closeLabel: taken ? "בחירת שעה אחרת" : "סגירה",'
+    replace: 'closeLabel: "סגירה",'
+- name: a cancellation by the shop is labelled as the customer's
+  file: app/views.py
+  catches:
+  - api
+  changes:
+  - find: 'return "customer" if booking.cancelled_by == booking.customer_id else "staff"'
+    replace: 'return "customer"'

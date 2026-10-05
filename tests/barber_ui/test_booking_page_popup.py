@@ -68,11 +68,51 @@ def test_a_refusal_that_is_not_a_taken_time_says_it_could_not_book(refused_booki
 def test_while_a_refusal_is_open_nothing_behind_it_can_be_pressed(refused_booking):
     refused_booking.book(keep_answer=True)
 
+    expect(refused_booking.message(), "nothing is said behind the popup as well").to_have_text("")
     assert refused_booking.by("popup").evaluate(
         "d => d.matches(':modal')"
     ), "a popup the page stays usable behind is not modal"
     with pytest.raises(PlaywrightTimeout):
         refused_booking.by("slot").first.click(timeout=1500)
+
+
+def test_a_refusal_for_too_many_bookings_offers_the_list_to_cancel_one(
+    shop, account, bookings, barbers, ui_haircut, shop_tz
+):
+    barber = barbers.create_fake_barber()
+    day = local_day(shop_tz, 10)
+    for hhmm in ("10:00", "11:00"):
+        bookings.create_booking(
+            barber["id"], ui_haircut["id"], at_local(shop_tz, day, hhmm), persona=account["persona"]
+        )
+    shop.sign_in_as(account)
+    shop.choose(barber["id"], ui_haircut["id"], day).pick("13:00").book(keep_answer=True)
+
+    expect(shop.by("popup")).to_have_attribute("data-kind", "error")
+    expect(shop.by("popup-action")).to_have_text("התורים שלי")
+    shop.by("popup-action").click()
+
+    expect(shop.by("popup")).to_be_hidden()
+    expect(shop.by("right-panel")).to_be_visible()
+    expect(shop.rows()).to_have_count(2)
+
+
+def test_a_refusal_for_a_taken_time_closes_with_a_button_that_says_to_choose_another(
+    shop, account, bookings, barbers, customers, ui_haircut, shop_tz
+):
+    barber = barbers.create_fake_barber()
+    day = local_day(shop_tz, 11)
+    shop.sign_in_as(account)
+    shop.choose(barber["id"], ui_haircut["id"], day).pick("12:00")
+    rival = customers.sign_up_as_persona()
+    bookings.create_booking(barber["id"], ui_haircut["id"], at_local(shop_tz, day, "12:00"), persona=rival)
+
+    shop.book(keep_answer=True)
+
+    expect(shop.by("popup-action")).to_be_hidden()
+    expect(shop.by("popup-close")).to_have_text("בחירת שעה אחרת")
+    shop.close_popup()
+    expect(shop.by("slot").first).to_be_visible()
 
 
 @pytest.mark.parametrize("how", ["its button", "Escape"])
