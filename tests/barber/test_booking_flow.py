@@ -40,6 +40,22 @@ def test_cancelling_gives_the_slot_back(barbers, bookings, barber, haircut, new_
     assert bookings.listing(persona=me, status="confirmed")["total"] == 0
 
 
+def test_a_cancelled_booking_says_whether_the_customer_or_the_shop_cancelled_it(
+    barbers, bookings, barber, haircut, new_customer, shop_tz
+):
+    me = new_customer()
+    day = local_day(shop_tz, 4)
+    first, second = (barbers.slots(barber["id"], day, haircut["id"], persona=me)[i]["start"] for i in (2, 8))
+    mine = bookings.create_booking(barber["id"], haircut["id"], first, persona=me)
+    theirs = bookings.create_booking(barber["id"], haircut["id"], second, persona=me)
+
+    assert mine["cancelled_by"] is None
+    assert bookings.cancel(mine["id"], persona=me).assert_ok(200).as_dict["cancelled_by"] == "customer"
+    assert bookings.cancel(theirs["id"], persona="owner").assert_ok(200).as_dict["cancelled_by"] == "staff"
+    listed = {b["id"]: b["cancelled_by"] for b in bookings.listing(persona=me)["content"]}
+    assert listed == {mine["id"]: "customer", theirs["id"]: "staff"}
+
+
 def test_a_price_change_does_not_reach_back_into_a_booking(
     barbers, bookings, services, barber, new_customer, shop_tz
 ):

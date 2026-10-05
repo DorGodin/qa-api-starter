@@ -32,11 +32,10 @@ def test_a_time_taken_while_you_were_looking_is_explained(
     second.book()
 
     expect(first.message()).to_have_text("")
-    expect(second.message()).to_contain_text("מישהו בדיוק קבע את 10:00")
     assert first.last_answer["kind"] == "ok" and "התור נקבע" in first.last_answer["title"]
     assert second.last_answer == {**second.last_answer, "kind": "error", "title": "השעה כבר תפוסה"}
-    assert "10:00" in second.last_answer["text"]
-    expect(second.message()).to_have_attribute("data-kind", "error")
+    assert "מישהו בדיוק קבע את 10:00" in second.last_answer["text"]
+    expect(second.message(), "nothing is said behind the popup as well").to_have_text("")
     assert "10:00" not in second.times(), "the losing screen still offers the time it just lost"
     owner_view = bookings.listing(persona="owner", barber_id=contested["id"], status="confirmed")
     assert owner_view["total"] == 1

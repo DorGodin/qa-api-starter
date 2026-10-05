@@ -62,9 +62,64 @@ def test_cancelling_from_the_list_gives_the_time_back(
     signed_in.cancel("12:00")
 
     expect(signed_in.message()).to_contain_text("בוטל")
+    expect(signed_in.message()).to_have_attribute("data-kind", "cancelled")
+    expect(signed_in.message()).to_have_css("color", "rgb(168, 50, 58)")
     expect(signed_in.row_at("12:00")).to_contain_text("בוטל")
     assert "12:00" in signed_in.times()
     assert bookings.listing(persona=account["persona"], status="confirmed")["total"] == 0
+
+
+def test_a_booking_the_customer_cancelled_is_gone_once_they_leave_the_app(
+    signed_in, ui_barber, ui_haircut, shop_tz
+):
+    signed_in.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 4)).pick("12:00").book()
+    signed_in.cancel("12:00")
+    expect(signed_in.row_at("12:00")).to_have_attribute("data-status", "cancelled")
+
+    signed_in.reload()
+
+    expect(signed_in.row_at("12:00")).to_have_count(0)
+
+
+def test_a_booking_the_shop_cancelled_stays_for_twelve_hours_even_after_the_customer_comes_back(
+    shop, account, bookings, ui_barber, ui_haircut, shop_tz
+):
+    day = local_day(shop_tz, 4)
+    booking = bookings.create_booking(
+        ui_barber["id"], ui_haircut["id"], at_local(shop_tz, day, "12:00"), persona=account["persona"]
+    )
+    bookings.cancel(booking["id"], persona="owner").assert_ok(200)
+    shop.page.clock.install()
+
+    shop.sign_in_as(account)
+    expect(shop.row_at("12:00")).to_have_attribute("data-status", "cancelled")
+    shop.reload()
+    expect(shop.row_at("12:00")).to_have_attribute("data-status", "cancelled")
+
+    shop.page.clock.fast_forward("11:58:00")
+    expect(shop.row_at("12:00")).to_have_attribute("data-status", "cancelled")
+    shop.page.clock.fast_forward("00:03:00")
+
+    expect(shop.row_at("12:00")).to_have_count(0)
+
+
+def test_a_booking_the_customer_cancelled_is_gone_after_twelve_hours(
+    shop, account, bookings, ui_barber, ui_haircut, shop_tz
+):
+    day = local_day(shop_tz, 4)
+    bookings.create_booking(
+        ui_barber["id"], ui_haircut["id"], at_local(shop_tz, day, "12:00"), persona=account["persona"]
+    )
+    shop.page.clock.install()
+    shop.sign_in_as(account)
+    shop.cancel("12:00")
+    expect(shop.row_at("12:00")).to_have_attribute("data-status", "cancelled")
+
+    shop.page.clock.fast_forward("11:59:00")
+    expect(shop.row_at("12:00")).to_have_attribute("data-status", "cancelled")
+    shop.page.clock.fast_forward("00:02:00")
+
+    expect(shop.row_at("12:00")).to_have_count(0)
 
 
 def test_a_late_cancellation_explains_why_and_keeps_the_booking(

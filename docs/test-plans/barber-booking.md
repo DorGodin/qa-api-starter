@@ -142,7 +142,9 @@ on the screen, and through the API behind it.
 | the times on a phone | pills, five to a row, 36px tall, ends fully round, on three phones |
 | the greeting | a customer greeted `שלום` and their first name, the full name kept on the account; the staff see their name and role instead |
 | the booking card | a tick, the title, the day and time, the service with the barber and the price, and two buttons - the list and another booking |
-| cancelling gives the time back | the list shows cancelled and the grid offers the time again |
+| cancelling gives the time back | the list shows cancelled and the grid offers the time again; the line after it is red |
+| a cancelled booking leaves the list | one the customer cancelled is gone once they leave the app (a reload) and after twelve hours; one the shop cancelled stays twelve hours, a return included, and is then gone |
+| a cancelled booking says who cancelled it | `cancelled_by` is `customer` or `staff`, and `null` while confirmed (API) |
 | a late cancellation explains why | the reason, what to do next ("call the shop"), and the booking still there |
 | the shop's header | the brand and the tab title from the shop's settings, a named button for each contact link set and none for the rest, the poles and scissors hidden from screen readers and still for reduced motion |
 | the privacy policy | one step from the sign-in screen, every placeholder filled, WCAG 2.2 AA |
@@ -185,7 +187,9 @@ on the screen, and through the API behind it.
 | no English reaches the customer | a wrong password and a taken slot both answer in Hebrew only |
 | a booking is confirmed by a card | it stands where the form was, says the day, time, service and price, and takes the focus on its heading |
 | the card leads on | `התורים שלי` goes to the list with the focus on the new booking, `קביעת תור נוסף` brings the form back, and the booking tab pressed again shows the form |
-| a refusal is a modal popup | red, `:modal`, a click on a time behind it does not land, and it closes with its button and with Escape |
+| a refusal for too many bookings | offers `התורים שלי`, which closes it and shows the list |
+| a refusal for a taken time | closes with a button that says `בחירת שעה אחרת`, and the list of times is there |
+| a refusal is a modal popup | a white card with a red mark, `:modal`, a click on a time behind it does not land, and it closes with its button and with Escape |
 | a refusal that is not a taken time | red "לא הצלחנו לקבוע את התור", with the reason - not the taken-time wording |
 
 **Waiting is on the page's own signal.** The page holds `aria-busy="true"` while it fetches
