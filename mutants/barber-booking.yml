@@ -261,15 +261,15 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '  popup(taken ? "השעה כבר תפוסה" : failedTitle, reason, "error", {'
+  - find: '  popup(refusalTitle(r, failedTitle), reason, "error", {'
     replace: '  popup("✓ התור נקבע", reason, "ok", {'
 - name: a taken time and any other refusal look the same
   file: app/static/index.html
   catches:
   - ui
   changes:
-  - find: 'taken ? "השעה כבר תפוסה" : failedTitle'
-    replace: 'failedTitle'
+  - find: 'slot_taken: "מישהו הקדים אותך" };'
+    replace: '};'
 - name: the popup's close button does nothing
   file: app/static/index.html
   catches:
@@ -1439,3 +1439,10 @@ mutants:
   changes:
   - find: 'return "customer" if booking.cancelled_by == booking.customer_id else "staff"'
     replace: 'return "customer"'
+- name: a failure nobody planned for is not owned up to
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: 'return code && FRIENDLY[code] ? failedTitle : "אוי, משהו השתבש";'
+    replace: 'return failedTitle;'

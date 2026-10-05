@@ -127,6 +127,23 @@ def test_a_refusal_closes_with_its_button_and_with_escape(refused_booking, how):
     expect(refused_booking.by("popup")).to_be_hidden()
 
 
+def test_a_failure_nobody_planned_for_owns_up_to_going_wrong(shop, account, ui_barber, ui_haircut, shop_tz):
+    shop.sign_in_as(account)
+    shop.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 12)).pick("14:00")
+    shop.page.route(
+        "**/bookings",
+        lambda route: route.fulfill(status=500, content_type="application/json", body='{"detail":"x","code":"boom"}')
+        if route.request.method == "POST"
+        else route.continue_(),
+    )
+
+    shop.book()
+
+    assert shop.last_answer["kind"] == "error"
+    assert shop.last_answer["title"] == "אוי, משהו השתבש"
+    assert shop.last_answer["text"] == "לא הצלחנו להשלים את הפעולה. אפשר לנסות שוב בעוד רגע."
+
+
 def test_a_third_booking_ahead_is_refused_saying_how_many_may_be_held(
     shop, account, bookings, barbers, ui_haircut, shop_tz
 ):
@@ -141,6 +158,7 @@ def test_a_third_booking_ahead_is_refused_saying_how_many_may_be_held(
     shop.choose(barber["id"], ui_haircut["id"], day).pick("13:00").book()
 
     assert shop.last_answer["kind"] == "error"
+    assert shop.last_answer["title"] == "נראה שכבר קבעת מספיק"
     assert "עד 2 תורים" in shop.last_answer["text"] and "לבטל" in shop.last_answer["text"], shop.last_answer[
         "text"
     ]
