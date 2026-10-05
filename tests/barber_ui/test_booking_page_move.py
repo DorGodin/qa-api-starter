@@ -57,7 +57,7 @@ def test_a_time_taken_while_choosing_is_explained_and_the_booking_stays(
 
     signed_in.book()
 
-    assert signed_in.last_answer["title"] == "השעה כבר תפוסה"
+    assert signed_in.last_answer["title"] == "מישהו הקדים אותך"
     assert "14:00" in signed_in.last_answer["text"]
     [kept] = bookings.listing(persona=account["persona"])["content"]
     assert parse_instant(kept["start"]) == at_local(shop_tz, day, "10:00")
