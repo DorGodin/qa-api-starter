@@ -147,6 +147,8 @@ on the screen, and through the API behind it.
 | the shop's header | the brand and the tab title from the shop's settings, a named button for each contact link set and none for the rest, the poles and scissors hidden from screen readers and still for reduced motion |
 | the privacy policy | one step from the sign-in screen, every placeholder filled, WCAG 2.2 AA |
 | the contact buttons | at the foot of the page, after the sign-in |
+| the legal links on a phone | a signed-in customer sees neither the accessibility statement nor the privacy policy on either tab, and no foot with nothing in it - the contact buttons stay at the foot of booking when the shop sets any; the sign-in screen keeps both links, and so does a computer |
+| the page ends above the tabs | scrolled to the bottom, the end of the signed-in screen is not hidden under the tab bar |
 | a signed-in phone screen | opens at its top, not where the sign-in form had been |
 | the slim bar on a phone | scrolled with the keyboard open, the brand shrinks to a slim bar at the very top and leaves when scrolled back; a field reached by the keyboard is not under it; the owner's menu sticks under it, not behind it; hidden from screen readers and without a slide for reduced motion |
 | a first sign-in by code | name and phone, the code screen showing only the last four digits, the code, the greeting by first name, and the account named in full as given |

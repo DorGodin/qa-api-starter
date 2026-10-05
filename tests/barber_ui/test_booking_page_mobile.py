@@ -16,6 +16,7 @@ from playwright.sync_api import expect
 
 from obj.barber.booking_page import BookingPage, OwnerScreen, a_device
 from tests.barber_ui.test_booking_page_late_answers import Held
+from tests.barber_ui.test_shop_header import shop_info
 from utils.local_time import local_day
 
 PHONES = ["iPhone SE", "iPhone 13", "Pixel 7"]
@@ -372,8 +373,32 @@ def test_the_page_ends_above_the_tabs(phone_shop, account):
     phone_shop.page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
 
     tabs = phone_shop.by("tabbar").bounding_box()
-    last = phone_shop.by("privacy-link").bounding_box()
-    assert last["y"] + last["height"] <= tabs["y"], "the foot of the page is hidden under the tabs"
+    screen = phone_shop.by("app").bounding_box()
+    assert screen["y"] + screen["height"] <= tabs["y"], "the end of the screen is hidden under the tabs"
+
+
+def test_a_signed_in_customer_has_no_legal_links_and_no_empty_foot_and_the_sign_in_screen_keeps_them(
+    phone_shop, account, env_config
+):
+    contacts = shop_info(env_config)["links"]
+    phone_shop.sign_in_as(account)
+
+    for tab in ("book", "mine"):
+        phone_shop.show_tab(tab)
+        expect(phone_shop.by("accessibility-link")).to_be_hidden()
+        expect(phone_shop.by("privacy-link")).to_be_hidden()
+
+    phone_shop.show_tab("book")
+    if contacts:
+        expect(phone_shop.by(f"shop-{next(iter(contacts))}")).to_be_visible()
+    else:
+        expect(phone_shop.page.locator("footer")).to_be_hidden()
+    phone_shop.show_tab("mine")
+    expect(phone_shop.page.locator("footer")).to_be_hidden()
+
+    phone_shop.by("logout").click()
+    expect(phone_shop.by("accessibility-link")).to_be_visible()
+    expect(phone_shop.by("privacy-link")).to_be_visible()
 
 
 def test_the_owner_has_no_tabs(phone_owner):
