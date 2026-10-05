@@ -124,8 +124,8 @@ def test_a_shop_opened_on_the_screen_is_booked_cancelled_and_booked_again(
         "09:00", "12:15"
     ), "a 45 minute service, inside the hours the owner typed"
     first.pick("12:15").book()
-    assert first.last_popup["kind"] == "ok", "the last time offered ends exactly at closing, and is bookable"
-    assert "72.50 ₪" in first.last_popup["text"]
+    assert first.last_answer["kind"] == "ok", "the last time offered ends exactly at closing, and is bookable"
+    assert "72.50 ₪" in first.last_answer["text"]
     expect(first.row_at("12:15")).to_have_attribute("data-status", "confirmed")
 
     diary = person().sign_in(barber["username"], barber["password"])
@@ -143,7 +143,7 @@ def test_a_shop_opened_on_the_screen_is_booked_cancelled_and_booked_again(
     second.choose_by_name(barber["name"], service, day)
     assert "12:15" in second.times(), "the cancelled time is offered again"
     second.pick("12:15").book()
-    assert second.last_popup["kind"] == "ok"
+    assert second.last_answer["kind"] == "ok"
 
     owner.select_barber(barber["id"])
     expect(owner.page.locator('[data-testid="booking-row"][data-status="confirmed"]')).to_have_count(1)
@@ -265,7 +265,7 @@ def test_what_the_owner_changes_reaches_each_customer_the_way_it_should(
 
     first = signed_up(person(), new_account(run_id, "first"))
     first.choose_by_name(barber["name"], cut, day).pick("10:00").book()
-    assert "80.00 ₪" in first.last_popup["text"]
+    assert "80.00 ₪" in first.last_answer["text"]
 
     owner.save_service(cut_id, price="95")
     expect(owner.message()).to_have_attribute("data-kind", "ok")
@@ -275,7 +275,7 @@ def test_what_the_owner_changes_reaches_each_customer_the_way_it_should(
     second = signed_up(person(), new_account(run_id, "second"))
     assert "95.00 ₪" in second.text(second.by("service").locator("option", has_text=cut))
     second.choose_by_name(barber["name"], cut, day).pick("11:00").book()
-    assert "95.00 ₪" in second.last_popup["text"], "a new booking takes the new price"
+    assert "95.00 ₪" in second.last_answer["text"], "a new booking takes the new price"
 
     owner.save_service(cut_id, offered=False)
     expect(owner.message()).to_have_attribute("data-kind", "ok")

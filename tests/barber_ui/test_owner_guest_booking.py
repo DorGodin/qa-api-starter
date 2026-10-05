@@ -19,8 +19,8 @@ def test_the_owner_books_a_caller_by_name_and_the_diary_shows_who_is_coming(
 
     screen.choose(barber["id"], ui_haircut["id"], day).pick("11:00").book_for("משה כהן")
 
-    assert screen.last_popup["title"] == "✓ התור נקבע"
-    assert "משה כהן" in screen.last_popup["text"]
+    assert screen.last_answer["title"] == "✓ התור נקבע"
+    assert "משה כהן" in screen.last_answer["text"]
     expect(screen.row_at("11:00")).to_contain_text("משה כהן")
     expect(screen.row_at("11:00")).to_contain_text("בלי חשבון")
     expect(screen.by("guest-name")).to_have_value("")

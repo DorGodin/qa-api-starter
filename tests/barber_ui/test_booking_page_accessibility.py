@@ -55,9 +55,9 @@ def test_every_screen_meets_wcag_2_2_aa(shop, account, credentials, ui_barber, u
     shop.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 4)).pick("13:00")
     assert violations(shop.page) == [], "the booking screen, a time chosen"
 
-    shop.book(keep_popup=True)
-    assert violations(shop.page) == [], "the popup"
-    shop.close_popup()
+    shop.book(keep_answer=True)
+    assert violations(shop.page) == [], "the card that answers a booking"
+    shop.go_to_my_bookings()
 
     shop.by("logout").click()
     shop.sign_in(*credentials("owner"), navigate=False)
@@ -126,10 +126,11 @@ def test_a_whole_booking_and_its_cancellation_with_the_keyboard_alone(
         focused(page)["testid"] == "book"
     ), "the times are one stop: one Tab from the chosen one to the book button"
     page.keyboard.press("Enter")
-    expect(shop.by("popup")).to_be_visible()
-    assert focused(page)["testid"] == "popup-close", "the popup takes the focus"
-    page.keyboard.press("Escape")
-    expect(shop.by("popup")).to_be_hidden()
+    expect(shop.by("booking-done")).to_be_visible()
+    assert focused(page)["testid"] == "booking-done-title", "the card takes the focus"
+    page.keyboard.press("Tab")
+    assert focused(page)["testid"] == "booking-done-mine", "its first way on is the list"
+    page.keyboard.press("Enter")
     expect(shop.row_at("10:45"), "the focus goes to the new booking, not the top of the page").to_be_focused()
 
     page.keyboard.press("Tab")

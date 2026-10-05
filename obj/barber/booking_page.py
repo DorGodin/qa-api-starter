@@ -145,6 +145,11 @@ class BookingPage:
         # Behind an open popup nothing can be pressed - a person closes it first.
         if self.by("popup").is_visible():
             return
+        # The card that answered a booking stands where the form was: to book
+        # again a person presses its `קביעת תור נוסף`.
+        if tab == "book" and self.by("booking-done").is_visible():
+            self.book_another()
+            return
         # The page may still be moving the focus to the tab it chose itself -
         # to the new booking, say, once a popup closed with its button or with
         # Escape. A person waits for the screen to settle.
@@ -224,21 +229,42 @@ class BookingPage:
         expect(self.by("confirm")).to_be_visible()
         return self
 
-    def book(self, keep_popup: bool = False) -> BookingPage:
-        """Book, and read the popup that answers. The popup is modal - nothing
-        behind it can be pressed - so unless asked to keep it, it is closed and
-        what it said is kept in `last_popup`."""
+    def book(self, keep_answer: bool = False) -> BookingPage:
+        """Book, and read what answers: a card in the panel when a customer's
+        booking or move went through, a modal popup for a refusal and for the
+        owner's booking for a caller. Unless asked to keep it, the answer is
+        left - the popup closed, the card's `התורים שלי` pressed - and what it
+        said is kept in `last_answer`."""
         self.by("book").click()
         self.settled()
-        popup = self.by("popup")
-        expect(popup).to_be_visible()
-        self.last_popup = {
-            "title": plain(self.by("popup-title").inner_text()),
-            "text": plain(self.by("popup-text").inner_text()),
-            "kind": popup.get_attribute("data-kind"),
-        }
-        if not keep_popup:
-            self.close_popup()
+        answer = self.page.locator('[data-testid="booking-done"]:visible, [data-testid="popup"]:visible').first
+        expect(answer).to_be_visible()
+        if self.by("popup").is_visible():
+            self.last_answer = {
+                "title": plain(self.by("popup-title").inner_text()),
+                "text": plain(self.by("popup-text").inner_text()),
+                "kind": self.by("popup").get_attribute("data-kind"),
+            }
+            if not keep_answer:
+                self.close_popup()
+        else:
+            self.last_answer = {
+                "title": plain(self.by("booking-done-title").inner_text()),
+                "text": plain(self.by("booking-done-when").inner_text()) + " · " + plain(self.by("booking-done-what").inner_text()),
+                "kind": "ok",
+            }
+            if not keep_answer:
+                self.go_to_my_bookings()
+        return self
+
+    def go_to_my_bookings(self) -> BookingPage:
+        self.by("booking-done-mine").click()
+        self.settled()
+        return self
+
+    def book_another(self) -> BookingPage:
+        self.by("booking-done-more").click()
+        expect(self.by("booking-done")).to_be_hidden()
         return self
 
     def close_popup(self) -> BookingPage:
@@ -274,10 +300,10 @@ class BookingPage:
     def row_at(self, hhmm: str) -> Locator:
         return self.rows().filter(has=self.page.get_by_test_id("booking-when").filter(has_text=hhmm))
 
-    def book_for(self, name: str, keep_popup: bool = False) -> BookingPage:
+    def book_for(self, name: str, keep_answer: bool = False) -> BookingPage:
         """The owner's booking: the guest's name, then the same book button."""
         self.by("guest-name").fill(name)
-        return self.book(keep_popup=keep_popup)
+        return self.book(keep_answer=keep_answer)
 
     def start_moving(self, hhmm: str) -> BookingPage:
         """Press "שינוי מועד" on the booking at that time: the panel then offers the

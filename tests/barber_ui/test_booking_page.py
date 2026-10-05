@@ -44,7 +44,7 @@ def test_a_customer_books_a_time_and_sees_it(signed_in, bookings, account, ui_ba
     day = local_day(shop_tz, 3)
     signed_in.choose(ui_barber["id"], ui_haircut["id"], day).pick("11:00").book()
 
-    assert signed_in.last_popup["title"] == "✓ התור נקבע"
+    assert signed_in.last_answer["title"] == "התור נקבע"
     expect(signed_in.message()).to_have_text("")
     assert "80.00 ₪" in signed_in.text(signed_in.row_at("11:00"))
     assert "11:00" not in signed_in.times(), "a booked time is still offered"
@@ -107,7 +107,7 @@ def test_a_double_click_on_book_books_once(signed_in, bookings, account, ui_barb
 
     signed_in.by("book").dblclick()
     signed_in.settled()
-    expect(signed_in.by("popup")).to_be_visible()
+    expect(signed_in.by("booking-done")).to_be_visible()
 
     # Counted on the wire. With one Idempotency-Key per chosen time, a second
     # request would be answered as a success, so the screen alone cannot show
@@ -119,18 +119,9 @@ def test_a_double_click_on_book_books_once(signed_in, bookings, account, ui_barb
     # The server would refuse a second booking anyway. What the page must also
     # not do is send it: the refusal would replace "Booked" with "Someone just
     # booked 13:00" - told to the very customer who just booked it.
-    expect(signed_in.by("popup")).to_have_attribute("data-kind", "ok")
+    expect(signed_in.by("popup")).to_be_hidden()
+    expect(signed_in.by("booking-done-title")).to_have_text("התור נקבע")
     expect(signed_in.message()).to_have_text("")
-
-
-def test_the_booked_popup_is_black_like_the_page_buttons(signed_in, ui_barber, ui_haircut, shop_tz):
-    signed_in.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 3)).pick("12:00").book(
-        keep_popup=True
-    )
-
-    band = signed_in.by("popup").locator(".band")
-    assert band.evaluate("e => getComputedStyle(e).backgroundColor") == "rgb(17, 17, 17)"
-    assert band.evaluate("e => getComputedStyle(e).color") == "rgb(255, 255, 255)"
 
 
 def test_an_account_made_through_the_api_signs_in_on_the_page_with_its_password(shop, customers):
