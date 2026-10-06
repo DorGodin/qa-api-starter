@@ -237,7 +237,9 @@ class BookingPage:
         said is kept in `last_answer`."""
         self.by("book").click()
         self.settled()
-        answer = self.page.locator('[data-testid="booking-done"]:visible, [data-testid="popup"]:visible').first
+        answer = self.page.locator(
+            '[data-testid="booking-done"]:visible, [data-testid="popup"]:visible'
+        ).first
         expect(answer).to_be_visible()
         if self.by("popup").is_visible():
             self.last_answer = {
@@ -250,7 +252,9 @@ class BookingPage:
         else:
             self.last_answer = {
                 "title": plain(self.by("booking-done-title").inner_text()),
-                "text": plain(self.by("booking-done-when").inner_text()) + " · " + plain(self.by("booking-done-what").inner_text()),
+                "text": plain(self.by("booking-done-when").inner_text())
+                + " · "
+                + plain(self.by("booking-done-what").inner_text()),
                 "kind": "ok",
             }
             if not keep_answer:
@@ -319,6 +323,10 @@ class BookingPage:
         expect(self.by("moving")).to_be_hidden()
         return self
 
+    def course_card(self, title: str) -> Locator:
+        self.show_tab("courses")
+        return self.by("course").filter(has=self.page.get_by_test_id("course-title").filter(has_text=title))
+
     def answer(self, hhmm: str, verb: str) -> BookingPage:
         self.row_at(hhmm).get_by_test_id(verb).click()
         self.settled()
@@ -380,6 +388,23 @@ class OwnerScreen(BookingPage):
 
     def save_approval(self) -> OwnerScreen:
         self.by("save-approval").click()
+        self.settled()
+        return self
+
+    def course_editor(self, course_id: str) -> Locator:
+        return self.page.locator(f'[data-testid="course-edit"][data-id="{course_id}"]')
+
+    def add_course(self, title: str, subtitle: str = "", starts_on: str = "", price: str = "") -> OwnerScreen:
+        self.by("new-course-title").fill(title)
+        self.by("new-course-subtitle").fill(subtitle)
+        self.by("new-course-date").fill(starts_on)
+        self.by("new-course-price").fill(price)
+        self.by("add-course").click()
+        self.settled()
+        return self
+
+    def save_course(self, course_id: str) -> OwnerScreen:
+        self.course_editor(course_id).get_by_test_id("save-course").click()
         self.settled()
         return self
 

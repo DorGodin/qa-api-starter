@@ -8,6 +8,7 @@ changes one, these suites are meant to fail until someone decides which is right
 from obj.barber.approval_rules import ApprovalRules
 from obj.barber.barbers import Barbers
 from obj.barber.bookings import Bookings
+from obj.barber.courses import Courses
 from obj.barber.customers import Customers
 from obj.barber.services import Services
 
@@ -24,6 +25,7 @@ __all__ = [
     "ApprovalRules",
     "Barbers",
     "Bookings",
+    "Courses",
     "Customers",
     "Services",
 ]

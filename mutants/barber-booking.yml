@@ -524,7 +524,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '  for (const id of ["bookings", "slots", "hours", "approval-hours", "days-off", "services", "barber", "service"]) $(id).replaceChildren();
+  - find: '  for (const id of ["bookings", "slots", "hours", "approval-hours", "days-off", "services", "barber", "service", "courses", "courses-admin"]) $(id).replaceChildren();
 
       '
     replace: ''
@@ -1661,3 +1661,108 @@ mutants:
   changes:
   - find: "    asks.addEventListener(\"change\", () => { from.disabled = until.disabled = !asks.checked; });"
     replace: "    asks.addEventListener(\"change\", () => {});"
+- name: a gif is accepted as a picture
+  file: app/routers/courses.py
+  catches:
+  - api
+  changes:
+  - find: "    return None\n\n\ndef _view("
+    replace: "    return \"jpg\"\n\n\ndef _view("
+- name: a picture may be any size
+  file: app/routers/courses.py
+  catches:
+  - api
+  changes:
+  - find: "    if len(raw) > MAX_IMAGE_BYTES:"
+    replace: "    if False:"
+- name: a withdrawn course is shown to customers
+  file: app/routers/courses.py
+  catches:
+  - api
+  changes:
+  - find: "    if user.role != \"owner\":\n        query = query.where(Course.active.is_(True))\n"
+    replace: ""
+- name: a customer may add a course
+  file: app/routers/courses.py
+  catches:
+  - api
+  changes:
+  - find: "    body: CourseIn,\n    _: User = Depends(require(\"owner\")),"
+    replace: "    body: CourseIn,\n    _: User = Depends(require(\"owner\", \"customer\")),"
+- name: courses come in no order
+  file: app/routers/courses.py
+  catches:
+  - api
+  changes:
+  - find: "order_by(Course.starts_on.is_(None), Course.starts_on, Course.title)"
+    replace: "order_by(Course.title)"
+- name: a picture stays on the course after it is removed
+  file: app/routers/courses.py
+  catches:
+  - api
+  changes:
+  - find: "        course = _course_or_404(session, course_id)\n        _forget_image(directory, course)\n        return _view(course, config)"
+    replace: "        course = _course_or_404(session, course_id)\n        return _view(course, config)"
+- name: a course title is written into the card as HTML
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "control(\"h3\", { textContent: isolate(c.title), testid: \"course-title\" })"
+    replace: "control(\"h3\", { innerHTML: isolate(c.title), testid: \"course-title\" })"
+- name: the course button opens in this tab and trusts the page it opens
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "target: \"_blank\", rel: \"noopener noreferrer\", "
+    replace: ""
+- name: a free course shows a price of nothing
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "c.price_minor === 0 ? \"חינם\" : "
+    replace: ""
+- name: a round price is shown with agorot
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  const digits = minor % 100 ? 2 : 0;"
+    replace: "  const digits = 2;"
+- name: the owner's course price is read as a float
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "priceText.trim() === \"\" ? null : parseShekels(priceText)"
+    replace: "priceText.trim() === \"\" ? null : parseFloat(priceText)"
+- name: a withdrawn tick is ignored when a course is saved
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "{ ...body, active: fields.active.checked }"
+    replace: "{ ...body, active: true }"
+- name: the owner is shown the customers' courses
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "$(\"courses-panel\").hidden = !customer;"
+    replace: "$(\"courses-panel\").hidden = false;"
+- name: a course card has no picture
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    if (c.image_url) card.append(control(\"img\", { src: c.image_url, alt: \"\" }));\n"
+    replace: ""
+- name: the empty courses tab says nothing
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "$(\"no-courses\").hidden = list.length > 0;"
+    replace: "$(\"no-courses\").hidden = true;"

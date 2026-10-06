@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 import pytest
 import requests
 
-from obj.barber import ApprovalRules, Barbers, Bookings, Customers, Services
+from obj.barber import ApprovalRules, Barbers, Bookings, Courses, Customers, Services
 from obj.barber.customers import new_device_address
 from obj.barber.sms_inbox import SmsInbox
 
@@ -98,6 +98,25 @@ def barbers(api, artifact_log):
 @pytest.fixture(scope="session")
 def bookings(api, artifact_log):
     return Bookings(api, log=artifact_log)
+
+
+@pytest.fixture
+def courses(api, artifact_log):
+    """The shop's courses are shared by everyone who signs in, and the product cannot be
+    reset: what a test makes it withdraws, so a customer in another test never reads it."""
+    made = []
+    kept = Courses(api, log=artifact_log)
+    create = kept.create_fake_course
+
+    def tracked(**kwargs):
+        course = create(**kwargs)
+        made.append(course["id"])
+        return course
+
+    kept.create_fake_course = tracked
+    yield kept
+    for course_id in made:
+        kept.withdraw(course_id)
 
 
 @pytest.fixture

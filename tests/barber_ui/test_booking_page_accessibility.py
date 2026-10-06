@@ -15,6 +15,7 @@ from axe_playwright_python.sync_playwright import Axe
 from playwright.sync_api import expect
 
 from obj.barber.booking_page import BookingPage
+from obj.barber.courses import PNG_1X1
 from utils.local_time import local_day
 
 PHONE_WIDTH = 760
@@ -63,6 +64,16 @@ def test_every_screen_meets_wcag_2_2_aa(shop, account, credentials, ui_barber, u
     shop.sign_in(*credentials("owner"), navigate=False)
     expect(shop.by("owner")).to_be_visible()
     assert violations(shop.page) == [], "the owner's screen"
+
+
+def test_the_courses_tab_meets_wcag_2_2_aa(courses, signed_in):
+    course = courses.create_fake_course()
+    courses.set_image(course["id"], PNG_1X1).assert_ok(200)
+    signed_in.reload()
+
+    signed_in.show_tab("courses")
+
+    assert violations(signed_in.page) == [], "the courses tab, a course with a picture"
 
 
 def test_a_whole_booking_and_its_cancellation_with_the_keyboard_alone(

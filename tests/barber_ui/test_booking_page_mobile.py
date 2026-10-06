@@ -15,6 +15,7 @@ import pytest
 from playwright.sync_api import expect
 
 from obj.barber.booking_page import BookingPage, OwnerScreen, a_device
+from obj.barber.courses import PNG_1X1
 from tests.barber_ui.test_booking_page_late_answers import Held
 from tests.barber_ui.test_shop_header import shop_info
 from utils.local_time import local_day
@@ -461,3 +462,16 @@ def test_a_booking_card_below_a_tall_header_is_brought_into_view(
     expect(card).to_be_visible()
 
     assert fits_on_screen(phone_shop.page, card), "the card started below the fold and stayed there"
+
+
+def test_the_courses_tab_fits_a_phone(phone_shop, account, courses):
+    course = courses.create_fake_course()
+    courses.set_image(course["id"], PNG_1X1).assert_ok(200)
+    phone_shop.sign_in_as(account)
+
+    phone_shop.show_tab("courses")
+
+    expect(phone_shop.by("course").first).to_be_visible()
+    assert sideways_overflow(phone_shop.page) == []
+    assert too_small_to_tap(phone_shop.page) == []
+    assert clipped_labels(phone_shop.page) == []
