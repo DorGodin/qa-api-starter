@@ -5,6 +5,7 @@ documented contract, and the constants below are that contract: when the product
 changes one, these suites are meant to fail until someone decides which is right.
 """
 
+from obj.barber.approval_rules import ApprovalRules
 from obj.barber.barbers import Barbers
 from obj.barber.bookings import Bookings
 from obj.barber.customers import Customers
@@ -20,6 +21,7 @@ __all__ = [
     "CANCEL_CUTOFF_HOURS",
     "MOVE_CUTOFF_HOURS",
     "SLOT_MINUTES",
+    "ApprovalRules",
     "Barbers",
     "Bookings",
     "Customers",

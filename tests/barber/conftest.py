@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 import pytest
 import requests
 
-from obj.barber import Barbers, Bookings, Customers, Services
+from obj.barber import ApprovalRules, Barbers, Bookings, Customers, Services
 from obj.barber.customers import new_device_address
 from obj.barber.sms_inbox import SmsInbox
 
@@ -98,6 +98,16 @@ def barbers(api, artifact_log):
 @pytest.fixture(scope="session")
 def bookings(api, artifact_log):
     return Bookings(api, log=artifact_log)
+
+
+@pytest.fixture
+def approval_rules(api, artifact_log):
+    """When a booking waits for its barber is one setting for the whole shop, and the
+    product cannot be reset: what a test changes it puts back."""
+    rules = ApprovalRules(api, log=artifact_log)
+    before = rules.current()
+    yield rules
+    rules.save(before).assert_ok(200)
 
 
 @pytest.fixture(scope="module")

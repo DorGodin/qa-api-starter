@@ -3,11 +3,17 @@ checked on the screen and through the API behind it."""
 
 from datetime import timedelta
 
+import pytest
 from playwright.sync_api import expect
 
 from obj.barber import MOVE_CUTOFF_HOURS
 from utils.helpers import now_utc, to_iso
 from utils.local_time import at_local, local_day, parse_instant
+
+
+@pytest.fixture
+def own_barber(barbers):
+    return barbers.create_fake_barber()
 
 
 def test_a_customer_moves_a_booking_and_it_is_the_same_booking_at_the_new_time(
@@ -29,20 +35,32 @@ def test_a_customer_moves_a_booking_and_it_is_the_same_booking_at_the_new_time(
     # The booking's own time is not in its way: a quarter later is offered.
     assert "11:15" in signed_in.times()
 
-    signed_in.pick("15:00")
+    signed_in.pick("17:00")
     expect(signed_in.by("book")).to_have_text("אישור המועד החדש")
     signed_in.book()
 
     assert signed_in.last_answer["title"] == "המועד עודכן"
-    expect(signed_in.row_at("15:00")).to_be_visible()
+    expect(signed_in.row_at("17:00")).to_be_visible()
     expect(signed_in.row_at("11:00")).to_have_count(0)
     expect(signed_in.by("moving")).to_be_hidden()
     expect(signed_in.by("book")).to_have_text("קביעת התור")
     expect(signed_in.barber_pill(ui_barber["id"])).to_be_enabled()
     [after] = bookings.listing(persona=account["persona"])["content"]
     assert after["id"] == before["id"]
-    assert parse_instant(after["start"]) == at_local(shop_tz, day, "15:00")
+    assert parse_instant(after["start"]) == at_local(shop_tz, day, "17:00")
     assert after["price_minor"] == before["price_minor"]
+
+
+def test_moving_into_the_afternoon_hours_is_a_request_to_the_barber(
+    own_barber, signed_in, ui_haircut, shop_tz
+):
+    day = local_day(shop_tz, 5)
+    signed_in.choose(own_barber["id"], ui_haircut["id"], day).pick("11:00").book()
+
+    signed_in.start_moving("11:00").pick("15:00").book()
+
+    assert signed_in.last_answer["title"] == "הבקשה נשלחה"
+    expect(signed_in.row_at("15:00")).to_have_attribute("data-approval", "pending")
 
 
 def test_a_time_taken_while_choosing_is_explained_and_the_booking_stays(

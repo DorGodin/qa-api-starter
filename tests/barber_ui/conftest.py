@@ -12,6 +12,7 @@ import pytest
 from obj.barber.booking_page import BookingPage, OwnerScreen
 from obj.barber.customers import new_device_address
 from tests.barber.conftest import (  # noqa: F401
+    approval_rules,
     barbers,
     bookings,
     customers,

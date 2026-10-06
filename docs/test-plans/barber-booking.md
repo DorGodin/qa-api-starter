@@ -145,6 +145,15 @@ on the screen, and through the API behind it.
 | cancelling gives the time back | the list shows cancelled and the grid offers the time again; the line after it is red |
 | a cancelled booking leaves the list | one the customer cancelled is gone once they leave the app (a reload) and after twelve hours; one the shop cancelled stays twelve hours, a return included, and is then gone |
 | a cancelled booking says who cancelled it | `cancelled_by` is `customer` or `staff`, and `null` while confirmed (API) |
+| the afternoon hours wait for the barber | a customer's booking from 14:00 up to (not including) 16:00 is `approval: pending` with `decide_by` two hours out; 13:45 and 16:00 are not; it holds the chair; the guest booking by the owner never waits (API) |
+| the barber answers | the barber approves or declines their own booking, the owner any; a no cancels it (`cancelled_by: staff`), frees the time and no longer counts toward the limit; another barber gets 404, a customer 403; an answer cannot be reversed; nothing to answer outside the hours (API) |
+| a move meets the same rule | a customer's move into the hours waits again, out of them ends the wait; the owner's move decides it (API) |
+| a request is not a booking | the card says `הבקשה נשלחה` with one amber line, `<barber> יאשר או ידחה את התור.`, and nothing about the wait; the list says `ממתין לאישור של <barber>`; outside the hours it is `התור נקבע` |
+| the customer is told in the page | an answer that came while the page was closed is told on opening - once; the page looks again while a booking waits; a no offers `בחירת שעה אחרת` and the list says so |
+| the card is in view under a tall header | with the shop's cover and profile picture the header is tall; the card, and both its buttons, are brought onto the screen of the smallest phone |
+| the owner sets when it asks | a switch and, per day, the hours from and up to; turned off, or on another day or hour, a booking is booked at once; saved rules are read back; a customer is refused; rules that make no sense (a day missing, backwards, off the quarter hour, no switch) are refused and change nothing; a booking already waiting keeps waiting (API) |
+| the owner's panel | the switch and seven rows read from the rules, the same rows as the working hours; unticking a day disables its hours; backwards hours and hours off the quarter hour are explained and nothing is saved; a customer sees no panel |
+| the barber and the owner answer from the diary | `אישור` and `דחייה` on a waiting row, and no cancel for a barber |
 | a late cancellation explains why | the reason, what to do next ("call the shop"), and the booking still there |
 | the shop's header | the brand and the tab title from the shop's settings, a named button for each contact link set and none for the rest, the poles and scissors hidden from screen readers and still for reduced motion |
 | the privacy policy | one step from the sign-in screen, every placeholder filled, WCAG 2.2 AA |
