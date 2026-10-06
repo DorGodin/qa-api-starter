@@ -475,3 +475,18 @@ def test_the_courses_tab_fits_a_phone(phone_shop, account, courses):
     assert sideways_overflow(phone_shop.page) == []
     assert too_small_to_tap(phone_shop.page) == []
     assert clipped_labels(phone_shop.page) == []
+
+
+def test_a_booking_too_close_to_cancel_fits_a_phone_and_its_link_is_a_finger_tall(
+    phone_shop, account, bookings, barbers, ui_haircut
+):
+    from tests.barber_ui.test_late_cancellation import booked
+
+    booked(bookings, barbers.create_fake_barber(), ui_haircut, account, 3)
+    phone_shop.sign_in_as(account)
+
+    phone_shop.show_tab("mine")
+
+    expect(phone_shop.by("late-note").first).to_be_visible()
+    assert sideways_overflow(phone_shop.page) == []
+    assert too_small_to_tap(phone_shop.page) == []

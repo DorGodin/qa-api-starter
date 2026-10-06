@@ -13,7 +13,7 @@ from obj.barber.customers import Customers
 from obj.barber.services import Services
 
 BOOKING_WINDOW_DAYS = 30
-CANCEL_CUTOFF_HOURS = 24
+CANCEL_CUTOFF_HOURS = 12
 MOVE_CUTOFF_HOURS = 12
 SLOT_MINUTES = 15
 

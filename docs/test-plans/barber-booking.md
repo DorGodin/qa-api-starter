@@ -159,6 +159,7 @@ on the screen, and through the API behind it.
 | the owner keeps the courses | the panel adds a course (a name is required, a price that is not a number is explained), edits and withdraws one, uploads a picture and removes it; a file that is not a picture is refused in words; the owner has no customers' panel |
 | the courses tab on a phone | the third tab, no sideways overflow, the card's button a finger tall, axe clean |
 | the barber and the owner answer from the diary | `אישור` and `דחייה` on a waiting row, and no cancel for a barber |
+| a booking too close to cancel or move | the customer is not offered the button that is past its cutoff (12 hours for both), and the row says why in those numbers, with a WhatsApp link that names the booking (new tab, `noopener`); none without a number; the owner keeps the cancel button; on a phone it fits and the link is a finger tall |
 | a late cancellation explains why | the reason, what to do next ("call the shop"), and the booking still there |
 | the shop's header | the brand and the tab title from the shop's settings, a named button for each contact link set and none for the rest, the poles and scissors hidden from screen readers and still for reduced motion |
 | the privacy policy | one step from the sign-in screen, every placeholder filled, WCAG 2.2 AA |

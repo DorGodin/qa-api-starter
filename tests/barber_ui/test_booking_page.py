@@ -122,37 +122,6 @@ def test_a_booking_the_customer_cancelled_is_gone_after_twelve_hours(
     expect(shop.row_at("12:00")).to_have_count(0)
 
 
-def test_a_late_cancellation_explains_why_and_keeps_the_booking(
-    shop, bookings, account, barbers, ui_haircut, shop_tz
-):
-    # The barber exists before the customer signs in: the page reads the list
-    # of barbers once, at sign-in, as a customer's page would.
-    soon = barbers.create_fake_barber()
-    signed_in = shop.sign_in_as(account)
-    today = local_day(shop_tz, 0)
-    signed_in.choose(soon["id"], ui_haircut["id"], today)
-    # Late in the evening today has one time left, or none: then tomorrow's first
-    # ones, still well inside the 24 hours. With `not times()` alone this failed
-    # every night from 23:15 to 23:45, shop time, and passed the rest of the day.
-    if len(signed_in.times()) < 2:
-        signed_in.choose(soon["id"], ui_haircut["id"], local_day(shop_tz, 1))
-    # The second time, not the first: the first can be seconds away, and if a
-    # quarter hour ticks over between listing it and booking it, the booking is
-    # refused as in the past. The second is 15 minutes out - still well inside
-    # the 24 hour cutoff.
-    soonest = signed_in.times()[1]
-    signed_in.pick(soonest).book()
-
-    signed_in.cancel(soonest)
-
-    expect(signed_in.message()).to_contain_text("24 שעות")
-    expect(signed_in.message(), "say what to do next, not only what went wrong").to_contain_text(
-        "להתקשר למספרה"
-    )
-    expect(signed_in.message()).to_have_attribute("data-kind", "error")
-    assert bookings.listing(persona=account["persona"], status="confirmed")["total"] == 1
-
-
 def test_a_double_click_on_book_books_once(signed_in, bookings, account, ui_barber, ui_haircut, shop_tz):
     signed_in.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 5)).pick("13:00")
     sent = []

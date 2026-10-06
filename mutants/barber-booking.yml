@@ -837,13 +837,6 @@ mutants:
   changes:
   - find: '_refuse_clashes(session, wanted, booking.barber_id, booking.customer_id, excluding=booking.id)'
     replace: '_refuse_clashes(session, wanted, booking.barber_id, booking.customer_id)'
-- name: a move uses the 24-hour cancellation cutoff instead of its own
-  file: app/routers/bookings.py
-  catches:
-  - api
-  changes:
-  - find: 'timedelta(hours=config.move_cutoff_hours)'
-    replace: 'timedelta(hours=config.cancel_cutoff_hours)'
 - name: a barber can move a booking
   file: app/routers/bookings.py
   catches:
@@ -1766,3 +1759,52 @@ mutants:
   changes:
   - find: "$(\"no-courses\").hidden = list.length > 0;"
     replace: "$(\"no-courses\").hidden = true;"
+- name: a customer is offered a cancel button on a booking too close
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "me.role !== \"barber\" && (me.role !== \"customer\" || canCancel)"
+    replace: "me.role !== \"barber\""
+- name: a customer is offered a move button on a booking too close
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "me.role === \"customer\" && canMove) {"
+    replace: "me.role === \"customer\") {"
+- name: a booking too close says nothing about it
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: " && (!canMove || !canCancel)) row.append(lateNote(b, canCancel, canMove, when.textContent));"
+    replace: " && false) row.append(lateNote(b, canCancel, canMove, when.textContent));"
+- name: the late note has no way to ask the shop
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "if (whatsapp && whatsapp.startsWith(\"https://\")) {"
+    replace: "if (false) {"
+- name: the late note's link trusts the page it opens
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    ask.rel = \"noopener noreferrer\";\n"
+    replace: ""
+- name: the late note's message does not name the booking
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "encodeURIComponent(`שלום, אני רוצה לבטל או לשנות את התור של ${when}`)"
+    replace: "encodeURIComponent(\"שלום\")"
+- name: the owner loses the cancel button on a booking that is close
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "(me.role !== \"customer\" || canCancel)"
+    replace: "canCancel"
