@@ -251,7 +251,6 @@ class BookingPage:
             self.last_answer = {
                 "title": plain(self.by("booking-done-title").inner_text()),
                 "text": plain(self.by("booking-done-when").inner_text()) + " · " + plain(self.by("booking-done-what").inner_text()),
-                "note": plain(self.by("booking-done-note").inner_text()) if self.by("booking-done-note").is_visible() else None,
                 "kind": "ok",
             }
             if not keep_answer:
