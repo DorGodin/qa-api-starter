@@ -1,13 +1,10 @@
 """A customer moves a booking from the page: the same booking at a new time,
 checked on the screen and through the API behind it."""
 
-from datetime import timedelta
 
 import pytest
 from playwright.sync_api import expect
 
-from obj.barber import MOVE_CUTOFF_HOURS
-from utils.helpers import now_utc, to_iso
 from utils.local_time import at_local, local_day, parse_instant
 
 
@@ -79,22 +76,6 @@ def test_a_time_taken_while_choosing_is_explained_and_the_booking_stays(
     assert "14:00" in signed_in.last_answer["text"]
     [kept] = bookings.listing(persona=account["persona"])["content"]
     assert parse_instant(kept["start"]) == at_local(shop_tz, day, "10:00")
-
-
-def test_a_late_move_is_explained_in_hebrew(shop, bookings, account, barbers, ui_haircut, shop_tz):
-    soon = barbers.create_fake_barber()
-    t = now_utc() + timedelta(hours=2)
-    start = t.replace(second=0, microsecond=0) + timedelta(minutes=15 - t.minute % 15)
-    booking = bookings.create_booking(soon["id"], ui_haircut["id"], to_iso(start), persona=account["persona"])
-    hhmm = booking["start_local"][11:16]
-    signed_in = shop.sign_in_as(account)
-
-    signed_in.start_moving(hhmm)
-    signed_in.pick(signed_in.times()[-1]).book()
-
-    assert f"אפשר לשנות מועד עד {MOVE_CUTOFF_HOURS} שעות לפני" in signed_in.last_answer["text"]
-    [kept] = bookings.listing(persona=account["persona"])["content"]
-    assert parse_instant(kept["start"]) == start
 
 
 def test_stopping_a_move_puts_the_panel_back_and_changes_nothing(

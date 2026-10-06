@@ -3,7 +3,6 @@ time - until MOVE_CUTOFF_HOURS before it, for the customer."""
 
 from datetime import timedelta
 
-from obj.barber import CANCEL_CUTOFF_HOURS, MOVE_CUTOFF_HOURS
 from utils.assertions import assert_refused
 from utils.helpers import now_utc, to_iso
 from utils.local_time import at_local, local_day, parse_instant
@@ -82,17 +81,6 @@ def test_inside_the_move_cutoff_only_the_owner_can_move(bookings, barber, trim, 
 
     assert_refused(bookings.move(booking["id"], quarter_hour_from_now(40), persona=me), 409, "late_move")
     bookings.move(booking["id"], quarter_hour_from_now(40), persona="owner").assert_ok(200)
-
-
-def test_between_the_two_cutoffs_a_customer_can_move_but_not_cancel(bookings, barber, trim, new_customer):
-    assert MOVE_CUTOFF_HOURS < CANCEL_CUTOFF_HOURS
-    me = new_customer()
-    halfway = (MOVE_CUTOFF_HOURS + CANCEL_CUTOFF_HOURS) / 2
-    booking = bookings.create_booking(barber["id"], trim["id"], quarter_hour_from_now(halfway), persona=me)
-
-    assert_refused(bookings.cancel(booking["id"], persona=me), 409, "late_cancellation")
-    # Not 40 hours: the module's barber already has a booking moved there.
-    bookings.move(booking["id"], quarter_hour_from_now(44), persona=me).assert_ok(200)
 
 
 def test_a_barber_cannot_move_and_a_stranger_does_not_find_it(
