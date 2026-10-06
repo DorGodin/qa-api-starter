@@ -251,6 +251,7 @@ class BookingPage:
             self.last_answer = {
                 "title": plain(self.by("booking-done-title").inner_text()),
                 "text": plain(self.by("booking-done-when").inner_text()) + " · " + plain(self.by("booking-done-what").inner_text()),
+                "note": plain(self.by("booking-done-note").inner_text()) if self.by("booking-done-note").is_visible() else None,
                 "kind": "ok",
             }
             if not keep_answer:
@@ -319,6 +320,11 @@ class BookingPage:
         expect(self.by("moving")).to_be_hidden()
         return self
 
+    def answer(self, hhmm: str, verb: str) -> BookingPage:
+        self.row_at(hhmm).get_by_test_id(verb).click()
+        self.settled()
+        return self
+
     def cancel(self, hhmm: str) -> BookingPage:
         self.row_at(hhmm).get_by_test_id("cancel").click()
         self.settled()
@@ -355,6 +361,26 @@ class OwnerScreen(BookingPage):
 
     def save_hours(self) -> OwnerScreen:
         self.by("save-hours").click()
+        self.settled()
+        return self
+
+    def approval_row(self, day: str) -> Locator:
+        return self.page.locator(f'[data-testid="approval-row"][data-day="{day}"]')
+
+    def set_approval_day(self, day: str, start: str | None = None, until: str | None = None) -> OwnerScreen:
+        """A day with times asks for the barber's yes in those hours; a day without never does."""
+        row = self.approval_row(day)
+        asks = row.get_by_test_id("approval-asks")
+        if start is None:
+            asks.uncheck()
+            return self
+        asks.check()
+        row.get_by_test_id("approval-from").fill(start)
+        row.get_by_test_id("approval-until").fill(until)
+        return self
+
+    def save_approval(self) -> OwnerScreen:
+        self.by("save-approval").click()
         self.settled()
         return self
 

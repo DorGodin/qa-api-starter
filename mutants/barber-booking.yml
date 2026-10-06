@@ -394,8 +394,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "api(\"GET\", `/barbers/${barberId}/time-off`)]);\n  if (!current()) return;"
-    replace: api("GET", `/barbers/${barberId}/time-off`)]);
+  - find: "api(\"GET\", \"/approval-rules\")]);\n  if (!current()) return;"
+    replace: api("GET", "/approval-rules")]);
 - name: on a phone the two columns stay side by side
   file: app/static/index.html
   catches:
@@ -524,7 +524,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '  for (const id of ["bookings", "slots", "hours", "days-off", "services", "barber", "service"]) $(id).replaceChildren();
+  - find: '  for (const id of ["bookings", "slots", "hours", "approval-hours", "days-off", "services", "barber", "service"]) $(id).replaceChildren();
 
       '
     replace: ''
@@ -702,10 +702,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '    if (row && document.activeElement === document.body) row.focus();
-
-      '
-    replace: ''
+  - find: "    // back to the same booking, now marked cancelled, not to the top of the page.\n    const row = document.querySelector(`[data-testid=\"booking-row\"][data-id=\"${b.id}\"]`);\n    if (row && document.activeElement === document.body) row.focus();\n"
+    replace: "    // back to the same booking, now marked cancelled, not to the top of the page.\n    const row = document.querySelector(`[data-testid=\"booking-row\"][data-id=\"${b.id}\"]`);\n"
 - name: a booking in the list cannot take the focus
   file: app/static/index.html
   catches:
@@ -909,8 +907,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '    detail.textContent = ` · ${isolate(b.service_name)}'
-    replace: '    detail.innerHTML = ` · ${isolate(b.service_name)}'
+  - find: '    detail.textContent = `${isolate(b.service_name)}'
+    replace: '    detail.innerHTML = `${isolate(b.service_name)}'
 - name: the owner's booking choice offers withdrawn services
   file: app/static/index.html
   catches:
@@ -1344,14 +1342,14 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '    showDone("התור נקבע", r.data);'
+  - find: '    showDone(r.data.approval === "pending" ? "הבקשה נשלחה" : "התור נקבע", r.data);'
     replace: '    popup("✓ התור נקבע", "", "ok");'
 - name: a moved time is answered by a popup and not by the card
   file: app/static/index.html
   catches:
   - ui
   changes:
-  - find: '    showDone("המועד עודכן", r.data);'
+  - find: '    showDone(r.data.approval === "pending" ? "הבקשה נשלחה" : "המועד עודכן", r.data);'
     replace: '    popup("✓ המועד עודכן", "", "ok");'
 - name: the card does not take the focus
   file: app/static/index.html
@@ -1446,3 +1444,220 @@ mutants:
   changes:
   - find: 'return code && FRIENDLY[code] ? failedTitle : "אוי, משהו השתבש";'
     replace: 'return failedTitle;'
+- name: an afternoon booking from two o'clock does not wait
+  file: app/booking_rules.py
+  catches:
+  - api
+  changes:
+  - find: "parse_hhmm(span[0]) <= local.hour"
+    replace: "parse_hhmm(span[0]) < local.hour"
+- name: a booking at four o'clock still waits
+  file: app/booking_rules.py
+  catches:
+  - api
+  changes:
+  - find: "< parse_hhmm(span[1])"
+    replace: "<= parse_hhmm(span[1])"
+- name: the barber's wait is three times as long as it says
+  file: app/booking_rules.py
+  catches:
+  - api
+  changes:
+  - find: "timedelta(minutes=config.approval_wait_minutes), start)"
+    replace: "timedelta(minutes=config.approval_wait_minutes * 3), start)"
+- name: a booking the customer cancelled is still waiting
+  file: app/booking_rules.py
+  catches:
+  - api
+  changes:
+  - find: "    if booking.status == \"cancelled\" and booking.approval != \"declined\":\n        return None\n"
+    replace: ""
+- name: a declined booking forgets it was declined
+  file: app/booking_rules.py
+  catches:
+  - api
+  changes:
+  - find: "booking.approval != \"declined\":\n        return None"
+    replace: "True:\n        return None"
+- name: a no from the barber does not free the time
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "\"cancelled\", now, user.id"
+    replace: "\"confirmed\", None, None"
+- name: a yes from the barber leaves it waiting
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "\"approved\", user.id"
+    replace: "\"pending\", user.id"
+- name: a barber answers for another barber's booking
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "    booking = visible_booking_or_404(session, booking_id, user)\n    if booking.status == \"cancelled\" and booking.approval != \"declined\":"
+    replace: "    booking = session.get(Booking, booking_id)\n    if booking.status == \"cancelled\" and booking.approval != \"declined\":"
+- name: the owner's move into the hours waits too
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "if user.role == \"customer\" and needs_approval(session, config, wanted.start):"
+    replace: "if needs_approval(session, config, wanted.start):"
+- name: a move out of the hours keeps the wait
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "        else:\n            booking.approval, booking.decide_by, booking.decided_by = None, None, None\n"
+    replace: "        else:\n            pass\n"
+- name: a waiting booking is announced as booked
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    showDone(r.data.approval === \"pending\" ? \"הבקשה נשלחה\" : \"התור נקבע\", r.data);"
+    replace: "    showDone(\"התור נקבע\", r.data);"
+- name: the card does not say the barber will answer
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "$(\"booking-done-note\").hidden = !waiting;"
+    replace: "$(\"booking-done-note\").hidden = true;"
+- name: the list does not say a booking waits for the barber
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if (b.approval === \"pending\") {"
+    replace: "  if (false) {"
+- name: the barber cannot answer from the diary
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "if (b.approval === \"pending\" && me.role !== \"customer\") {"
+    replace: "if (false) {"
+- name: the customer is not told the barber has answered
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "if (news.length && !$(\"popup\").open) {"
+    replace: "if (false) {"
+- name: a no is not explained in the list
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if (b.approval === \"declined\") return me.role === \"customer\" ? \"לא אושר\" : \"נדחה\";"
+    replace: "  if (false) return \"\";"
+- name: a no offers no way on
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "\n        action: { label: \"בחירת שעה אחרת\", run: () => { hideDone(); showTab(\"book\"); window.scrollTo(0, 0); } },"
+    replace: ""
+- name: an answer is told again every time
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    for (const b of news) delete known[b.id];\n"
+    replace: "\n"
+- name: a waiting booking is not remembered on the device
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    if (b.approval === \"pending\") known[b.id] = true;"
+    replace: "    if (b.approval === \"pending\") known[b.id] = false;"
+- name: the page does not look again while a booking waits
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if (all.some((b) => b.approval === \"pending\")) waitingPoll = setTimeout(() => refreshBookings(), 45000);\n"
+    replace: ""
+- name: a booking card below a tall header stays below the fold
+  file: app/static/index.html
+  catches:
+  - ui-webkit
+  changes:
+  - find: "  if ($(\"booking-done\").getBoundingClientRect().bottom > window.innerHeight) $(\"booking-done\").scrollIntoView({ block: \"start\" });\n"
+    replace: ""
+- name: the barber's yes is asked though the owner turned it off
+  file: app/booking_rules.py
+  catches:
+  - api
+  changes:
+  - find: "    if not rules[\"enabled\"]:\n        return False\n"
+    replace: ""
+- name: every day asks at monday's hours
+  file: app/booking_rules.py
+  catches:
+  - api
+  changes:
+  - find: "rules[\"hours\"].get(WEEKDAYS[local.weekday()])"
+    replace: "rules[\"hours\"].get(\"mon\")"
+- name: a day the owner left out still asks
+  file: app/booking_rules.py
+  catches:
+  - api
+  changes:
+  - find: "return span is not None and parse_hhmm"
+    replace: "return span is None or parse_hhmm"
+- name: the owner's saved rules are not kept
+  file: app/routers/settings.py
+  catches:
+  - api
+  changes:
+  - find: "            row.value_json = json.dumps(rules)"
+    replace: "            row.value_json = row.value_json"
+- name: a customer may change when the barber's yes is asked
+  file: app/routers/settings.py
+  catches:
+  - api
+  changes:
+  - find: "body: ApprovalRulesIn, _: User = Depends(require(\"owner\"))"
+    replace: "body: ApprovalRulesIn, _: User = Depends(require(\"owner\", \"customer\"))"
+- name: the panel always saves the switch on
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "{ enabled: $(\"approval-enabled\").checked, hours }"
+    replace: "{ enabled: true, hours }"
+- name: a day unticked in the panel is saved with hours
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "      if (!asks) { hours[row.dataset.day] = null; continue; }\n"
+    replace: ""
+- name: the panel lets the hours end before they start
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "      if (from >= until) {"
+    replace: "      if (false) {"
+- name: the panel does not show the rules the shop has
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "renderApproval(approval.ok ? approval.data : { enabled: false, hours: {} });"
+    replace: "renderApproval({ enabled: false, hours: {} });"
+- name: unticking a day leaves its hours editable
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    asks.addEventListener(\"change\", () => { from.disabled = until.disabled = !asks.checked; });"
+    replace: "    asks.addEventListener(\"change\", () => {});"

@@ -27,6 +27,8 @@ FINGER, CHECKBOX = 44, 24
 # The times are smaller by the owner's choice (2026-10-04): 36px, five to a row,
 # so a day's times fit the screen. Still above WCAG 2.5.8's 24px.
 TIME = 36
+# The buttons under a booking, small and round by the owner's choice (2026-10-06).
+ROW_BUTTON = 36
 
 # Below 16px, Safari on iOS zooms the whole page in when a field takes the
 # focus, and leaves it zoomed. Only a font size of 16px or more prevents it.
@@ -75,17 +77,18 @@ def sideways_overflow(page) -> list[str]:
 
 def too_small_to_tap(page) -> list[str]:
     return page.evaluate(
-        """([selector, finger, checkbox, time]) => [...document.querySelectorAll(selector)]
+        """([selector, finger, checkbox, time, rowButton]) => [...document.querySelectorAll(selector)]
             .filter((el) => el.offsetParent && el.type !== "hidden")
             .map((el) => {
                 const r = el.getBoundingClientRect();
-                const need = el.type === "checkbox" ? checkbox : el.dataset.testid === "slot" ? time : finger;
+                const inRow = el.tagName === "BUTTON" && el.closest('[data-testid="booking-row"]');
+                const need = el.type === "checkbox" ? checkbox : el.dataset.testid === "slot" ? time : inRow ? rowButton : finger;
                 const tooSmall = r.height < need || (el.tagName !== "INPUT" && el.tagName !== "SELECT" && r.width < need) || (el.type === "checkbox" && r.width < need);
                 return tooSmall ? `${el.tagName.toLowerCase()} ${el.dataset.testid || el.textContent.trim().slice(0, 12)}: ${Math.round(r.width)}x${Math.round(r.height)}, needs ${need}` : null;
             })
             .filter(Boolean)
             .slice(0, 10)""",
-        [CONTROLS, FINGER, CHECKBOX, TIME],
+        [CONTROLS, FINGER, CHECKBOX, TIME, ROW_BUTTON],
     )
 
 
@@ -440,3 +443,21 @@ def test_a_tab_pressed_while_the_list_still_loads_is_not_undone(
 
     expect(phone_shop.by("tab-book")).to_have_attribute("aria-current", "page")
     expect(phone_shop.by("left-panel")).to_be_visible()
+
+
+def test_a_booking_card_below_a_tall_header_is_brought_into_view(
+    phone_shop, account, barbers, ui_haircut, shop_tz
+):
+    barber = barbers.create_fake_barber()
+    phone_shop.sign_in_as(account)
+    phone_shop.page.evaluate("document.querySelector('header').style.paddingTop = '320px'")
+    phone_shop.choose(barber["id"], ui_haircut["id"], local_day(shop_tz, 3))
+
+    phone_shop.by("slot").filter(has_text="11:00").first.tap()
+    phone_shop.by("book").tap()
+    phone_shop.settled()
+
+    card = phone_shop.by("booking-done")
+    expect(card).to_be_visible()
+
+    assert fits_on_screen(phone_shop.page, card), "the card started below the fold and stayed there"

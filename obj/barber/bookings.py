@@ -68,6 +68,12 @@ class Bookings(Base):
             "POST", f"{self.path}/{booking_id}/move", persona=persona, json=self.build_move_payload(start)
         )
 
+    def approve(self, booking_id: str, persona: str) -> Response:
+        return self.client.request("POST", f"{self.path}/{booking_id}/approve", persona=persona)
+
+    def decline(self, booking_id: str, persona: str) -> Response:
+        return self.client.request("POST", f"{self.path}/{booking_id}/decline", persona=persona)
+
     def cancel(self, booking_id: str, persona: str) -> Response:
         return self.client.request("POST", f"{self.path}/{booking_id}/cancel", persona=persona)
 
