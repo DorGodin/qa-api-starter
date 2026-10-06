@@ -15,6 +15,7 @@ from tests.barber.conftest import (  # noqa: F401
     approval_rules,
     barbers,
     bookings,
+    courses,
     customers,
     fresh_address,
     new_customer,
