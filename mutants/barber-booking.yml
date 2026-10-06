@@ -1521,13 +1521,13 @@ mutants:
   changes:
   - find: "    showDone(r.data.approval === \"pending\" ? \"הבקשה נשלחה\" : \"התור נקבע\", r.data);"
     replace: "    showDone(\"התור נקבע\", r.data);"
-- name: the card does not say the barber will answer
+- name: a request is marked with a tick like a booking
   file: app/static/index.html
   catches:
   - ui
   changes:
-  - find: "$(\"booking-done-note\").hidden = !waiting;"
-    replace: "$(\"booking-done-note\").hidden = true;"
+  - find: "textContent = waiting ? \"…\" : \"✓\";"
+    replace: "textContent = \"✓\";"
 - name: the list does not say a booking waits for the barber
   file: app/static/index.html
   catches:

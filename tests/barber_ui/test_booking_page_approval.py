@@ -30,8 +30,8 @@ def test_a_booking_in_the_afternoon_hours_is_answered_by_a_request(
     )
 
     assert signed_in.last_answer["title"] == "הבקשה נשלחה"
-    assert signed_in.last_answer["note"] == f"{own_barber['display_name']} יאשר או ידחה את התור."
-    expect(signed_in.by("booking-done-note")).to_be_visible()
+    expect(signed_in.by("booking-done")).to_have_attribute("data-waiting", "")
+    expect(signed_in.by("booking-done").locator(".tick")).to_have_text("…")
 
 
 def test_the_list_says_the_booking_waits_for_the_barber(own_barber, signed_in, ui_haircut, shop_tz):
@@ -53,8 +53,8 @@ def test_a_booking_outside_the_hours_is_booked_at_once(own_barber, signed_in, ui
     )
 
     assert signed_in.last_answer["title"] == "התור נקבע"
-    assert signed_in.last_answer["note"] is None
-    expect(signed_in.by("booking-done-note")).to_be_hidden()
+    expect(signed_in.by("booking-done")).not_to_have_attribute("data-waiting", "")
+    expect(signed_in.by("booking-done").locator(".tick")).to_have_text("✓")
     signed_in.go_to_my_bookings()
     expect(signed_in.row_at(hhmm)).to_have_attribute("data-approval", "")
 
