@@ -1808,3 +1808,52 @@ mutants:
   changes:
   - find: "(me.role !== \"customer\" || canCancel)"
     replace: "canCancel"
+- name: a tap on a star sends five whatever the star
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "const r = await api(\"POST\", `/bookings/${booking.id}/review`, { stars });"
+    replace: "const r = await api(\"POST\", `/bookings/${booking.id}/review`, { stars: 5 });"
+- name: a booking that is not over is asked about
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "all.filter((b) => b.reviewable && "
+    replace: "all.filter((b) => true && "
+- name: not now is forgotten as soon as the page opens again
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "      localStorage.setItem(DISMISSED_KEY, JSON.stringify([...dismissedReviews(), b.id]));\n"
+    replace: ""
+- name: the words are sent empty
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "const r = await api(\"PATCH\", `/bookings/${booking.id}/review`, { text });"
+    replace: "const r = await api(\"PATCH\", `/bookings/${booking.id}/review`, { text: \"\" });"
+- name: the thank-you card never goes away
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    if (r.ok) thanksFor = null;\n    say(r.ok ? \"תודה! הביקורת נשמרה.\""
+    replace: "    if (r.ok) thanksFor = booking.id;\n    say(r.ok ? \"תודה! הביקורת נשמרה.\""
+- name: the barber and the owner see no stars in the row
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "`${\"★\".repeat(b.review.stars)}${b.review.text"
+    replace: "`${\"\"}${b.review.text"
+- name: the stars have no names
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "\"aria-label\": n === 1 ? \"כוכב אחד\" : `${n} כוכבים`"
+    replace: "\"aria-label\": \"\""

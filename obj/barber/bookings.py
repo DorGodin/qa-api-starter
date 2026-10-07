@@ -74,6 +74,15 @@ class Bookings(Base):
     def decline(self, booking_id: str, persona: str) -> Response:
         return self.client.request("POST", f"{self.path}/{booking_id}/decline", persona=persona)
 
+    def review(self, booking_id: str, persona: str, stars: int = 5, text: str | None = None) -> Response:
+        body = {"stars": stars, **({"text": text} if text is not None else {})}
+        return self.client.request("POST", f"{self.path}/{booking_id}/review", persona=persona, json=body)
+
+    def review_words(self, booking_id: str, text: str, persona: str) -> Response:
+        return self.client.request(
+            "PATCH", f"{self.path}/{booking_id}/review", persona=persona, json={"text": text}
+        )
+
     def cancel(self, booking_id: str, persona: str) -> Response:
         return self.client.request("POST", f"{self.path}/{booking_id}/cancel", persona=persona)
 
