@@ -1857,3 +1857,59 @@ mutants:
   changes:
   - find: "\"aria-label\": n === 1 ? \"כוכב אחד\" : `${n} כוכבים`"
     replace: "\"aria-label\": \"\""
+- name: a third cancellation does not flag the customer
+  file: app/booking_rules.py
+  catches:
+  - api
+  changes:
+  - find: "cancels >= config.flag_cancels"
+    replace: "cancels > config.flag_cancels"
+- name: a third move does not flag the customer
+  file: app/booking_rules.py
+  catches:
+  - api
+  changes:
+  - find: "moves >= config.flag_moves"
+    replace: "moves > config.flag_moves"
+- name: the shop's cancellations count against the customer
+  file: app/booking_rules.py
+  catches:
+  - api
+  changes:
+  - find: "            Booking.cancelled_by == customer_id,\n"
+    replace: ""
+- name: a flagged customer is never flagged
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "        if is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n        elif"
+    replace: "        if False:\n            booking.approval = \"pending\"\n        elif"
+- name: a flagged customer is approved by silence after two hours
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "        if is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n        elif"
+    replace: "        if is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n            booking.decide_by = decide_by(config, now, wanted.start)\n        elif"
+- name: a customer's moves are not counted
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "            session.add(BookingMove(booking_id=booking.id, customer_id=user.id, moved_at=now))\n"
+    replace: "            pass\n"
+- name: the owner's moves count against the customer
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "        if user.role == \"customer\":\n            session.add(BookingMove(booking_id=booking.id, customer_id=user.id, moved_at=now))"
+    replace: "        if True:\n            session.add(BookingMove(booking_id=booking.id, customer_id=booking.customer_id, moved_at=now))"
+- name: a flagged customer's move does not wait again
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "        if flagged:\n            booking.approval, booking.decide_by, booking.decided_by = \"pending\", None, None"
+    replace: "        if False:\n            booking.approval, booking.decide_by, booking.decided_by = \"pending\", None, None"
