@@ -147,3 +147,36 @@ def test_a_push_service_that_is_down_never_breaks_the_answer(
     answered = bookings.approve(made["id"], persona=own_barber["persona"]).assert_ok(200).as_dict
 
     assert answered["approval"] == "approved"
+
+
+def test_a_stranger_with_an_address_nobody_subscribed_is_given_no_words(push, ready):
+    answer = push.notice("https://fcm.googleapis.com/fcm/send/nobody-" + "x" * 8).assert_ok(200).as_dict
+
+    assert answer == {"title": None, "body": None}
+
+
+def test_a_browser_with_nothing_waiting_is_given_no_words_and_shows_its_fixed_ones(
+    push, push_inbox, ready, new_customer
+):
+    endpoint = push_inbox.new_endpoint()
+    push.subscribe(endpoint, new_customer()).assert_ok(201)
+
+    assert push.notice(endpoint).assert_ok(200).as_dict == {"title": None, "body": None}
+
+
+def test_a_booking_made_a_day_ahead_is_not_reminded_of_at_once(
+    push, push_inbox, ready, bookings, own_barber, haircut, new_customer, shop_tz
+):
+    me, endpoint = new_customer(), push_inbox.new_endpoint()
+    push.subscribe(endpoint, me).assert_ok(201)
+
+    waiting(bookings, own_barber, haircut, me, shop_tz, "10:00", days=1)
+
+    assert push_inbox.stays_quiet(endpoint) == []
+    assert push.notice(endpoint).assert_ok(200).as_dict["title"] is None
+
+
+def test_the_service_worker_asks_for_the_words_with_its_own_address(api):
+    worker = api.request("GET", "/sw.js", persona=None)
+
+    assert "/push/notice" in worker.text and "getSubscription" in worker.text

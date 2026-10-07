@@ -20,6 +20,10 @@ class Push(Base):
             "POST", f"{self.path}/subscribe", persona=persona, json={"endpoint": endpoint}
         )
 
+    def notice(self, endpoint: str) -> Response:
+        """What the service worker asks when a push wakes it: no sign-in, its own address as the proof."""
+        return self.client.request("POST", f"{self.path}/notice", persona=None, json={"endpoint": endpoint})
+
     def unsubscribe(self, endpoint: str, persona: str) -> Response:
         return self.client.request(
             "POST", f"{self.path}/unsubscribe", persona=persona, json={"endpoint": endpoint}
