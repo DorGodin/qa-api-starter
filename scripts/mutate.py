@@ -204,12 +204,18 @@ class ProductServer:
 
     def start(self) -> bool:
         self.workdir = Path(tempfile.mkdtemp(prefix="mutant-db-"))
+        keys = subprocess.run(
+            [str(self.python), "-m", "app.push_keys"], cwd=self.product, capture_output=True, text=True, check=True
+        ).stdout.split()
         env = {
             **os.environ,
             **env_example(self.product),
             "DATABASE_URL": f"sqlite:///{self.workdir / 'm.db'}",
             # Its codes go to the fake SMS provider the suites read them from.
             "SMS_URL": "http://127.0.0.1:8109/messages",
+            # A key pair of its own, and the fake push service the suites read what was sent from.
+            **dict(line.split("=", 1) for line in keys),
+            "PUSH_EXTRA_HOSTS": "127.0.0.1",
         }
         self.proc = subprocess.Popen(
             [

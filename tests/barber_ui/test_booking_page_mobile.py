@@ -512,3 +512,22 @@ def test_the_review_card_fits_a_phone_and_its_stars_are_a_finger_wide(
     phone_shop.settled()
     expect(phone_shop.by("review-text")).to_be_visible()
     assert sideways_overflow(phone_shop.page) == []
+
+
+def test_the_notification_card_fits_a_phone_in_both_states(phone_shop, account, push, new_customer):
+    from tests.barber_ui.test_push_card import STUB
+
+    if push.key(new_customer()).status_code == 404:
+        pytest.skip("this copy of the shop has no VAPID key pair set")
+    phone_shop.page.add_init_script(STUB)
+    phone_shop.sign_in_as(account)
+    phone_shop.show_tab("mine")
+
+    expect(phone_shop.by("push-card")).to_have_attribute("data-state", "ask")
+    assert sideways_overflow(phone_shop.page) == []
+    assert too_small_to_tap(phone_shop.page) == []
+    phone_shop.by("push-on").tap()
+    phone_shop.settled()
+    expect(phone_shop.by("push-card")).to_have_attribute("data-state", "on")
+    assert sideways_overflow(phone_shop.page) == []
+    assert too_small_to_tap(phone_shop.page) == []

@@ -10,6 +10,7 @@ from obj.barber.barbers import Barbers
 from obj.barber.bookings import Bookings
 from obj.barber.courses import Courses
 from obj.barber.customers import Customers
+from obj.barber.push import Push, PushInbox
 from obj.barber.services import Services
 
 BOOKING_WINDOW_DAYS = 30
@@ -27,5 +28,7 @@ __all__ = [
     "Bookings",
     "Courses",
     "Customers",
+    "Push",
+    "PushInbox",
     "Services",
 ]
