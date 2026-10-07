@@ -55,6 +55,7 @@
     "passwords": { "owner": "dev-owner-password", "barber": "dev-barber-password", "customer": "dev-customer-password" },
     "auth": { "type": "password_token", "path": "/auth/token" },
     "sms_inbox": "http://127.0.0.1:8109",
+    "push_inbox": "http://127.0.0.1:8110",
     "health_path": "/health",
     "test_hooks": false,
     "shop_tz": "Asia/Jerusalem"
@@ -67,6 +68,7 @@
     "passwords": { "owner": "dev-owner-password", "barber": "dev-barber-password", "customer": "dev-customer-password" },
     "auth": { "type": "password_token", "path": "/auth/token" },
     "sms_inbox": "http://127.0.0.1:8109",
+    "push_inbox": "http://127.0.0.1:8110",
     "health_path": "/health",
     "test_hooks": false,
     "shop_tz": "Asia/Jerusalem"

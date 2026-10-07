@@ -30,6 +30,8 @@ runs:
         .venv/bin/pip install -q -r requirements.lock.txt
         cp .env.example .env
         set -a; . ./.env; set +a
+        # A key pair for this run, and the fake push service the suites read what was sent from.
+        export $(.venv/bin/python -m app.push_keys | xargs) PUSH_EXTRA_HOSTS=127.0.0.1
         DATABASE_URL=sqlite:///./barber-test.db SMS_URL=http://127.0.0.1:8109/messages .venv/bin/python -m uvicorn app.main:create_app --factory --port 8101 --workers 2 &
         for i in $(seq 1 60); do curl -sf http://127.0.0.1:8101/health && exit 0; sleep 1; done
         echo "the barbershop never became healthy"; exit 1

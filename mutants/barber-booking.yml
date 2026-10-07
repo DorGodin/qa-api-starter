@@ -2004,3 +2004,87 @@ mutants:
   changes:
   - find: "any_time: $(\"new-service-any-time\").checked }"
     replace: "any_time: false }"
+- name: a host that only ends like a push service's is trusted
+  file: app/push.py
+  catches:
+  - api
+  changes:
+  - find: "host.endswith(\".\" + h)"
+    replace: "host.endswith(h)"
+- name: any address is a push service
+  file: app/push.py
+  catches:
+  - api
+  changes:
+  - find: "host in extra_hosts"
+    replace: "True"
+- name: a push is sent in a header that is not signed
+  file: app/push.py
+  catches:
+  - api
+  changes:
+  - find: "f\"vapid t={token}, k={self.public}\""
+    replace: "f\"Bearer {token}\""
+- name: the news goes to everyone who subscribed
+  file: app/push.py
+  catches:
+  - api
+  changes:
+  - find: "PushSubscription.user_id.in_(user_ids)"
+    replace: "PushSubscription.user_id.is_not(None)"
+- name: a subscription the push service says is gone is kept
+  file: app/push.py
+  catches:
+  - api
+  changes:
+  - find: "if self.sender.send(row.endpoint) in (404, 410):"
+    replace: "if self.sender.send(row.endpoint) in (404,):"
+- name: a customer is not told of a yes
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "booking.approval, booking.decided_by = \"approved\", user.id\n            background.add_task(hub.tell, [booking.customer_id])"
+    replace: "booking.approval, booking.decided_by = \"approved\", user.id"
+- name: a customer is not told of a no
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "\"cancelled\", now, user.id\n        background.add_task(hub.tell, [booking.customer_id])"
+    replace: "\"cancelled\", now, user.id"
+- name: a barber is not told of a request
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "        if booking.approval == \"pending\":\n            background.add_task(hub.tell, [booking.barber_id])\n        if idempotency_key is not None:"
+    replace: "        if idempotency_key is not None:"
+- name: a barber is given the customer's worker
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "register(`/sw.js?role=${pushRole()}`)"
+    replace: "register(\"/sw.js?role=customer\")"
+- name: the notification card is asked again after not now
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "if (pushLater() ||"
+    replace: "if (false ||"
+- name: the server is not told of a subscription
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "const r = await api(\"POST\", \"/push/subscribe\", { endpoint: subscription.endpoint });"
+    replace: "const r = { ok: true };"
+- name: turning it off does not tell the server
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "        await api(\"POST\", \"/push/unsubscribe\", { endpoint: subscription.endpoint });\n"
+    replace: ""

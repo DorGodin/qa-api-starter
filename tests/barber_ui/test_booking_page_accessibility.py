@@ -90,6 +90,21 @@ def test_the_review_card_meets_wcag_2_2_aa(shop, account, bookings, barbers, ui_
     assert violations(shop.page) == [], "the review card, thanking"
 
 
+def test_the_notification_card_meets_wcag_2_2_aa(shop, account, push, new_customer):
+    from tests.barber_ui.test_push_card import STUB
+
+    if push.key(new_customer()).status_code == 404:
+        pytest.skip("this copy of the shop has no VAPID key pair set")
+    shop.page.add_init_script(STUB)
+    shop.sign_in_as(account)
+    shop.show_tab("mine")
+    assert violations(shop.page) == [], "the notification card, asking"
+
+    shop.by("push-on").click()
+    shop.settled()
+    assert violations(shop.page) == [], "the notification card, on"
+
+
 def test_a_whole_booking_and_its_cancellation_with_the_keyboard_alone(
     page, env_config, customers, sms_inbox, barbers, ui_haircut, shop_tz, keyboard
 ):

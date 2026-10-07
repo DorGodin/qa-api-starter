@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 import pytest
 import requests
 
-from obj.barber import ApprovalRules, Barbers, Bookings, Courses, Customers, Services
+from obj.barber import ApprovalRules, Barbers, Bookings, Courses, Customers, Push, PushInbox, Services
 from obj.barber.customers import new_device_address
 from obj.barber.sms_inbox import SmsInbox
 
@@ -75,6 +75,44 @@ def sms_inbox(env_config):
         else:
             raise RuntimeError(f"the fake SMS provider did not start on {url}")
         yield SmsInbox(url)
+    finally:
+        proc.terminate()
+        proc.wait(timeout=10)
+
+
+@pytest.fixture(scope="session")
+def push(api, artifact_log):
+    return Push(api, log=artifact_log)
+
+
+@pytest.fixture(scope="session")
+def push_inbox(env_config):
+    """The fake push service the barbershop posts its news to (utils/fake_push.py), started for the run
+    when nothing answers on its port, and stopped after. An environment without one - the Docker image,
+    which cannot reach it - skips what needs it."""
+    url = env_config.get("push_inbox")
+    if not url:
+        pytest.skip(f"ENV={env_config['env']} has no push_inbox")
+    try:
+        requests.get(f"{url}/health", timeout=1).raise_for_status()
+        yield PushInbox(url)
+        return
+    except requests.RequestException:
+        pass
+    proc = subprocess.Popen(
+        [sys.executable, "-m", "utils.fake_push", "--port", str(urlparse(url).port)],
+        cwd=Path(__file__).resolve().parents[2],
+    )
+    try:
+        for _ in range(50):
+            try:
+                if requests.get(f"{url}/health", timeout=1).ok:
+                    break
+            except requests.RequestException:
+                time.sleep(0.1)
+        else:
+            raise RuntimeError(f"the fake push service did not start on {url}")
+        yield PushInbox(url)
     finally:
         proc.terminate()
         proc.wait(timeout=10)
