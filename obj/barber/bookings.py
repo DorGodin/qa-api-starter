@@ -74,6 +74,34 @@ class Bookings(Base):
     def decline(self, booking_id: str, persona: str) -> Response:
         return self.client.request("POST", f"{self.path}/{booking_id}/decline", persona=persona)
 
+    def book_group(self, barber_id: str, start: datetime | str, people: list[dict], persona: str) -> Response:
+        """The customer's own booking and someone else's, back to back with one barber."""
+        payload = {
+            "barber_id": barber_id,
+            "start": start if isinstance(start, str) else to_iso(start),
+            "people": people,
+        }
+        return self.client.request("POST", f"{self.path}/group", persona=persona, json=payload)
+
+    def create_group(
+        self, barber_id: str, start: datetime | str, people: list[dict], persona: str
+    ) -> list[dict]:
+        return self.book_group(barber_id, start, people, persona=persona).assert_ok(201).as_dict["bookings"]
+
+    def book_group(self, barber_id: str, start: datetime | str, people: list[dict], persona: str) -> Response:
+        """The customer's own booking and someone else's, back to back with one barber."""
+        payload = {
+            "barber_id": barber_id,
+            "start": start if isinstance(start, str) else to_iso(start),
+            "people": people,
+        }
+        return self.client.request("POST", f"{self.path}/group", persona=persona, json=payload)
+
+    def create_group(
+        self, barber_id: str, start: datetime | str, people: list[dict], persona: str
+    ) -> list[dict]:
+        return self.book_group(barber_id, start, people, persona=persona).assert_ok(201).as_dict["bookings"]
+
     def review(self, booking_id: str, persona: str, stars: int = 5, text: str | None = None) -> Response:
         body = {"stars": stars, **({"text": text} if text is not None else {})}
         return self.client.request("POST", f"{self.path}/{booking_id}/review", persona=persona, json=body)
