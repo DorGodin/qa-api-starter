@@ -432,9 +432,12 @@ class OwnerScreen(BookingPage):
         self.settled()
         return self
 
-    def add_service(self, name: str, minutes: int, price: str, needs_barber: bool = False) -> OwnerScreen:
+    def add_service(
+        self, name: str, minutes: int, price: str, needs_barber: bool = False, any_time: bool = False
+    ) -> OwnerScreen:
         self.by("new-service-name").fill(name)
         self.by("new-service-approval").set_checked(needs_barber)
+        self.by("new-service-any-time").set_checked(any_time)
         self.by("new-service-duration").select_option(value=str(minutes))
         self.by("new-service-price").fill(price)
         self.by("add-service").click()
@@ -450,8 +453,11 @@ class OwnerScreen(BookingPage):
         price: str | None = None,
         offered: bool | None = None,
         needs_barber: bool | None = None,
+        any_time: bool | None = None,
     ) -> OwnerScreen:
         row = self.service_row(service_id)
+        if any_time is not None:
+            row.get_by_test_id("service-any-time").set_checked(any_time)
         if needs_barber is not None:
             row.get_by_test_id("service-approval").set_checked(needs_barber)
         if price is not None:

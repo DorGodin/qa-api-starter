@@ -1946,12 +1946,61 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "requires_approval: approvalInput.checked }"
+  - find: "requires_approval: approvalInput.checked,"
     replace: "requires_approval: false }"
 - name: a new service is added without the owner's tick
   file: app/static/index.html
   catches:
   - ui
   changes:
-  - find: "requires_approval: $(\"new-service-approval\").checked }"
+  - find: "requires_approval: $(\"new-service-approval\").checked,"
     replace: "requires_approval: false }"
+- name: a service that works at any time still keeps the barber's hours
+  file: app/booking_rules.py
+  catches:
+  - api
+  changes:
+  - find: "    if any_time:\n"
+    replace: "    if False:\n"
+- name: a service that works at any time is refused on a day off
+  file: app/booking_rules.py
+  catches:
+  - api
+  changes:
+  - find: "    if not service.any_time and is_off(session, barber_id, local_day):"
+    replace: "    if is_off(session, barber_id, local_day):"
+- name: a service that works at any time is refused outside the barber's hours
+  file: app/booking_rules.py
+  catches:
+  - api
+  changes:
+  - find: "local_day, any_time=service.any_time)"
+    replace: "local_day)"
+- name: the calendar does not open the whole day for it
+  file: app/routers/barbers.py
+  catches:
+  - api
+  changes:
+  - find: "barber_id, day, any_time=service.any_time)"
+    replace: "barber_id, day)"
+- name: the service list hides which services work at any time
+  file: app/views.py
+  catches:
+  - api
+  changes:
+  - find: "\"any_time\": service.any_time,"
+    replace: "\"any_time\": False,"
+- name: the owner's tick for any time is not saved
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "any_time: anytimeInput.checked }"
+    replace: "any_time: false }"
+- name: a new service is added without the any-time tick
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "any_time: $(\"new-service-any-time\").checked }"
+    replace: "any_time: false }"

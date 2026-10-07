@@ -15,6 +15,7 @@ class Services(Base):
         price_minor: int = 8000,
         currency: str = "ILS",
         requires_approval: bool = False,
+        any_time: bool = False,
     ) -> dict:
         return {
             "name": name or f"QA service {secrets.token_hex(4)}",
@@ -22,6 +23,7 @@ class Services(Base):
             "price_minor": price_minor,
             "currency": currency,
             "requires_approval": requires_approval,
+            "any_time": any_time,
         }
 
     def create_fake_service(self, persona: str = "owner", **kwargs) -> dict:
