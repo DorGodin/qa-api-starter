@@ -76,6 +76,20 @@ def test_the_courses_tab_meets_wcag_2_2_aa(courses, signed_in):
     assert violations(signed_in.page) == [], "the courses tab, a course with a picture"
 
 
+def test_the_review_card_meets_wcag_2_2_aa(shop, account, bookings, barbers, ui_haircut, shop_tz):
+    from tests.barber_ui.test_review_card import Told, over
+
+    booking = over(bookings, barbers.create_fake_barber(), ui_haircut, account, shop_tz)
+    Told(shop.page, booking["id"])
+    shop.sign_in_as(account)
+    shop.show_tab("mine")
+    assert violations(shop.page) == [], "the review card, asking"
+
+    shop.by("star-4").click()
+    shop.settled()
+    assert violations(shop.page) == [], "the review card, thanking"
+
+
 def test_a_whole_booking_and_its_cancellation_with_the_keyboard_alone(
     page, env_config, customers, sms_inbox, barbers, ui_haircut, shop_tz, keyboard
 ):

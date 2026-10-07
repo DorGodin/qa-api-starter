@@ -490,3 +490,23 @@ def test_a_booking_too_close_to_cancel_fits_a_phone_and_its_link_is_a_finger_tal
     expect(phone_shop.by("late-note").first).to_be_visible()
     assert sideways_overflow(phone_shop.page) == []
     assert too_small_to_tap(phone_shop.page) == []
+
+
+def test_the_review_card_fits_a_phone_and_its_stars_are_a_finger_wide(
+    phone_shop, account, bookings, barbers, ui_haircut, shop_tz
+):
+    from tests.barber_ui.test_review_card import Told, over
+
+    booking = over(bookings, barbers.create_fake_barber(), ui_haircut, account, shop_tz)
+    Told(phone_shop.page, booking["id"])
+    phone_shop.sign_in_as(account)
+
+    phone_shop.show_tab("mine")
+
+    expect(phone_shop.by("review-card")).to_be_visible()
+    assert sideways_overflow(phone_shop.page) == []
+    assert too_small_to_tap(phone_shop.page) == []
+    phone_shop.by("star-2").tap()
+    phone_shop.settled()
+    expect(phone_shop.by("review-text")).to_be_visible()
+    assert sideways_overflow(phone_shop.page) == []
