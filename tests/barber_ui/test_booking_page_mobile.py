@@ -478,11 +478,13 @@ def test_the_courses_tab_fits_a_phone(phone_shop, account, courses):
 
 
 def test_a_booking_too_close_to_cancel_fits_a_phone_and_its_link_is_a_finger_tall(
-    phone_shop, account, bookings, barbers, ui_haircut
+    phone_shop, account, bookings, barbers, services
 ):
     from tests.barber_ui.test_late_cancellation import booked
 
-    booked(bookings, barbers.create_fake_barber(), ui_haircut, account, 3)
+    booked(
+        bookings, barbers.create_fake_barber(), services.create_fake_service(duration_minutes=15), account, 3
+    )
     phone_shop.sign_in_as(account)
 
     phone_shop.show_tab("mine")
