@@ -14,12 +14,14 @@ class Services(Base):
         duration_minutes: int = 30,
         price_minor: int = 8000,
         currency: str = "ILS",
+        requires_approval: bool = False,
     ) -> dict:
         return {
             "name": name or f"QA service {secrets.token_hex(4)}",
             "duration_minutes": duration_minutes,
             "price_minor": price_minor,
             "currency": currency,
+            "requires_approval": requires_approval,
         }
 
     def create_fake_service(self, persona: str = "owner", **kwargs) -> dict:
