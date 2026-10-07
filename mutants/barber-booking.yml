@@ -84,8 +84,8 @@ mutants:
   catches:
   - api
   changes:
-  - find: '        _refuse_clashes(session, wanted, body.barber_id, user.id)'
-    replace: '        _refuse_clashes(session, wanted, body.barber_id, None)'
+  - find: "\n        _refuse_clashes(session, wanted, body.barber_id, user.id)\n"
+    replace: "\n        _refuse_clashes(session, wanted, body.barber_id, None)\n"
 - name: a price change reaches back into bookings
   file: app/views.py
   catches:
@@ -524,7 +524,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '  for (const id of ["bookings", "slots", "hours", "approval-hours", "days-off", "services", "barber", "service", "courses", "courses-admin"]) $(id).replaceChildren();
+  - find: '  for (const id of ["bookings", "slots", "hours", "approval-hours", "days-off", "services", "barber", "service", "courses", "courses-admin", "service-2"]) $(id).replaceChildren();
 
       '
     replace: ''
@@ -779,22 +779,22 @@ mutants:
   catches:
   - api
   changes:
-  - find: '        if ahead >= config.max_future_bookings:'
-    replace: '        if False:'
+  - find: "        # is taken.\n        if _held_ahead(session, user.id, now) >= config.max_future_bookings:"
+    replace: "        # is taken.\n        if False:"
 - name: one more booking ahead than the limit is allowed
   file: app/routers/bookings.py
   catches:
   - api
   changes:
-  - find: '        if ahead >= config.max_future_bookings:'
-    replace: '        if ahead > config.max_future_bookings:'
+  - find: "        # is taken.\n        if _held_ahead(session, user.id, now) >= config.max_future_bookings:"
+    replace: "        # is taken.\n        if _held_ahead(session, user.id, now) > config.max_future_bookings:"
 - name: a cancelled booking still counts against the limit
   file: app/routers/bookings.py
   catches:
   - api
   changes:
-  - find: .where(Booking.customer_id == user.id, Booking.status == "confirmed", Booking.start_utc > now)
-    replace: .where(Booking.customer_id == user.id, Booking.start_utc > now)
+  - find: .where(Booking.customer_id == customer_id, Booking.status == "confirmed", Booking.start_utc > now)
+    replace: .where(Booking.customer_id == customer_id, Booking.start_utc > now)
 - name: one address may make any number of accounts
   file: app/routers/auth.py
   catches:
@@ -1981,7 +1981,7 @@ mutants:
   catches:
   - api
   changes:
-  - find: "barber_id, day, any_time=service.any_time)"
+  - find: "barber_id, day, any_time=all(s.any_time for s in together))"
     replace: "barber_id, day)"
 - name: the service list hides which services work at any time
   file: app/views.py
@@ -2088,3 +2088,108 @@ mutants:
   changes:
   - find: "        await api(\"POST\", \"/push/unsubscribe\", { endpoint: subscription.endpoint });\n"
     replace: ""
+- name: a group takes a place for each person toward the limit
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "select(func.count(func.distinct(func.coalesce(Booking.group_id, Booking.id))))"
+    replace: "select(func.count())"
+- name: a group may be as big as the schema lets it
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "    if len(body.people) > config.group_max:"
+    replace: "    if False:"
+- name: the second person's time is not checked against the barber's bookings
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "            _refuse_clashes(session, wanted, body.barber_id, user.id)\n            booking = Booking(\n                customer_id=user.id,\n                barber_id=body.barber_id,\n                service_id=service.id,\n                start_utc=wanted.start,\n                end_utc=wanted.end,\n                price_minor=service.price_minor,\n                currency=service.currency,\n                for_name="
+    replace: "            booking = Booking(\n                customer_id=user.id,\n                barber_id=body.barber_id,\n                service_id=service.id,\n                start_utc=wanted.start,\n                end_utc=wanted.end,\n                price_minor=service.price_minor,\n                currency=service.currency,\n                for_name="
+- name: a group books everyone at the same start
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "wanted = check_bookable(session, config, body.barber_id, service, cursor, now)"
+    replace: "wanted = check_bookable(session, config, body.barber_id, service, start, now)"
+- name: a group's bookings do not say they were made together
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "                group_id=group_id,\n"
+    replace: ""
+- name: a booking made for someone else does not say who
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "for_name=person.name or None,"
+    replace: "for_name=None,"
+- name: the times for two are those where one fits
+  file: app/routers/barbers.py
+  catches:
+  - api
+  changes:
+  - find: "duration = timedelta(minutes=sum(s.duration_minutes for s in together))"
+    replace: "duration = timedelta(minutes=service.duration_minutes)"
+- name: a group's bookings ignore the barber's-yes hours
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "            elif needs_approval(session, config, wanted.start):"
+    replace: "            elif False:"
+- name: the times on the page ignore the second person
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "service_id: $(\"service\").value });\n  if (companion) params.append(\"also\", $(\"service-2\").value);"
+    replace: "service_id: $(\"service\").value });"
+- name: booking for two books only the first person
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  const r = companion\n    ? await api("
+    replace: "  const r = false\n    ? await api("
+- name: the second person's name is not sent
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "name: $(\"person-name\").value.trim() || null"
+    replace: "name: null"
+- name: two bookings are announced as one
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "showDone(waiting ? \"הבקשה נשלחה\" : \"שני התורים נקבעו\", first, other);"
+    replace: "showDone(waiting ? \"הבקשה נשלחה\" : \"התור נקבע\", first, other);"
+- name: the list does not say who a booking is for
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "const forWho = b.for_name ? "
+    replace: "const forWho = false ? "
+- name: removing the second person leaves the times for two
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "$(\"remove-person\").addEventListener(\"click\", () => busyWhile(async () => {\n  setCompanion(false);"
+    replace: "$(\"remove-person\").addEventListener(\"click\", () => busyWhile(async () => {"
+- name: booking for two is offered while moving a booking
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    setCompanion(false);\n    $(\"companion-field\").hidden = true;\n    $(\"moving\").hidden = false;"
+    replace: "    $(\"moving\").hidden = false;"

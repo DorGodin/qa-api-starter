@@ -53,10 +53,19 @@ class Barbers(Base):
         )
 
     def availability(
-        self, barber_id: str, day: date, service_id: str, persona: str = "customer", moving: str | None = None
+        self,
+        barber_id: str,
+        day: date,
+        service_id: str,
+        persona: str = "customer",
+        moving: str | None = None,
+        also: list[str] | None = None,
     ) -> Response:
-        """`moving`: the booking being moved, whose own time then counts as free."""
+        """`moving`: the booking being moved, whose own time then counts as free. `also`: the services of
+        people booked back to back with the first - the times are then where all of them fit."""
         params = {"date": day.isoformat(), "service_id": service_id}
+        if also:
+            params["also"] = also
         if moving is not None:
             params["moving"] = moving
         return self.client.request(
@@ -70,10 +79,13 @@ class Barbers(Base):
         service_id: str,
         persona: str = "customer",
         moving: str | None = None,
+        also: list[str] | None = None,
     ) -> Response:
         """The month's calendar: each bookable day of `month` (YYYY-MM), whether the
-        barber works it and how many times are free."""
+        barber works it and how many times are free - for two, where both fit."""
         params = {"month": month, "service_id": service_id}
+        if also:
+            params["also"] = also
         if moving is not None:
             params["moving"] = moving
         return self.client.request("GET", f"{self.path}/{barber_id}/days", persona=persona, params=params)
