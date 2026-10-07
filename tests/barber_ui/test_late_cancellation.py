@@ -30,6 +30,11 @@ def shop_with_whatsapp(page):
 
 
 @pytest.fixture
+def quarter_service(services):
+    return services.create_fake_service(duration_minutes=15)
+
+
+@pytest.fixture
 def own_barber(barbers):
     return barbers.create_fake_barber()
 
@@ -42,9 +47,9 @@ def booked(bookings, barber, haircut, account, hours):
 
 
 def test_a_booking_closer_than_the_cutoff_offers_neither_button_and_says_why(
-    own_barber, shop, bookings, account, ui_haircut
+    own_barber, shop, bookings, account, quarter_service
 ):
-    hhmm = booked(bookings, own_barber, ui_haircut, account, CANCEL_CUTOFF_HOURS - 6)
+    hhmm = booked(bookings, own_barber, quarter_service, account, CANCEL_CUTOFF_HOURS - 6)
     signed_in = shop.sign_in_as(account)
 
     row = signed_in.row_at(hhmm)
@@ -56,9 +61,9 @@ def test_a_booking_closer_than_the_cutoff_offers_neither_button_and_says_why(
 
 
 def test_a_booking_far_enough_ahead_has_both_buttons_and_no_note(
-    own_barber, shop, bookings, account, ui_haircut, shop_tz
+    own_barber, shop, bookings, account, quarter_service, shop_tz
 ):
-    hhmm = booked(bookings, own_barber, ui_haircut, account, CANCEL_CUTOFF_HOURS + 48)
+    hhmm = booked(bookings, own_barber, quarter_service, account, CANCEL_CUTOFF_HOURS + 48)
     signed_in = shop.sign_in_as(account)
 
     row = signed_in.row_at(hhmm)
@@ -69,9 +74,9 @@ def test_a_booking_far_enough_ahead_has_both_buttons_and_no_note(
 
 
 def test_the_note_links_to_the_shops_whatsapp_naming_the_booking(
-    own_barber, shop, bookings, account, ui_haircut
+    own_barber, shop, bookings, account, quarter_service
 ):
-    hhmm = booked(bookings, own_barber, ui_haircut, account, 3)
+    hhmm = booked(bookings, own_barber, quarter_service, account, 3)
     shop_with_whatsapp(shop.page)
     signed_in = shop.sign_in_as(account)
 
@@ -85,9 +90,9 @@ def test_the_note_links_to_the_shops_whatsapp_naming_the_booking(
 
 
 def test_without_a_whatsapp_number_the_note_still_says_why_and_has_no_link(
-    own_barber, shop, bookings, account, ui_haircut
+    own_barber, shop, bookings, account, quarter_service
 ):
-    hhmm = booked(bookings, own_barber, ui_haircut, account, 3)
+    hhmm = booked(bookings, own_barber, quarter_service, account, 3)
     shop.page.route(
         "**/shop",
         lambda route: route.fulfill(
@@ -104,9 +109,9 @@ def test_without_a_whatsapp_number_the_note_still_says_why_and_has_no_link(
 
 
 def test_the_owner_may_still_cancel_a_booking_that_is_close(
-    own_barber, owner_screen, bookings, account, ui_haircut
+    own_barber, owner_screen, bookings, account, quarter_service
 ):
-    hhmm = booked(bookings, own_barber, ui_haircut, account, 3)
+    hhmm = booked(bookings, own_barber, quarter_service, account, 3)
     owner = owner_screen().select_barber(own_barber["id"])
 
     row = owner.row_at(hhmm)
