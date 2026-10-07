@@ -339,8 +339,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '{ price_minor: price, active: activeInput.checked }'
-    replace: '{ price_minor: price }'
+  - find: '{ price_minor: price, active: activeInput.checked, requires_approval'
+    replace: '{ price_minor: price, requires_approval'
 - name: customers get the management screen
   file: app/static/index.html
   catches:
@@ -1883,15 +1883,15 @@ mutants:
   catches:
   - api
   changes:
-  - find: "        if is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n        elif"
-    replace: "        if False:\n            booking.approval = \"pending\"\n        elif"
+  - find: "        if service.requires_approval or is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n        elif"
+    replace: "        if service.requires_approval or False:\n            booking.approval = \"pending\"\n        elif"
 - name: a flagged customer is approved by silence after two hours
   file: app/routers/bookings.py
   catches:
   - api
   changes:
-  - find: "        if is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n        elif"
-    replace: "        if is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n            booking.decide_by = decide_by(config, now, wanted.start)\n        elif"
+  - find: "        if service.requires_approval or is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n        elif"
+    replace: "        if service.requires_approval or is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n            booking.decide_by = decide_by(config, now, wanted.start)\n        elif"
 - name: a customer's moves are not counted
   file: app/routers/bookings.py
   catches:
@@ -1913,3 +1913,45 @@ mutants:
   changes:
   - find: "        if flagged:\n            booking.approval, booking.decide_by, booking.decided_by = \"pending\", None, None"
     replace: "        if False:\n            booking.approval, booking.decide_by, booking.decided_by = \"pending\", None, None"
+- name: a service that needs the barber is booked at once
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "        if service.requires_approval or is_flagged(session, config, user.id, now):"
+    replace: "        if is_flagged(session, config, user.id, now):"
+- name: a service that needs the barber is approved by silence after two hours
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "        if service.requires_approval or is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n        elif"
+    replace: "        if service.requires_approval or is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n            booking.decide_by = decide_by(config, now, wanted.start)\n        elif"
+- name: moving a booking of a service that needs the barber does not wait again
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "            service.requires_approval or is_flagged(session, config, user.id, now)\n        )"
+    replace: "            is_flagged(session, config, user.id, now)\n        )"
+- name: the service list hides which services need the barber
+  file: app/views.py
+  catches:
+  - api
+  changes:
+  - find: "\"requires_approval\": service.requires_approval,"
+    replace: "\"requires_approval\": False,"
+- name: the owner's tick for a service is not saved
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "requires_approval: approvalInput.checked }"
+    replace: "requires_approval: false }"
+- name: a new service is added without the owner's tick
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "requires_approval: $(\"new-service-approval\").checked }"
+    replace: "requires_approval: false }"
