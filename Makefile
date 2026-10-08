@@ -70,6 +70,9 @@ PRODUCT ?= ../barber-booking-api
 mutate:         ## break the barbershop rule by rule and check a suite catches each (about 25 min - end of day, not before a push); ONLY=name filter
 	$(PY) scripts/mutate.py --product $(PRODUCT) $(if $(ONLY),--only "$(ONLY)",)
 
+tidy-test-copy: ## reset the barbershop's test copy (port 8101 only) when it holds 200 services or 20 courses - run it before any suite
+	ENV=barber $(PY) scripts/tidy_test_copy.py
+
 mutate-check:   ## the mutation catalogue still matches the product - every anchor exactly once, in seconds
 	$(PY) scripts/mutate.py --product $(PRODUCT) --check
 
