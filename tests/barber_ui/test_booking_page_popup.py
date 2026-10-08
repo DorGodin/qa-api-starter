@@ -9,7 +9,9 @@ from playwright.sync_api import expect
 from utils.local_time import at_local, local_day
 
 
-def test_a_booking_is_confirmed_by_a_card_that_says_what_was_booked(signed_in, ui_barber, ui_haircut, shop_tz):
+def test_a_booking_is_confirmed_by_a_card_that_says_what_was_booked(
+    signed_in, ui_barber, ui_haircut, shop_tz
+):
     signed_in.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 8)).pick("16:00").book(
         keep_answer=True
     )
@@ -132,7 +134,9 @@ def test_a_failure_nobody_planned_for_owns_up_to_going_wrong(shop, account, ui_b
     shop.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 12)).pick("14:00")
     shop.page.route(
         "**/bookings",
-        lambda route: route.fulfill(status=500, content_type="application/json", body='{"detail":"x","code":"boom"}')
+        lambda route: route.fulfill(
+            status=500, content_type="application/json", body='{"detail":"x","code":"boom"}'
+        )
         if route.request.method == "POST"
         else route.continue_(),
     )
