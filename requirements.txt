@@ -3,7 +3,7 @@
 pytest==9.1.1
 pytest-dependency==0.6.0
 requests==2.34.2
-Faker==40.39.0
+Faker==40.40.0
 pytest-playwright==0.9.0
 axe-playwright-python==0.1.8
 deepeval==4.2.6
