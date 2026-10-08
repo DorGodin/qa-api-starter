@@ -514,8 +514,12 @@ def test_the_review_card_fits_a_phone_and_its_stars_are_a_finger_wide(
     assert sideways_overflow(phone_shop.page) == []
 
 
-def test_the_notification_card_fits_a_phone_in_both_states(phone_shop, account, push, new_customer):
-    from tests.barber_ui.test_push_card import STUB
+def test_the_notification_card_fits_a_phone_in_both_states(
+    phone_shop, account, push, new_customer, bookings, barbers, ui_haircut, shop_tz
+):
+    from tests.barber_ui.test_push_card import STUB, make_upcoming
+
+    make_upcoming(bookings, barbers, ui_haircut, account, shop_tz)
 
     if push.key(new_customer()).status_code == 404:
         pytest.skip("this copy of the shop has no VAPID key pair set")

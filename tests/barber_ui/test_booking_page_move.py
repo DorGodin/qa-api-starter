@@ -1,7 +1,6 @@
 """A customer moves a booking from the page: the same booking at a new time,
 checked on the screen and through the API behind it."""
 
-
 import pytest
 from playwright.sync_api import expect
 

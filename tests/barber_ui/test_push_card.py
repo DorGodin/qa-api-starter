@@ -8,6 +8,8 @@ import json
 import pytest
 from playwright.sync_api import expect
 
+from utils.local_time import at_local, local_day
+
 STUB = """
 (() => {
   const state = { permission: "default", sub: null, registered: null, ask: "granted", subscribes: 0 };
@@ -35,6 +37,17 @@ STUB = """
 """
 
 
+def make_upcoming(bookings, barbers, haircut, account, shop_tz):
+    barber = barbers.create_fake_barber()
+    start = at_local(shop_tz, local_day(shop_tz, 6), "11:00")
+    return bookings.create_booking(barber["id"], haircut["id"], start, persona=account["persona"])
+
+
+@pytest.fixture
+def upcoming(account, bookings, barbers, ui_haircut, shop_tz):
+    return make_upcoming(bookings, barbers, ui_haircut, account, shop_tz)
+
+
 @pytest.fixture
 def ready(push, new_customer):
     if push.key(new_customer()).status_code == 404:
@@ -52,7 +65,7 @@ def sent_to(page, path):
     return seen
 
 
-def test_a_customer_is_asked_once_and_the_card_says_what_it_is_for(ready, shop, account):
+def test_a_customer_is_asked_once_and_the_card_says_what_it_is_for(ready, upcoming, shop, account):
     shop.page.add_init_script(STUB)
     signed_in = shop.sign_in_as(account)
     signed_in.show_tab("mine")
@@ -64,7 +77,9 @@ def test_a_customer_is_asked_once_and_the_card_says_what_it_is_for(ready, shop, 
     assert "לא מכילה פרטים" in signed_in.text(card.locator("p"))
 
 
-def test_saying_yes_asks_the_browser_registers_the_worker_and_tells_the_server(ready, shop, account):
+def test_saying_yes_asks_the_browser_registers_the_worker_and_tells_the_server(
+    ready, upcoming, shop, account
+):
     shop.page.add_init_script(STUB)
     signed_in = shop.sign_in_as(account)
     signed_in.show_tab("mine")
@@ -79,7 +94,7 @@ def test_saying_yes_asks_the_browser_registers_the_worker_and_tells_the_server(r
     assert "עדכונים פעילים" in signed_in.text(signed_in.by("push-card"))
 
 
-def test_turning_it_off_unsubscribes_and_the_card_asks_again(ready, shop, account):
+def test_turning_it_off_unsubscribes_and_the_card_asks_again(ready, upcoming, shop, account):
     shop.page.add_init_script(STUB)
     signed_in = shop.sign_in_as(account)
     signed_in.show_tab("mine")
@@ -95,7 +110,7 @@ def test_turning_it_off_unsubscribes_and_the_card_asks_again(ready, shop, accoun
     expect(signed_in.by("push-card")).to_have_attribute("data-state", "ask")
 
 
-def test_a_browser_that_is_already_subscribed_shows_that_it_is_on(ready, shop, account):
+def test_a_browser_that_is_already_subscribed_shows_that_it_is_on(ready, upcoming, shop, account):
     shop.page.add_init_script(
         STUB
         + "window.__push.sub = { endpoint: 'https://fcm.googleapis.com/fcm/send/already', unsubscribe: async () => true };"
@@ -106,7 +121,7 @@ def test_a_browser_that_is_already_subscribed_shows_that_it_is_on(ready, shop, a
     expect(signed_in.by("push-card")).to_have_attribute("data-state", "on")
 
 
-def test_not_now_hides_the_card_and_it_stays_hidden_after_opening_again(ready, shop, account):
+def test_not_now_hides_the_card_and_it_stays_hidden_after_opening_again(ready, upcoming, shop, account):
     shop.page.add_init_script(STUB)
     signed_in = shop.sign_in_as(account)
     signed_in.show_tab("mine")
@@ -119,7 +134,7 @@ def test_not_now_hides_the_card_and_it_stays_hidden_after_opening_again(ready, s
     expect(signed_in.by("push-card")).to_have_count(0)
 
 
-def test_a_no_from_the_browser_subscribes_nothing(ready, shop, account):
+def test_a_no_from_the_browser_subscribes_nothing(ready, upcoming, shop, account):
     shop.page.add_init_script(STUB.replace('ask: "granted"', 'ask: "denied"'))
     signed_in = shop.sign_in_as(account)
     signed_in.show_tab("mine")
@@ -160,7 +175,7 @@ def test_a_barber_is_asked_in_the_wording_of_a_barber_and_gets_the_barbers_worke
 
 
 def test_on_an_iphone_that_is_not_installed_the_card_says_how_to_add_the_page_to_the_home_screen(
-    ready, shop, account
+    ready, upcoming, shop, account
 ):
     shop.page.add_init_script(
         "delete window.PushManager; delete window.Notification;"
@@ -184,3 +199,20 @@ def test_the_service_worker_and_the_manifest_are_served_from_the_root(api):
     assert manifest.status_code == 200
     body = manifest.as_dict
     assert (body["start_url"], body["display"], body["lang"], body["dir"]) == ("/", "standalone", "he", "rtl")
+
+
+def test_a_customer_with_nothing_ahead_is_not_asked(ready, shop, account):
+    shop.page.add_init_script(STUB)
+    signed_in = shop.sign_in_as(account)
+    signed_in.show_tab("mine")
+
+    expect(signed_in.by("push-card")).to_have_count(0)
+
+
+def test_a_customer_whose_only_booking_was_cancelled_is_not_asked(ready, upcoming, bookings, shop, account):
+    bookings.cancel(upcoming["id"], persona=account["persona"]).assert_ok(200)
+    shop.page.add_init_script(STUB)
+    signed_in = shop.sign_in_as(account)
+    signed_in.show_tab("mine")
+
+    expect(signed_in.by("push-card")).to_have_count(0)

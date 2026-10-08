@@ -90,8 +90,12 @@ def test_the_review_card_meets_wcag_2_2_aa(shop, account, bookings, barbers, ui_
     assert violations(shop.page) == [], "the review card, thanking"
 
 
-def test_the_notification_card_meets_wcag_2_2_aa(shop, account, push, new_customer):
-    from tests.barber_ui.test_push_card import STUB
+def test_the_notification_card_meets_wcag_2_2_aa(
+    shop, account, push, new_customer, bookings, barbers, ui_haircut, shop_tz
+):
+    from tests.barber_ui.test_push_card import STUB, make_upcoming
+
+    make_upcoming(bookings, barbers, ui_haircut, account, shop_tz)
 
     if push.key(new_customer()).status_code == 404:
         pytest.skip("this copy of the shop has no VAPID key pair set")

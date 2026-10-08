@@ -74,3 +74,21 @@ def test_the_control_is_not_offered_while_moving_a_booking(
 
     expect(signed_in.by("companion-field")).to_be_hidden()
     expect(signed_in.by("companion")).to_be_hidden()
+
+
+def test_the_confirm_button_keeps_one_line_beside_the_words_for_two(
+    barbers, shop, account, ui_haircut, shop_tz
+):
+    barber = barbers.create_fake_barber()
+    signed_in = shop.sign_in_as(account)
+    signed_in.choose(barber["id"], ui_haircut["id"], local_day(shop_tz, 6))
+    signed_in.by("add-person").click()
+    signed_in.settled()
+
+    signed_in.pick("10:00")
+
+    lines = signed_in.by("book").evaluate(
+        "b => { const r = document.createRange(); r.selectNodeContents(b); return r.getClientRects().length; }"
+    )
+    assert lines == 1, f"the button's words are on {lines} lines"
+    assert "סך הכול" not in signed_in.text(signed_in.by("confirm-text"))

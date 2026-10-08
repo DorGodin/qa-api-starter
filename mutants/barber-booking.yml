@@ -1211,7 +1211,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '    .slots button { min-height:36px; height:36px; min-width:0; padding:0; font-size:13px; }'
+  - find: '    .slots button { min-height:36px; height:36px; min-width:0; padding:0; font-size:14px; }'
     replace: ''
 - name: Friday closes at seven like the other days
   file: app/routers/barbers.py
@@ -2072,8 +2072,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "if (pushLater() ||"
-    replace: "if (false ||"
+  - find: "|| pushLater() ||"
+    replace: "|| false ||"
 - name: the server is not told of a subscription
   file: app/static/index.html
   catches:
@@ -2193,3 +2193,10 @@ mutants:
   changes:
   - find: "    setCompanion(false);\n    $(\"companion-field\").hidden = true;\n    $(\"moving\").hidden = false;"
     replace: "    $(\"moving\").hidden = false;"
+- name: the confirm button is squeezed by the words for two
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  .confirm button { border-radius:999px; padding-inline:22px; flex:none; white-space:nowrap; min-height:44px; }"
+    replace: "  .confirm button { border-radius:999px; padding-inline:22px; }"
