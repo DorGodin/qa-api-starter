@@ -765,3 +765,7 @@ day and the check printed its refusal - the commit chain would have run on.
 **Rule:** a check that gates a commit is chained with `&&`, never `;`, and is never piped -
 redirect its output to a file and read that (`make mutate-check > out.txt 2>&1 && git commit`),
 or `set -o pipefail` first. The commit runs only when the check itself exits 0.
+
+## 2026-10-08 - a test copy that has grown fails tests that are not wrong
+
+Phone tests failed on WebKit with `aria-busy` stuck at true: the owner's screen drew 1,600 services and 240 courses with their pictures. Nothing was broken but the data. The fix is a rule, not a retry: `make tidy-test-copy` resets the test copy (port 8101 only) once it holds 200 services or 20 courses. Run it before a local suite.

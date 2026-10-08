@@ -415,6 +415,14 @@ own data, and `make cleanup` removes what the run left. A test that needs a pris
 environment declares `fresh_state`, and on such an environment it is skipped with the
 reason — it has nothing honest to assert on shared data.
 
+## The test copy grows - tidy it before a run
+
+Every run leaves services, courses and barbers the product cannot delete. At about 1,600 services and 240
+courses the owner's screen took over five seconds to draw on WebKit and phone tests failed for a reason that
+was not the product's, while the whole suite ran four times slower. `make tidy-test-copy` (before any local
+run) resets the test copy - its database file only, port 8101 only, never the shop in use - when it holds 200
+services or 20 courses, and starts it again. It refuses any other environment.
+
 ## DateTime
 
 All datetimes are UTC-aware. Never `datetime.now()`. Use `now_utc()`, `to_iso()`,
