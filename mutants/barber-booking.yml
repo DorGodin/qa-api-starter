@@ -524,7 +524,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '  for (const id of ["bookings", "slots", "hours", "approval-hours", "days-off", "services", "barber", "service", "courses", "courses-admin", "service-2"]) $(id).replaceChildren();
+  - find: '  for (const id of ["bookings", "slots", "hours", "approval-hours", "days-off", "services", "barber", "service", "courses", "courses-admin", "service-2", "products", "products-admin"]) $(id).replaceChildren();
 
       '
     replace: ''
@@ -1657,8 +1657,8 @@ mutants:
   catches:
   - api
   changes:
-  - find: "    return None\n\n\ndef _view("
-    replace: "    return \"jpg\"\n\n\ndef _view("
+  - find: "    return None\n\n\ndef picture("
+    replace: "    return \"jpg\"\n\n\ndef picture("
 - name: a picture may be any size
   file: app/routers/courses.py
   catches:
@@ -2247,3 +2247,164 @@ mutants:
   changes:
   - find: "for (const id of [\"service\", \"service-2\"]) $(id).addEventListener(\"change\", showLengths);\n"
     replace: ""
+- name: a withdrawn product is shown to customers
+  file: app/routers/products.py
+  catches:
+  - api
+  changes:
+  - find: "    if user.role != \"owner\":\n        query = query.where(Product.active.is_(True))\n"
+    replace: ""
+- name: a customer may put a product on the shelf
+  file: app/routers/products.py
+  catches:
+  - api
+  changes:
+  - find: "def create_product(body: ProductIn, _: User = Depends(require(\"owner\"))"
+    replace: "def create_product(body: ProductIn, _: User = Depends(require(\"owner\", \"customer\"))"
+- name: a change to a product wipes what was not sent
+  file: app/routers/products.py
+  catches:
+  - api
+  changes:
+  - find: "body.model_dump(exclude_unset=True).items():\n            if value is not None:\n                setattr(product, field, value)"
+    replace: "body.model_dump().items():\n            setattr(product, field, value)"
+- name: a product is kept for a cancelled booking
+  file: app/routers/products.py
+  catches:
+  - api
+  changes:
+  - find: "            booking.status != \"confirmed\"\n            or booking.end_utc <= now"
+    replace: "            booking.end_utc <= now"
+- name: a product that ran out can be kept
+  file: app/routers/products.py
+  catches:
+  - api
+  changes:
+  - find: "if not product.active or not product.in_stock:"
+    replace: "if not product.active:"
+- name: a withdrawn product can be kept
+  file: app/routers/products.py
+  catches:
+  - api
+  changes:
+  - find: "if not product.active or not product.in_stock:"
+    replace: "if not product.in_stock:"
+- name: a barber may keep a product for a booking
+  file: app/routers/products.py
+  catches:
+  - api
+  changes:
+  - find: "    \"\"\"Keep a product for a booking that is still ahead and stands. Asked twice,\n    it is kept once.\"\"\"\n    with write_lock(session):\n        booking = visible_booking_or_404(session, booking_id, user)"
+    replace: "    \"\"\"Keep a product for a booking that is still ahead and stands. Asked twice,\n    it is kept once.\"\"\"\n    with write_lock(session):\n        booking = session.get(Booking, booking_id)"
+- name: releasing a product leaves it kept
+  file: app/routers/products.py
+  catches:
+  - api
+  changes:
+  - find: "        if kept is not None:\n            session.delete(kept)\n            session.flush()\n"
+    replace: "        if kept is not None:\n            session.flush()\n"
+- name: a booking does not say which products are kept for it
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "            .where(BookingProduct.booking_id == booking.id)\n"
+    replace: "            .where(BookingProduct.booking_id == \"\")\n"
+- name: kept products come in any order
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "            .order_by(BookingProduct.id)\n"
+    replace: "            .order_by(BookingProduct.id.desc())\n"
+- name: a product's picture is not served
+  file: app/main.py
+  catches:
+  - api
+  changes:
+  - find: "            course_images |= set(session.scalars(select(Product.image).where(Product.image.is_not(None))))\n"
+    replace: ""
+- name: a product is offered to keep with no booking ahead
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    } else if (booking) {\n      const keep = control(\"button\""
+    replace: "    } else {\n      const keep = control(\"button\""
+- name: a product that ran out is still offered
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    } else if (!p.in_stock) {"
+    replace: "    } else if (false) {"
+- name: a cancelled booking still counts as one ahead for the products shelf
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    .filter((b) => b.status === \"confirmed\" && b.approval !== \"declined\" && Date.parse(b.end) > Date.now())\n    .sort("
+    replace: "    .filter((b) => b.approval !== \"declined\" && Date.parse(b.end) > Date.now())\n    .sort("
+- name: the product is kept for the furthest booking
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: ".sort((a, b) => Date.parse(a.start) - Date.parse(b.start))[0] || null;"
+    replace: ".sort((a, b) => Date.parse(b.start) - Date.parse(a.start))[0] || null;"
+- name: a booking row does not say which products are kept
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    if (b.status === \"confirmed\" && b.products.length) {"
+    replace: "    if (false) {"
+- name: a product's name is written as markup
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "control(\"h3\", { textContent: isolate(p.name), testid: \"product-name\" })"
+    replace: "control(\"h3\", { innerHTML: p.name, testid: \"product-name\" })"
+- name: keeping a product does not refresh the list of bookings
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    await Promise.all([refreshBookings(), refreshProducts()]);"
+    replace: "    await refreshProducts();"
+- name: the products shelf does not say which booking a product waits for
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  $(\"products-for\").hidden = !booking || products.length === 0;"
+    replace: "  $(\"products-for\").hidden = true;"
+- name: a product without a price is put on the shelf for nothing
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  const price = parseShekels(priceText);\n  if (price === null) {\n    say(\"המחיר צריך להיות מספר בשקלים, עם עד שתי ספרות אחרי הנקודה.\", \"error\");\n    return null;\n  }"
+    replace: "  const price = parseShekels(priceText) || 0;"
+- name: the owner's stock switch for a product is not sent
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "active: fields.active.checked, in_stock: fields.stock.checked });"
+    replace: "active: fields.active.checked });"
+- name: the products shelf is one card to a row on a phone
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    .products { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }\n"
+    replace: ""
+- name: the tabs break their words now that products made them four
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: ".tabbar button { flex:1 1 auto; padding:0 2px; white-space:nowrap; }"
+    replace: ".tabbar button { padding:0 18px; }"

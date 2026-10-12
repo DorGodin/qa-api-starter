@@ -10,6 +10,7 @@ from obj.barber.barbers import Barbers
 from obj.barber.bookings import Bookings
 from obj.barber.courses import Courses
 from obj.barber.customers import Customers
+from obj.barber.products import Products
 from obj.barber.push import Push, PushInbox
 from obj.barber.services import Services
 
@@ -29,6 +30,7 @@ __all__ = [
     "Barbers",
     "Bookings",
     "Courses",
+    "Products",
     "Customers",
     "Push",
     "PushInbox",

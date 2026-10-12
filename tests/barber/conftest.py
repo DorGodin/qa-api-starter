@@ -17,7 +17,17 @@ from zoneinfo import ZoneInfo
 import pytest
 import requests
 
-from obj.barber import ApprovalRules, Barbers, Bookings, Courses, Customers, Push, PushInbox, Services
+from obj.barber import (
+    ApprovalRules,
+    Barbers,
+    Bookings,
+    Courses,
+    Customers,
+    Products,
+    Push,
+    PushInbox,
+    Services,
+)
 from obj.barber.customers import new_device_address
 from obj.barber.sms_inbox import SmsInbox
 
@@ -155,6 +165,24 @@ def courses(api, artifact_log):
     yield kept
     for course_id in made:
         kept.withdraw(course_id)
+
+
+@pytest.fixture
+def products(api, artifact_log):
+    """The shelf is shared like the courses: what a test puts on it, it withdraws."""
+    made = []
+    shelf = Products(api, log=artifact_log)
+    create = shelf.create_fake_product
+
+    def tracked(**kwargs):
+        product = create(**kwargs)
+        made.append(product["id"])
+        return product
+
+    shelf.create_fake_product = tracked
+    yield shelf
+    for product_id in made:
+        shelf.withdraw(product_id)
 
 
 @pytest.fixture

@@ -551,7 +551,9 @@ def test_the_owners_times_fit_their_pills_on_every_phone(
     assert sideways_overflow(owner.page) == []
 
 
-def test_what_was_said_on_one_tab_is_gone_on_the_next(phone_shop, account, bookings, barbers, ui_haircut, shop_tz):
+def test_what_was_said_on_one_tab_is_gone_on_the_next(
+    phone_shop, account, bookings, barbers, ui_haircut, shop_tz
+):
     barber = barbers.create_fake_barber()
     start = at_local(shop_tz, local_day(shop_tz, 6), "11:00")
     bookings.create_booking(barber["id"], ui_haircut["id"], start, persona=account["persona"])
@@ -587,3 +589,32 @@ def test_the_chosen_service_shows_its_price_in_full_on_every_phone(phone_shop, a
 
     assert words <= room, f"the words need {words:.0f}px and the field has {room:.0f}px"
     assert re.search(r"140\s*₪$", phone_shop.text(phone_shop.by("service").locator("option:checked")))
+
+
+def test_the_shelf_fits_a_phone_with_its_four_tabs_and_its_buttons(
+    phone_shop, account, products, bookings, barbers, ui_haircut, shop_tz
+):
+    kept, offered = products.create_fake_product(name="שמפו לגבר QA"), products.create_fake_product()
+    out = products.create_fake_product()
+    products.set_image(kept["id"], PNG_1X1).assert_ok(200)
+    products.run_out(out["id"])
+    barber = barbers.create_fake_barber()
+    start = at_local(shop_tz, local_day(shop_tz, 6), "11:00")
+    ahead = bookings.create_booking(barber["id"], ui_haircut["id"], start, persona=account["persona"])
+    products.keep(ahead["id"], kept["id"], persona=account["persona"]).assert_ok(200)
+    phone_shop.sign_in_as(account)
+
+    expect(phone_shop.product_card(offered["id"]).get_by_test_id("product-keep")).to_be_visible()
+    expect(phone_shop.product_card(kept["id"]).get_by_test_id("product-release")).to_be_visible()
+
+    assert sideways_overflow(phone_shop.page) == []
+    assert too_small_to_tap(phone_shop.page) == []
+    assert clipped_labels(phone_shop.page) == []
+    one_line = phone_shop.page.evaluate(
+        """() => [...document.querySelectorAll('[data-testid="tabbar"] button')]
+            .filter((b) => { const r = document.createRange(); r.selectNodeContents(b.lastChild); return r.getClientRects().length > 1; })
+            .map((b) => b.textContent)"""
+    )
+    assert one_line == [], f"a tab's words broke onto two lines: {one_line}"
+    first, second = (phone_shop.by("product").nth(i).bounding_box() for i in range(2))
+    assert first["y"] == second["y"] and first["x"] != second["x"], "two cards to a row"
