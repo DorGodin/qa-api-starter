@@ -206,3 +206,44 @@ def test_the_owner_cancels_a_booking_even_inside_the_cutoff(
 
     expect(screen.message()).to_have_attribute("data-kind", "ok")
     assert bookings.get_by_id(booking["id"], persona="owner").assert_ok(200).as_dict["status"] == "cancelled"
+
+
+def seen_listings(page) -> list[str]:
+    asked = []
+    page.on("request", lambda r: asked.append(r.url) if "/bookings?" in r.url and r.method == "GET" else None)
+    return asked
+
+
+def test_the_diary_asks_only_for_what_is_still_to_come(owner_screen, page):
+    asked = seen_listings(page)
+
+    owner_screen()
+
+    assert asked and all("upcoming=true" in url for url in asked), asked
+
+
+def test_a_customers_list_keeps_the_past(signed_in):
+    asked = seen_listings(signed_in.page)
+
+    signed_in.reload()
+
+    assert asked and not any("upcoming" in url for url in asked), asked
+
+
+def test_when_more_are_ahead_than_the_page_holds_the_diary_says_so(owner_screen, page):
+    def more(route):
+        response = route.fetch()
+        body = response.json()
+        route.fulfill(response=response, json={**body, "total": len(body["content"]) + 37})
+
+    page.route("**/bookings?*", more)
+
+    owner = owner_screen()
+
+    words = owner.text(owner.by("more-bookings"))
+    expect(owner.by("more-bookings")).to_be_visible()
+    assert "הקרובים" in words and words.rstrip(".").endswith(str(owner.rows().count() + 37)), words
+
+
+def test_with_everything_on_the_page_the_diary_adds_nothing(owner_screen):
+    expect(owner_screen().by("more-bookings")).to_be_hidden()

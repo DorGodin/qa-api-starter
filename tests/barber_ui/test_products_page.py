@@ -43,6 +43,7 @@ def test_with_a_booking_ahead_the_tab_says_which_booking_the_product_waits_for(p
     card = signed_in.product_card(product["id"])
 
     expect(card.get_by_test_id("product-keep")).to_have_text("שמור לי לתור")
+    expect(signed_in.by("products-for")).to_be_visible()
     words = signed_in.text(signed_in.by("products-for"))
     assert "11:00" in words and "התשלום במספרה" in words, words
 
