@@ -9,6 +9,7 @@ on a phone is the other half: `make ui-barber-mobile` runs every UI test with
 
 from __future__ import annotations
 
+import re
 import secrets
 
 import pytest
@@ -18,7 +19,7 @@ from obj.barber.booking_page import BookingPage, OwnerScreen, a_device
 from obj.barber.courses import PNG_1X1
 from tests.barber_ui.test_booking_page_late_answers import Held
 from tests.barber_ui.test_shop_header import shop_info
-from utils.local_time import local_day
+from utils.local_time import at_local, local_day
 
 PHONES = ["iPhone SE", "iPhone 13", "Pixel 7"]
 
@@ -548,3 +549,41 @@ def test_the_owners_times_fit_their_pills_on_every_phone(
     expect(owner.by("slot").first).to_be_visible()
     assert clipped_labels(owner.page) == []
     assert sideways_overflow(owner.page) == []
+
+
+def test_what_was_said_on_one_tab_is_gone_on_the_next(phone_shop, account, bookings, barbers, ui_haircut, shop_tz):
+    barber = barbers.create_fake_barber()
+    start = at_local(shop_tz, local_day(shop_tz, 6), "11:00")
+    bookings.create_booking(barber["id"], ui_haircut["id"], start, persona=account["persona"])
+    phone_shop.sign_in_as(account)
+    phone_shop.show_tab("mine")
+    phone_shop.cancel("11:00")
+    assert "בוטל" in phone_shop.text(phone_shop.message())
+
+    phone_shop.show_tab("courses")
+
+    expect(phone_shop.message()).to_have_text("")
+
+
+def test_the_chosen_service_shows_its_price_in_full_on_every_phone(phone_shop, account, services):
+    """A field cuts what does not fit and puts dots in its place: the words are measured in the
+    field's own letters against the room between its paddings. The name is as long as the shop's
+    longest."""
+    service = services.create_fake_service(name=f"גילוח פנים כמו {secrets.token_hex(1)}", price_minor=14000)
+    phone_shop.sign_in_as(account)
+    phone_shop.by("service").select_option(service["id"])
+    phone_shop.settled()
+
+    words, room = phone_shop.page.evaluate(
+        """() => {
+            const field = document.querySelector('[data-testid="service"]');
+            const cs = getComputedStyle(field);
+            const pen = document.createElement("canvas").getContext("2d");
+            pen.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+            return [pen.measureText(field.selectedOptions[0].textContent).width,
+                    field.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)];
+        }"""
+    )
+
+    assert words <= room, f"the words need {words:.0f}px and the field has {room:.0f}px"
+    assert re.search(r"140\s*₪$", phone_shop.text(phone_shop.by("service").locator("option:checked")))
