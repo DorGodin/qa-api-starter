@@ -535,3 +535,16 @@ def test_the_notification_card_fits_a_phone_in_both_states(
     expect(phone_shop.by("push-card")).to_have_attribute("data-state", "on")
     assert sideways_overflow(phone_shop.page) == []
     assert too_small_to_tap(phone_shop.page) == []
+
+
+def test_the_owners_times_fit_their_pills_on_every_phone(
+    phone, env_config, credentials, barbers, ui_haircut, shop_tz
+):
+    barber = barbers.create_fake_barber()
+    owner = OwnerScreen(phone, env_config["url"]).sign_in(*credentials("owner"))
+
+    owner.choose(barber["id"], ui_haircut["id"], local_day(shop_tz, 3))
+
+    expect(owner.by("slot").first).to_be_visible()
+    assert clipped_labels(owner.page) == []
+    assert sideways_overflow(owner.page) == []
