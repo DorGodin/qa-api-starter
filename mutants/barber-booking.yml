@@ -2200,3 +2200,10 @@ mutants:
   changes:
   - find: "  .confirm button { border-radius:999px; padding-inline:22px; flex:none; white-space:nowrap; min-height:44px; }"
     replace: "  .confirm button { border-radius:999px; padding-inline:22px; }"
+- name: the times are too wide for their pills on the narrowest phone
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    @media (max-width: 360px) { .slots button { font-size:13px; } }\n"
+    replace: ""
