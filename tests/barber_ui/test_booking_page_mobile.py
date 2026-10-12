@@ -616,5 +616,17 @@ def test_the_shelf_fits_a_phone_with_its_four_tabs_and_its_buttons(
             .map((b) => b.textContent)"""
     )
     assert one_line == [], f"a tab's words broke onto two lines: {one_line}"
+    # Two cards to a row - but on the narrowest phone one, so a finger fits each side of the number.
     first, second = (phone_shop.by("product").nth(i).bounding_box() for i in range(2))
-    assert first["y"] == second["y"] and first["x"] != second["x"], "two cards to a row"
+    if phone_shop.page.viewport_size["width"] > 360:
+        assert first["y"] == second["y"] and first["x"] != second["x"], "two cards to a row"
+    else:
+        assert first["x"] == second["x"] and first["y"] < second["y"], "one card to a row"
+    phone_shop.product_card(kept["id"]).get_by_test_id("product-more").tap()
+    phone_shop.settled()
+    assert too_small_to_tap(phone_shop.page) == []
+    assert clipped_labels(phone_shop.page) == []
+    phone_shop.show_tab("mine")
+    expect(phone_shop.by("kept-remove").first).to_be_visible()
+    assert sideways_overflow(phone_shop.page) == []
+    assert too_small_to_tap(phone_shop.page) == []

@@ -36,7 +36,8 @@ def test_without_a_booking_ahead_there_is_nothing_to_keep_a_product_for(product,
 
     expect(card).to_be_visible()
     expect(card.get_by_test_id("product-keep")).to_have_count(0)
-    expect(signed_in.by("products-for")).to_be_hidden()
+    expect(signed_in.by("products-for")).to_be_visible()
+    assert "קובעים תור" in signed_in.text(signed_in.by("products-for"))
 
 
 def test_with_a_booking_ahead_the_tab_says_which_booking_the_product_waits_for(product, ahead, signed_in):
@@ -57,7 +58,7 @@ def test_keeping_a_product_writes_it_beside_the_booking_and_tells_the_shop(
     expect(signed_in.product_card(product["id"]).get_by_test_id("product-release")).to_be_visible()
     expect(signed_in.product_card(product["id"]).get_by_test_id("product-keep")).to_have_count(0)
     stored = bookings.get_by_id(ahead["id"], persona=account["persona"]).as_dict["products"]
-    assert stored == [{"id": product["id"], "name": product["name"]}]
+    assert stored == [{"id": product["id"], "name": product["name"], "quantity": 1}]
     signed_in.show_tab("mine")
     kept = signed_in.text(signed_in.row_at("11:00").get_by_test_id("booking-products"))
     assert kept.startswith("שמור לתור:") and product["name"] in kept, kept
@@ -246,3 +247,102 @@ def test_a_barber_sees_what_is_kept_and_has_no_shelf(product, ahead, products, b
 
     expect(screen.by("products-panel")).to_be_hidden()
     expect(screen.by("tabbar")).to_be_hidden()
+
+
+def kept_quantities(bookings, booking, account) -> list[int]:
+    stored = bookings.get_by_id(booking["id"], persona=account["persona"]).as_dict["products"]
+    return [p["quantity"] for p in stored]
+
+
+def test_more_of_a_kept_product_and_fewer_again(product, ahead, signed_in, bookings, account):
+    signed_in.keep_product(product["id"])
+    card = signed_in.product_card(product["id"])
+
+    card.get_by_test_id("product-more").click()
+    signed_in.settled()
+    card.get_by_test_id("product-more").click()
+    signed_in.settled()
+
+    assert "3" in signed_in.text(card.get_by_test_id("product-quantity"))
+    assert kept_quantities(bookings, ahead, account) == [3]
+    assert "3" in signed_in.text(signed_in.message()) and product["name"] in signed_in.text(
+        signed_in.message()
+    )
+    card.get_by_test_id("product-less").click()
+    signed_in.settled()
+    assert kept_quantities(bookings, ahead, account) == [2]
+
+
+def test_the_last_one_is_given_back_by_the_same_button(
+    product, ahead, signed_in, products, bookings, account
+):
+    products.keep(ahead["id"], product["id"], persona=account["persona"], quantity=2).assert_ok(200)
+    signed_in.reload()
+    card = signed_in.product_card(product["id"])
+
+    card.get_by_test_id("product-less").click()
+    signed_in.settled()
+    expect(card.get_by_test_id("product-less")).to_have_count(0)
+    signed_in.release_product(product["id"])
+
+    assert kept_quantities(bookings, ahead, account) == []
+
+
+def test_at_nine_there_is_no_more(product, ahead, signed_in, products, account):
+    products.keep(ahead["id"], product["id"], persona=account["persona"], quantity=9).assert_ok(200)
+    signed_in.reload()
+
+    card = signed_in.product_card(product["id"])
+
+    assert "9" in signed_in.text(card.get_by_test_id("product-quantity"))
+    expect(card.get_by_test_id("product-more")).to_have_count(0)
+    expect(card.get_by_test_id("product-less")).to_be_visible()
+
+
+def test_of_a_kept_product_that_ran_out_there_is_fewer_and_no_more(
+    product, ahead, signed_in, products, account
+):
+    products.keep(ahead["id"], product["id"], persona=account["persona"], quantity=2).assert_ok(200)
+    products.run_out(product["id"])
+    signed_in.reload()
+
+    card = signed_in.product_card(product["id"])
+
+    expect(card.get_by_test_id("product-less")).to_be_visible()
+    expect(card.get_by_test_id("product-more")).to_have_count(0)
+
+
+def test_the_booking_says_how_many_and_a_kept_product_is_taken_off_from_its_row(
+    product, ahead, signed_in, products, bookings, account
+):
+    other = products.create_fake_product()
+    products.keep(ahead["id"], product["id"], persona=account["persona"], quantity=2).assert_ok(200)
+    products.keep(ahead["id"], other["id"], persona=account["persona"]).assert_ok(200)
+    signed_in.reload()
+    signed_in.show_tab("mine")
+    chips = signed_in.row_at("11:00").get_by_test_id("kept-product")
+
+    assert [signed_in.text(c.locator("span")) for c in chips.all()] == [
+        f"{product['name']} ×2",
+        other["name"],
+    ]
+    assert product["name"] in chips.first.get_by_test_id("kept-remove").get_attribute("aria-label")
+    chips.first.get_by_test_id("kept-remove").click()
+    signed_in.settled()
+
+    stored = bookings.get_by_id(ahead["id"], persona=account["persona"]).as_dict["products"]
+    assert [p["id"] for p in stored] == [other["id"]]
+    expect(signed_in.row_at("11:00").get_by_test_id("kept-product")).to_have_count(1)
+    assert product["name"] in signed_in.text(signed_in.message())
+
+
+def test_the_diary_says_how_many_and_offers_no_way_to_take_it_off(
+    product, ahead, products, account, owner_screen
+):
+    products.keep(ahead["id"], product["id"], persona=account["persona"], quantity=3).assert_ok(200)
+
+    owner = owner_screen().select_barber(ahead["barber_id"])
+
+    row = owner.row_at("11:00")
+    assert f"{product['name']} ×3" in owner.text(row.get_by_test_id("booking-products"))
+    expect(row.get_by_test_id("kept-remove")).to_have_count(0)

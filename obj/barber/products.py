@@ -39,9 +39,12 @@ class Products(Base):
     def one(self, product_id: str, persona: str = "owner") -> dict:
         return next(p for p in self.listing(persona) if p["id"] == product_id)
 
-    def keep(self, booking_id: str, product_id: str, persona: str) -> Response:
-        """Ask the shop to keep the product for the booking."""
-        return self.client.request("PUT", f"/bookings/{booking_id}/products/{product_id}", persona=persona)
+    def keep(self, booking_id: str, product_id: str, persona: str, quantity: object = None) -> Response:
+        """Ask the shop to keep the product for the booking - one, or the number given."""
+        body = {} if quantity is None else {"json": {"quantity": quantity}}
+        return self.client.request(
+            "PUT", f"/bookings/{booking_id}/products/{product_id}", persona=persona, **body
+        )
 
     def release(self, booking_id: str, product_id: str, persona: str) -> Response:
         return self.client.request("DELETE", f"/bookings/{booking_id}/products/{product_id}", persona=persona)
