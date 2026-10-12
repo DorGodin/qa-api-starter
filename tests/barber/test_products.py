@@ -98,7 +98,7 @@ def test_a_product_is_kept_for_a_booking_ahead_and_the_diary_names_it(products, 
 
     kept = products.keep(ahead["id"], product["id"], persona=me).assert_ok(200).as_dict
 
-    assert kept["products"] == [{"id": product["id"], "name": product["name"]}]
+    assert kept["products"] == [{"id": product["id"], "name": product["name"], "quantity": 1}]
     diary = bookings.listing("owner", barber_id=ahead["barber_id"])["content"]
     assert next(b for b in diary if b["id"] == ahead["id"])["products"] == kept["products"]
 
@@ -153,3 +153,38 @@ def test_somebody_elses_booking_is_not_found_and_a_barber_keeps_nothing(
     )
     assert_refused(products.keep(ahead["id"], "prd_nope", persona="owner"), 404, "not_found")
     products.keep(ahead["id"], product["id"], persona="owner").assert_ok(200)
+
+
+def test_the_number_asked_for_is_set_not_added(products, me, ahead):
+    product = products.create_fake_product()
+    products.keep(ahead["id"], product["id"], persona=me, quantity=2).assert_ok(200)
+
+    raised = products.keep(ahead["id"], product["id"], persona=me, quantity=3).assert_ok(200).as_dict
+    lowered = products.keep(ahead["id"], product["id"], persona=me, quantity=1).assert_ok(200).as_dict
+
+    assert [p["quantity"] for p in raised["products"]] == [3]
+    assert [p["quantity"] for p in lowered["products"]] == [1]
+
+
+@pytest.mark.parametrize("quantity", [0, 10, -1, 1.5, "two"])
+def test_from_one_to_nine_of_a_product_and_nothing_else(products, bookings, me, ahead, quantity):
+    product = products.create_fake_product()
+
+    assert products.keep(ahead["id"], product["id"], persona=me, quantity=quantity).status_code == 422
+    assert bookings.get_by_id(ahead["id"], persona=me).as_dict["products"] == []
+    nine = products.keep(ahead["id"], product["id"], persona=me, quantity=9).assert_ok(200).as_dict
+    assert nine["products"][0]["quantity"] == 9
+
+
+@pytest.mark.parametrize("gone", ["withdraw", "run_out"])
+def test_of_a_product_that_ran_out_fewer_may_be_kept_and_never_more(products, bookings, me, ahead, gone):
+    product = products.create_fake_product()
+    products.keep(ahead["id"], product["id"], persona=me, quantity=3).assert_ok(200)
+    getattr(products, gone)(product["id"])
+
+    fewer = products.keep(ahead["id"], product["id"], persona=me, quantity=2).assert_ok(200).as_dict
+    more = products.keep(ahead["id"], product["id"], persona=me, quantity=4)
+
+    assert fewer["products"][0]["quantity"] == 2
+    assert_refused(more, 422, "product_unavailable")
+    assert bookings.get_by_id(ahead["id"], persona=me).as_dict["products"][0]["quantity"] == 2

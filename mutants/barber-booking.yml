@@ -2280,22 +2280,22 @@ mutants:
   catches:
   - api
   changes:
-  - find: "if not product.active or not product.in_stock:"
-    replace: "if not product.active:"
+  - find: "if more and (not product.active or not product.in_stock):"
+    replace: "if more and not product.active:"
 - name: a withdrawn product can be kept
   file: app/routers/products.py
   catches:
   - api
   changes:
-  - find: "if not product.active or not product.in_stock:"
-    replace: "if not product.in_stock:"
+  - find: "if more and (not product.active or not product.in_stock):"
+    replace: "if more and not product.in_stock:"
 - name: a barber may keep a product for a booking
   file: app/routers/products.py
   catches:
   - api
   changes:
-  - find: "    \"\"\"Keep a product for a booking that is still ahead and stands. Asked twice,\n    it is kept once.\"\"\"\n    with write_lock(session):\n        booking = visible_booking_or_404(session, booking_id, user)"
-    replace: "    \"\"\"Keep a product for a booking that is still ahead and stands. Asked twice,\n    it is kept once.\"\"\"\n    with write_lock(session):\n        booking = session.get(Booking, booking_id)"
+  - find: "    quantity = body.quantity if body else 1\n    with write_lock(session):\n        booking = visible_booking_or_404(session, booking_id, user)"
+    replace: "    quantity = body.quantity if body else 1\n    with write_lock(session):\n        booking = session.get(Booking, booking_id)"
 - name: releasing a product leaves it kept
   file: app/routers/products.py
   catches:
@@ -2357,8 +2357,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "    if (b.status === \"confirmed\" && b.products.length) {"
-    replace: "    if (false) {"
+  - find: "    const keeps = b.status === \"confirmed\" && b.products.length > 0;"
+    replace: "    const keeps = false;"
 - name: a product's name is written as markup
   file: app/static/index.html
   catches:
@@ -2378,7 +2378,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "  $(\"products-for\").hidden = !booking || products.length === 0;"
+  - find: "  $(\"products-for\").hidden = products.length === 0;"
     replace: "  $(\"products-for\").hidden = true;"
 - name: a product without a price is put on the shelf for nothing
   file: app/static/index.html
@@ -2429,3 +2429,94 @@ mutants:
   changes:
   - find: "  $(\"more-bookings\").hidden = !more;"
     replace: "  $(\"more-bookings\").hidden = true;"
+- name: the number of a product asked for is ignored
+  file: app/routers/products.py
+  catches:
+  - api
+  changes:
+  - find: "            kept.quantity = quantity\n"
+    replace: "            pass\n"
+- name: a first keep of a product takes one whatever was asked
+  file: app/routers/products.py
+  catches:
+  - api
+  changes:
+  - find: "BookingProduct(booking_id=booking.id, product_id=product.id, quantity=quantity)"
+    replace: "BookingProduct(booking_id=booking.id, product_id=product.id)"
+- name: more of a product that ran out can be kept
+  file: app/routers/products.py
+  catches:
+  - api
+  changes:
+  - find: "        more = kept is None or quantity > kept.quantity\n"
+    replace: "        more = kept is None\n"
+- name: fewer of a product that ran out is refused
+  file: app/routers/products.py
+  catches:
+  - api
+  changes:
+  - find: "        more = kept is None or quantity > kept.quantity\n"
+    replace: "        more = True\n"
+- name: ten of a product can be kept
+  file: app/schemas.py
+  catches:
+  - api
+  changes:
+  - find: "    quantity: int = Field(default=1, ge=1, le=9)"
+    replace: "    quantity: int = Field(default=1, ge=1, le=99)"
+- name: a booking does not say how many of a product are kept
+  file: app/views.py
+  catches:
+  - api
+  changes:
+  - find: "\"quantity\": quantity} for p, quantity in products]"
+    replace: "\"quantity\": 1} for p, quantity in products]"
+- name: the plus on a kept product keeps the same number
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "keepProduct(booking, p, have.quantity + 1));"
+    replace: "keepProduct(booking, p, have.quantity));"
+- name: more of a product is offered past nine and when it ran out
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "      if (p.in_stock && have.quantity < MAX_KEPT) {"
+    replace: "      if (true) {"
+- name: a customer with no booking is not told how to keep a product
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    : \"קובעים תור, ואז אפשר לבקש שנשמור לכם מוצר לתור.\";"
+    replace: "    : \"\";"
+- name: a kept product cannot be taken off from its booking's row
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    remove.addEventListener(\"click\", () => keepProduct(b, p, 0));\n"
+    replace: ""
+- name: a booking's row does not say how many of a product are kept
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "const keptWords = (p) => `${isolate(p.name)}${p.quantity > 1 ? ` ×${p.quantity}` : \"\"}`;"
+    replace: "const keptWords = (p) => isolate(p.name);"
+- name: the barber's diary lets a kept product be taken off
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    if (keeps && me.role === \"customer\") row.append(keptList(b, when.textContent));"
+    replace: "    if (keeps) row.append(keptList(b, when.textContent));"
+- name: the products shelf stays two to a row on the narrowest phone
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  @media (max-width: 360px) { .products { grid-template-columns:minmax(0, 1fr); } }\n"
+    replace: ""
