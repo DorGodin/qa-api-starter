@@ -2408,3 +2408,24 @@ mutants:
   changes:
   - find: ".tabbar button { flex:1 1 auto; padding:0 2px; white-space:nowrap; }"
     replace: ".tabbar button { padding:0 18px; }"
+- name: the diary asks for every booking the barber ever had
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if (me.role !== \"customer\") params.set(\"upcoming\", \"true\");\n"
+    replace: ""
+- name: a customer's list leaves out the bookings that are over
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if (me.role !== \"customer\") params.set(\"upcoming\", \"true\");"
+    replace: "  params.set(\"upcoming\", \"true\");"
+- name: the diary does not say that more bookings are ahead than it shows
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  $(\"more-bookings\").hidden = !more;"
+    replace: "  $(\"more-bookings\").hidden = true;"

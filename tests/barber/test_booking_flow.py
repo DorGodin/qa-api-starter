@@ -2,7 +2,7 @@
 
 from datetime import timedelta
 
-from utils.local_time import local_day, parse_instant
+from utils.local_time import at_local, local_day, parse_instant
 
 
 def test_a_customer_books_the_first_free_slot_and_it_is_theirs(
@@ -99,3 +99,20 @@ def test_the_owner_sees_every_booking_and_a_barber_only_their_own(
     assert seen_by_barber == {mine["id"]}
     assert elsewhere["id"] not in seen_by_barber
     assert mine["id"] in seen_by_owner
+
+
+def test_the_diary_of_what_is_still_to_come_holds_a_booking_ahead_and_keeps_it_once_cancelled(
+    bookings, barbers, haircut, new_customer, shop_tz
+):
+    """What is over cannot be made from outside, so that it is left out is the product's own test;
+    here: asking for what is ahead loses nothing that is."""
+    barber, me = barbers.create_fake_barber(), new_customer()
+    start = at_local(shop_tz, local_day(shop_tz, 4), "11:00")
+    made = bookings.create_booking(barber["id"], haircut["id"], start, persona=me)
+
+    ahead = bookings.listing("owner", barber_id=barber["id"], upcoming="true")
+    bookings.cancel(made["id"], persona=me).assert_ok(200)
+    after = bookings.listing("owner", barber_id=barber["id"], upcoming="true")
+
+    assert ([b["id"] for b in ahead["content"]], ahead["total"]) == ([made["id"]], 1)
+    assert [(b["id"], b["status"]) for b in after["content"]] == [(made["id"], "cancelled")]
