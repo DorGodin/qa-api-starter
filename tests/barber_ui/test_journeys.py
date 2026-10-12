@@ -273,7 +273,7 @@ def test_what_the_owner_changes_reaches_each_customer_the_way_it_should(
     assert "80.00 ₪" in first.text(first.row_at("10:00")), "a booking keeps the price it was made at"
 
     second = signed_up(person(), new_account(run_id, "second"))
-    assert "95.00 ₪" in second.text(second.by("service").locator("option", has_text=cut))
+    assert "95 ₪" in second.text(second.by("service").locator("option", has_text=cut))
     second.choose_by_name(barber["name"], cut, day).pick("11:00").book()
     assert "95.00 ₪" in second.last_answer["text"], "a new booking takes the new price"
 

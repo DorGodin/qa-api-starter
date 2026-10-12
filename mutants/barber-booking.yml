@@ -240,8 +240,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: <div class="field"><label for="service">שירות</label><select id="service" data-testid="service"></select></div>
-    replace: <label>שירות <select data-testid="service"></select></label>
+  - find: <div class="label-row"><label for="service">שירות</label><span data-testid="service-length"></span></div><select id="service" data-testid="service"></select>
+    replace: <label>שירות <select id="service" data-testid="service"></select></label><span data-testid="service-length"></span>
 - name: no popup at all
   file: app/static/index.html
   catches:
@@ -1310,10 +1310,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: |2-
-          focusWhenSettled = null;
-          if (button.dataset.tab === "book") hideDone();
-    replace: '    if (button.dataset.tab === "book") hideDone();'
+  - find: "    focusWhenSettled = null;\n    // What was said about"
+    replace: "    // What was said about"
 - name: the legal links stay on a signed in customer's phone
   file: app/static/index.html
   catches:
@@ -2206,4 +2204,46 @@ mutants:
   - ui
   changes:
   - find: "    @media (max-width: 360px) { .slots button { font-size:13px; } }\n"
+    replace: ""
+- name: the customer is asked for notifications however long ago they booked
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: " && Date.parse(b.end) > Date.now() && madeLately(b));"
+    replace: " && Date.parse(b.end) > Date.now());"
+- name: the customer is asked for notifications for one day only
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "const PUSH_ASK_HOURS = 48;"
+    replace: "const PUSH_ASK_HOURS = 24;"
+- name: what was said on one tab stays on the next
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "belongs to the screen it was done on.\n    say(\"\", \"ok\");\n"
+    replace: "belongs to the screen it was done on.\n"
+- name: a whole price keeps its agorot in the service choice
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "minimumFractionDigits: minor % 100 ? 2 : 0"
+    replace: "minimumFractionDigits: 2"
+- name: the minutes are back in the service choice
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "const serviceLabel = (s) => `${isolate(s.name)} · ${shortMoney(s.price_minor, s.currency)}`;"
+    replace: "const serviceLabel = (s) => `${isolate(s.name)} · ${s.duration_minutes} דק׳ · ${shortMoney(s.price_minor, s.currency)}`;"
+- name: the minutes beside the label do not follow the service chosen
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "for (const id of [\"service\", \"service-2\"]) $(id).addEventListener(\"change\", showLengths);\n"
     replace: ""

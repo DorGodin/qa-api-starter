@@ -102,3 +102,27 @@ def test_no_english_from_the_server_ever_reaches_the_customer(
     for situation, text in said.items():
         assert HEBREW.search(text), f"{situation}: nothing was said in Hebrew: {text!r}"
         assert not LATIN.search(text), f"{situation}: English reached the customer: {text!r}"
+
+
+def test_the_service_choice_drops_the_agorot_of_a_whole_price_and_keeps_real_ones(signed_in, services):
+    whole = services.create_fake_service(price_minor=14000)
+    odd = services.create_fake_service(price_minor=9250)
+    signed_in.reload()
+
+    def words(service):
+        return signed_in.text(signed_in.by("service").locator(f'option[value="{service["id"]}"]'))
+
+    assert re.search(r"· 140\s*₪$", words(whole)), words(whole)
+    assert re.search(r"· 92\.50\s*₪$", words(odd)), words(odd)
+
+
+def test_how_long_the_chosen_service_takes_stands_beside_its_label(signed_in, services):
+    short = services.create_fake_service(duration_minutes=15)
+    long = services.create_fake_service(duration_minutes=45)
+    signed_in.reload()
+
+    signed_in.by("service").select_option(short["id"])
+    expect(signed_in.by("service-length")).to_have_text("15 דק׳")
+    signed_in.by("service").select_option(long["id"])
+    expect(signed_in.by("service-length")).to_have_text("45 דק׳")
+    assert "דק׳" not in signed_in.text(signed_in.by("service").locator("option:checked"))

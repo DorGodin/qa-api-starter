@@ -4,6 +4,7 @@ stand-ins that keep a record; what is tested is what the page does with them and
 server."""
 
 import json
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from playwright.sync_api import expect
@@ -216,3 +217,39 @@ def test_a_customer_whose_only_booking_was_cancelled_is_not_asked(ready, upcomin
     signed_in.show_tab("mine")
 
     expect(signed_in.by("push-card")).to_have_count(0)
+
+
+def hours_from_now(hours: int) -> datetime:
+    return datetime.now(UTC) + timedelta(hours=hours)
+
+
+def test_the_customer_is_still_asked_until_two_days_after_booking(ready, upcoming, shop, account):
+    """The page reads the time from the browser: the browser's clock is moved, the booking stays."""
+    shop.page.add_init_script(STUB)
+    shop.page.clock.set_fixed_time(hours_from_now(47))
+    signed_in = shop.sign_in_as(account)
+    signed_in.show_tab("mine")
+
+    expect(signed_in.by("push-card")).to_have_attribute("data-state", "ask")
+
+
+def test_two_days_after_the_booking_was_made_the_customer_is_no_longer_asked(ready, upcoming, shop, account):
+    shop.page.add_init_script(STUB)
+    shop.page.clock.set_fixed_time(hours_from_now(49))
+    signed_in = shop.sign_in_as(account)
+    signed_in.show_tab("mine")
+
+    expect(signed_in.rows()).to_have_count(1)
+    expect(signed_in.by("push-card")).to_have_count(0)
+
+
+def test_a_customer_who_said_yes_can_still_turn_it_off_after_the_two_days(ready, upcoming, shop, account):
+    shop.page.add_init_script(
+        STUB
+        + "window.__push.sub = { endpoint: 'https://fcm.googleapis.com/fcm/send/already', unsubscribe: async () => true };"
+    )
+    shop.page.clock.set_fixed_time(hours_from_now(49))
+    signed_in = shop.sign_in_as(account)
+    signed_in.show_tab("mine")
+
+    expect(signed_in.by("push-off")).to_be_visible()
