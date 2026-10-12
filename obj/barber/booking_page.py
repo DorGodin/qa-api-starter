@@ -327,6 +327,20 @@ class BookingPage:
         self.show_tab("courses")
         return self.by("course").filter(has=self.page.get_by_test_id("course-title").filter(has_text=title))
 
+    def product_card(self, product_id: str) -> Locator:
+        self.show_tab("products")
+        return self.page.locator(f'[data-testid="product"][data-id="{product_id}"]')
+
+    def keep_product(self, product_id: str) -> BookingPage:
+        self.product_card(product_id).get_by_test_id("product-keep").click()
+        self.settled()
+        return self
+
+    def release_product(self, product_id: str) -> BookingPage:
+        self.product_card(product_id).get_by_test_id("product-release").click()
+        self.settled()
+        return self
+
     def answer(self, hhmm: str, verb: str) -> BookingPage:
         self.row_at(hhmm).get_by_test_id(verb).click()
         self.settled()
@@ -405,6 +419,22 @@ class OwnerScreen(BookingPage):
 
     def save_course(self, course_id: str) -> OwnerScreen:
         self.course_editor(course_id).get_by_test_id("save-course").click()
+        self.settled()
+        return self
+
+    def product_editor(self, product_id: str) -> Locator:
+        return self.page.locator(f'[data-testid="product-edit"][data-id="{product_id}"]')
+
+    def add_product(self, name: str, line: str = "", price: str = "") -> OwnerScreen:
+        self.by("new-product-name").fill(name)
+        self.by("new-product-line").fill(line)
+        self.by("new-product-price").fill(price)
+        self.by("add-product").click()
+        self.settled()
+        return self
+
+    def save_product(self, product_id: str) -> OwnerScreen:
+        self.product_editor(product_id).get_by_test_id("save-product").click()
         self.settled()
         return self
 
