@@ -218,7 +218,7 @@ jobs:
           # books, redeploys, and checks the account, the booking and the sign-in
           # all survived.
           REDEPLOY_COMMAND: docker rm -f barber-image && $BARBER_IMAGE_RUN
-        run: python -m pytest --ui tests/barber_ui/test_journeys.py -q -rs --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber
+        run: python -m pytest --ui tests/barber_ui/test_journeys.py tests/barber_ui/test_journeys_features.py -q -rs --video retain-on-failure --tracing retain-on-failure --output reports/ui-barber
       - name: keep the video and trace of any journey that failed
         if: failure()
         uses: actions/upload-artifact@v7

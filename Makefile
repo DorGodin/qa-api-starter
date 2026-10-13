@@ -93,7 +93,7 @@ ui-barber-mobile: ## every barbershop page test on an iPhone (WebKit, Safari's e
 	ENV=barber $(PY) -m pytest --ui tests/barber_ui --browser chromium --device "Pixel 7"
 
 ui-barber-journeys: ## the end-to-end journeys only: a shop opened, booked, cancelled and booked again, all on the screen
-	ENV=barber $(PY) -m pytest --ui tests/barber_ui/test_journeys.py
+	ENV=barber $(PY) -m pytest --ui tests/barber_ui/test_journeys.py tests/barber_ui/test_journeys_features.py
 
 ui-barber-watch: ## the same, in a visible browser at human speed; SLOWMO=ms, K=name filter
 	ENV=barber $(PY) -m pytest --ui tests/barber_ui --headed --slowmo $(or $(SLOWMO),600) $(if $(K),-k "$(K)",)
