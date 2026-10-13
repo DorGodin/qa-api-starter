@@ -118,3 +118,20 @@ def test_the_owner_may_still_cancel_a_booking_that_is_close(
 
     expect(row.get_by_test_id("cancel")).to_be_visible()
     expect(row.get_by_test_id("late-note")).to_have_count(0)
+
+
+def test_a_booking_that_is_over_says_nothing_about_cancelling(
+    own_barber, shop, bookings, account, quarter_service
+):
+    """A booking that is over cannot be made from outside, but the page reads the time from the
+    browser: its clock is moved past the booking."""
+    hhmm = booked(bookings, own_barber, quarter_service, account, CANCEL_CUTOFF_HOURS - 6)
+    shop.page.clock.set_fixed_time(now_utc() + timedelta(hours=CANCEL_CUTOFF_HOURS))
+    signed_in = shop.sign_in_as(account)
+
+    row = signed_in.row_at(hhmm)
+
+    expect(row).to_be_visible()
+    expect(row.get_by_test_id("late-note")).to_have_count(0)
+    expect(row.get_by_test_id("cancel")).to_have_count(0)
+    expect(row.get_by_test_id("move")).to_have_count(0)

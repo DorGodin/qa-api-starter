@@ -2212,13 +2212,27 @@ mutants:
   changes:
   - find: " && Date.parse(b.end) > Date.now() && madeLately(b));"
     replace: " && Date.parse(b.end) > Date.now());"
-- name: the customer is asked for notifications for one day only
+- name: the customer is asked for notifications for half a day only
   file: app/static/index.html
   catches:
   - ui
   changes:
-  - find: "const PUSH_ASK_HOURS = 48;"
-    replace: "const PUSH_ASK_HOURS = 24;"
+  - find: "const PUSH_ASK_HOURS = 24;"
+    replace: "const PUSH_ASK_HOURS = 12;"
+- name: the customer is asked for notifications for two days
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "const PUSH_ASK_HOURS = 24;"
+    replace: "const PUSH_ASK_HOURS = 48;"
+- name: a booking that is over still says it cannot be cancelled
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "me.role === \"customer\" && hoursLeft > 0 && (!canMove || !canCancel)"
+    replace: "me.role === \"customer\" && (!canMove || !canCancel)"
 - name: what was said on one tab stays on the next
   file: app/static/index.html
   catches:
