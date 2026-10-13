@@ -22,6 +22,14 @@ def as_persona(customers, screen: BookingPage, name: str) -> str:
     return name
 
 
+def withdraw(owner: OwnerScreen, service_id: str) -> None:
+    """A service that waits for the barber's yes is taken off the menu when its journey ends: the
+    shop is shared, and left on offer it was the first service other tests met."""
+    owner.reload()
+    owner.save_service(service_id, offered=False)
+    expect(owner.message()).to_have_attribute("data-kind", "ok")
+
+
 def told(screen: BookingPage) -> dict:
     """Open the page again as a customer coming back does, and read what it tells them."""
     screen.reload()
@@ -41,14 +49,13 @@ def editor_named(owner: OwnerScreen, kind: str, field: str, name: str) -> str:
 
 
 def test_a_request_waits_for_the_barber_and_their_yes_and_no_reach_each_customer(
-    person, run_id, credentials, customers, bookings, shop_tz, signed_up
+    person, run_id, credentials, customers, bookings, shop_tz, signed_up, diary_of
 ):
     day = local_day(shop_tz, 7)
     owner = person(OwnerScreen).sign_in(*credentials("owner"))
     barber = open_a_barber(owner, run_id, WEEKDAYS[day.weekday()], "09:00", "12:00")
     service = f"QA ask first {run_id}"
-    owner.add_service(service, 30, "200", needs_barber=True)
-    expect(owner.message()).to_have_attribute("data-kind", "ok")
+    service_id = add_a_service(owner, service, 30, "200", needs_barber=True)
 
     asks = signed_up(person(), new_account(run_id, "asks"))
     asks.choose_by_name(barber["name"], service, day).pick("10:00").book(keep_answer=True)
@@ -62,7 +69,7 @@ def test_a_request_waits_for_the_barber_and_their_yes_and_no_reach_each_customer
     also.pick("11:00").book()
     expect(also.row_at("11:00")).to_have_attribute("data-approval", "pending")
 
-    diary = person().sign_in(barber["username"], barber["password"])
+    diary = diary_of(barber)
     diary.answer("10:00", "approve")
     diary.answer("11:00", "decline")
     expect(diary.row_at("10:00")).to_have_attribute("data-approval", "approved")
@@ -83,10 +90,11 @@ def test_a_request_waits_for_the_barber_and_their_yes_and_no_reach_each_customer
     yes_at, no_at = at_local(shop_tz, day, "10:00"), at_local(shop_tz, day, "11:00")
     assert (stored[yes_at]["status"], stored[yes_at]["approval"]) == ("confirmed", "approved")
     assert (stored[no_at]["status"], stored[no_at]["approval"]) == ("cancelled", "declined")
+    withdraw(owner, service_id)
 
 
 def test_a_booking_for_two_is_one_step_counts_once_and_each_is_then_its_own(
-    person, run_id, credentials, customers, bookings, shop_tz, signed_up
+    person, run_id, credentials, customers, bookings, shop_tz, signed_up, diary_of
 ):
     day = local_day(shop_tz, 7)
     owner = person(OwnerScreen).sign_in(*credentials("owner"))
@@ -123,7 +131,7 @@ def test_a_booking_for_two_is_one_step_counts_once_and_each_is_then_its_own(
     parent.cancel("10:30")
     expect(parent.row_at("10:00")).to_have_attribute("data-status", "confirmed")
 
-    diary = person().sign_in(barber["username"], barber["password"])
+    diary = diary_of(barber)
     expect(diary.page.locator('[data-testid="booking-row"][data-status="confirmed"]')).to_have_count(2)
     expect(diary.row_at("10:30")).to_have_attribute("data-status", "cancelled")
 
@@ -136,7 +144,7 @@ def test_a_booking_for_two_is_one_step_counts_once_and_each_is_then_its_own(
 
 
 def test_a_product_goes_from_the_owners_shelf_to_a_booking_and_the_barber_reads_it(
-    person, run_id, credentials, customers, bookings, shop_tz, signed_up
+    person, run_id, credentials, customers, bookings, shop_tz, signed_up, diary_of
 ):
     day = local_day(shop_tz, 7)
     owner = person(OwnerScreen).sign_in(*credentials("owner"))
@@ -161,7 +169,7 @@ def test_a_product_goes_from_the_owners_shelf_to_a_booking_and_the_barber_reads_
     buyer.show_tab("mine")
     assert buyer.text(buyer.row_at("10:00").get_by_test_id("booking-products")) == f"שמור לתור: {wax} ×2"
 
-    diary = person().sign_in(barber["username"], barber["password"])
+    diary = diary_of(barber)
     assert f"{wax} ×2" in diary.text(diary.row_at("10:00").get_by_test_id("booking-products"))
 
     # It runs out: what is kept stays, fewer may be kept and no more.
@@ -190,7 +198,7 @@ def test_a_product_goes_from_the_owners_shelf_to_a_booking_and_the_barber_reads_
 
 
 def test_a_booking_moved_on_the_screen_frees_its_old_time_for_the_next_customer(
-    person, run_id, credentials, bookings, shop_tz, signed_up
+    person, run_id, credentials, bookings, shop_tz, signed_up, diary_of
 ):
     day = local_day(shop_tz, 7)
     owner = person(OwnerScreen).sign_in(*credentials("owner"))
@@ -212,7 +220,7 @@ def test_a_booking_moved_on_the_screen_frees_its_old_time_for_the_next_customer(
     second.pick("10:00").book()
     assert second.last_answer["kind"] == "ok"
 
-    diary = person().sign_in(barber["username"], barber["password"])
+    diary = diary_of(barber)
     expect(diary.rows()).to_have_count(2)
     stored = bookings.listing("owner", barber_id=barber["id"])["content"]
     assert sorted((parse_instant(b["start"]), b["status"]) for b in stored) == [
@@ -258,8 +266,7 @@ def test_an_emergency_haircut_is_asked_for_in_the_night_and_the_owner_says_yes(
     barber = open_a_barber(owner, run_id, WEEKDAYS[day.weekday()], "09:00", "12:00")
     cut, emergency = f"QA cut {run_id}", f"QA emergency {run_id}"
     add_a_service(owner, cut, 30, "80")
-    owner.add_service(emergency, 30, "200", needs_barber=True, any_time=True)
-    expect(owner.message()).to_have_attribute("data-kind", "ok")
+    emergency_id = add_a_service(owner, emergency, 30, "200", needs_barber=True, any_time=True)
 
     caller = signed_up(person(), new_account(run_id, "caller"))
     caller.choose_by_name(barber["name"], cut, day)
@@ -283,3 +290,4 @@ def test_an_emergency_haircut_is_asked_for_in_the_night_and_the_owner_says_yes(
         "approved",
         20000,
     )
+    withdraw(owner, emergency_id)

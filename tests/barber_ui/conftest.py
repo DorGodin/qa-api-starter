@@ -128,3 +128,17 @@ def signed_up(sms_inbox):  # noqa: F811
         return screen
 
     return _sign_up
+
+
+@pytest.fixture
+def diary_of(person, sms_inbox):  # noqa: F811
+    """A barber opening their diary on a phone of their own: the mobile the owner typed for
+    them, and the code sent to it - the customers' own sign-in, and what opens is the diary."""
+
+    def _open(barber: dict) -> BookingPage:
+        screen = person()
+        screen.sign_in_by_code(barber["name"], barber["phone"], sms_inbox)
+        expect(screen.by("app")).to_be_visible()
+        return screen
+
+    return _open

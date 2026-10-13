@@ -123,12 +123,15 @@ def test_the_code_screen_meets_wcag_2_2_aa_and_so_does_a_wrong_code(shop, sms_in
     assert violations(shop.page) == [], "the code screen after a wrong code"
 
 
-def test_the_code_screen_offers_no_password_sign_in_and_changing_the_number_brings_it_back(shop, sms_inbox):
+def test_changing_the_number_brings_the_first_step_back_and_no_step_takes_a_password(shop, sms_inbox):
     to_code_screen(shop, sms_inbox)
+    expect(shop.page.locator('input[type="password"]')).to_have_count(0)
 
-    expect(shop.by("password-sign-in")).to_be_hidden()
     shop.by("change-phone").click()
-    expect(shop.by("password-sign-in")).to_be_visible()
+
+    expect(shop.by("code-request-form")).to_be_visible()
+    expect(shop.by("code-form")).to_be_hidden()
+    expect(shop.page.locator('input[type="password"]')).to_have_count(0)
 
 
 def test_a_cursor_blinks_in_the_box_the_next_digit_goes_to(shop, sms_inbox):

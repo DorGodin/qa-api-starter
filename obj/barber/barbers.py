@@ -29,14 +29,22 @@ class Barbers(Base):
         }
 
     def create_fake_barber(
-        self, opening: str = "00:00", closing: str = "24:00", persona: str = "owner"
+        self, opening: str = "00:00", closing: str = "24:00", persona: str = "owner", phone: str | None = None
     ) -> dict:
         """A barber of the caller's own, with known hours - the unit of isolation
-        on a product that cannot be reset."""
+        on a product that cannot be reset. With a phone, one who can sign in by code."""
         payload = self.build_barber_payload()
+        if phone is not None:
+            payload["phone"] = phone
         barber = self.create(payload, persona=persona).assert_ok(201).as_dict
         self.set_hours(barber["id"], self.build_hours(opening, closing), persona=persona)
         return {**barber, "username": payload["username"], "password": payload["password"]}
+
+    def set_phone(self, barber_id: str, phone: str, persona: str = "owner") -> Response:
+        """The mobile a barber signs in with; an empty one takes it away."""
+        return self.client.request(
+            "PATCH", f"{self.path}/{barber_id}", persona=persona, json={"phone": phone}
+        )
 
     def set_active(self, barber_id: str, active: bool, persona: str = "owner") -> Response:
         """A barber who leaves is made inactive - never deleted - and can come back."""

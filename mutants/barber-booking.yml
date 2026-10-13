@@ -1057,13 +1057,6 @@ mutants:
               html = PRIVACY.read_text(encoding="utf-8")
               for name, value in values.items():
                   pass
-- name: the code screen still offers the password sign-in
-  file: app/static/index.html
-  catches:
-  - ui
-  changes:
-  - find: '  $("password-sign-in").hidden = true;'
-    replace: ''
 - name: the code boxes show no cursor
   file: app/static/index.html
   catches:
@@ -2527,3 +2520,87 @@ mutants:
   changes:
   - find: "    if (b.status === \"confirmed\" && b.products.length > 0) {"
     replace: "    if (b.products.length > 0) {"
+- name: a staff phone - a barber's mobile is shown to customers
+  file: app/routers/barbers.py
+  catches:
+  - api
+  changes:
+  - find: "barber_view(b, for_owner=user.role == \"owner\")"
+    replace: "barber_view(b, for_owner=True)"
+- name: a staff phone - somebody else's number is given to a barber
+  file: app/routers/barbers.py
+  catches:
+  - api
+  changes:
+  - find: "    if taken is not None and (holder is None or taken.id != holder.id):\n        raise DomainError(409, \"phone_taken\", \"that phone already belongs to an account\")\n"
+    replace: ""
+- name: a staff phone - a number that is not a mobile is accepted
+  file: app/routers/barbers.py
+  catches:
+  - api
+  changes:
+  - find: "    if phone is None:\n        raise DomainError(422, \"bad_phone\", \"a mobile number: 05 and eight more digits\")\n    taken"
+    replace: "    if phone is None:\n        return None\n    taken"
+- name: a staff phone - taking it away is ignored
+  file: app/routers/barbers.py
+  catches:
+  - api
+  changes:
+  - find: "        if \"phone\" in sent:\n"
+    replace: "        if sent.get(\"phone\"):\n"
+- name: a staff phone - a new barber's phone is dropped
+  file: app/routers/barbers.py
+  catches:
+  - api
+  changes:
+  - find: "            phone=_staff_phone(session, body.phone),\n"
+    replace: "            phone=None,\n"
+- name: a staff phone - a change that names nothing is accepted
+  file: app/schemas.py
+  catches:
+  - api
+  changes:
+  - find: "        if not self.model_fields_set:\n            raise ValueError(\"send what to change: active, phone, or both\")\n"
+    replace: ""
+- name: a staff phone - a barber who left still signs in by code
+  file: app/routers/auth.py
+  catches:
+  - api
+  changes:
+  - find: "    if refusal is not None:\n        raise refusal\n    if not user.active:\n        raise DomainError(403, \"account_inactive\", \"this account is no longer active\")\n"
+    replace: "    if refusal is not None:\n        raise refusal\n"
+- name: a staff phone - the owner is not given the phone the settings name
+  file: app/main.py
+  catches:
+  - ui
+  changes:
+  - find: "        give_owner_phone(session, config)\n"
+    replace: ""
+- name: a staff phone - the owner's form does not send a new barber's phone
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "{ display_name: $(\"new-barber-name\").value.trim(), phone: $(\"new-barber-phone\").value.trim() }"
+    replace: "{ display_name: $(\"new-barber-name\").value.trim() }"
+- name: a staff phone - saving a barber's phone sends none
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "{ phone: $(\"barber-phone\").value.trim() }"
+    replace: "{ phone: \"\" }"
+- name: a staff phone - a barber with no phone is said to have a way in
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "$(\"barber-phone-note\").textContent = phone ? "
+    replace: "$(\"barber-phone-note\").textContent = true ? "
+- name: a staff phone - the field keeps the last barber's number
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  $(\"barber-phone\").value = phone;\n"
+    replace: "  $(\"barber-phone\").value = $(\"barber-phone\").value || phone;\n"

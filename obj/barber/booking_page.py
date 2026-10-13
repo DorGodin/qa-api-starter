@@ -11,12 +11,12 @@ from __future__ import annotations
 import re
 from datetime import date
 
+import requests
 from playwright.sync_api import Locator, Page, expect
 
 from obj.barber.customers import new_device_address
 
 # The page is Hebrew. Its field labels, as a person reads them.
-USERNAME, PASSWORD = "שם משתמש", "סיסמה"
 BARBER, SERVICE, DATE = "ספר", "שירות", "תאריך"
 
 # Unicode direction controls the page puts around names (isolates) and that
@@ -57,15 +57,6 @@ class BookingPage:
         expect(self.by("code-request-form")).to_be_visible()
         return self
 
-    def unfold_password_sign_in(self) -> BookingPage:
-        """The page signs in by SMS code now; the username and password form is
-        folded away under it until every account has a phone. Until these suites
-        sign in by code too, they unfold it."""
-        fold = self.by("password-sign-in")
-        if fold.count() and fold.get_attribute("open") is None:
-            fold.locator("summary").click()
-        return self
-
     def reload(self) -> BookingPage:
         """Refresh the page, as a person pulling it down on a phone does, and wait
         until it has settled - signed in again, or showing the sign-in form."""
@@ -74,25 +65,27 @@ class BookingPage:
         return self
 
     def sign_in(self, username: str, password: str, navigate: bool = True) -> BookingPage:
-        """navigate=False signs in on the page as it is, the way the next person
-        on a shared device does: a navigation would wipe what the last one left."""
+        """Open the page as a member of staff who is already signed in - the owner, or a
+        barber a test made through the API. The page itself signs in by a code sent to a
+        phone and has no password form; the sign-in is made through the API and the page
+        resumes with it, as it does for anyone who comes back. Signing in on the screen is
+        sign_in_by_code, for staff as for customers, and has its own tests.
+
+        navigate=False keeps the page where it is - after a sign-out, say."""
+        answered = requests.post(
+            self.base_url + "/auth/token",
+            json={"username": username, "password": password},
+            headers={"X-Forwarded-For": new_device_address()},
+            timeout=10,
+        )
+        if answered.status_code != 200:
+            raise AssertionError(f"signing in as {username} was refused: {answered.text}")
         if navigate:
-            self.open()
-        self.unfold_password_sign_in()
-        self.page.get_by_label(USERNAME, exact=True).first.fill(username)
-        self.page.get_by_label(PASSWORD, exact=True).first.fill(password)
-        self.by("login").click()
-        expect(
-            self.page.locator('[data-testid="app"]:visible, [data-testid="login-error"]:visible').first
-        ).to_be_visible()
-        if self.by("login-error").is_visible():
-            # Say why, not only that the screen never came: a refused sign-in
-            # otherwise reads as a page that is slow to load.
-            raise AssertionError(
-                f"signing in as {username} was refused: {plain(self.by('login-error').inner_text())}"
-            )
-        self.settled()
-        return self
+            self.page.goto(self.base_url + "/")
+        self.page.evaluate(
+            "token => sessionStorage.setItem('barber.session', token)", answered.json()["access_token"]
+        )
+        return self.reload()
 
     def sign_in_as(self, account: dict) -> BookingPage:
         """Open the page already signed in as an account made through the API:
@@ -454,11 +447,18 @@ class OwnerScreen(BookingPage):
         self.settled()
         return self
 
-    def add_barber(self, name: str, username: str, password: str) -> OwnerScreen:
+    def add_barber(self, name: str, phone: str = "") -> OwnerScreen:
+        """A new barber: a name, and the mobile they will sign in with."""
         self.by("new-barber-name").fill(name)
-        self.by("new-barber-username").fill(username)
-        self.by("new-barber-password").fill(password)
+        self.by("new-barber-phone").fill(phone)
         self.by("add-barber").click()
+        self.settled()
+        return self
+
+    def save_barber_phone(self, phone: str) -> OwnerScreen:
+        """Give the selected barber a mobile to sign in with, or - empty - take it away."""
+        self.by("barber-phone").fill(phone)
+        self.by("save-barber-phone").click()
         self.settled()
         return self
 

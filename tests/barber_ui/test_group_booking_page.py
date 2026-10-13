@@ -7,6 +7,15 @@ from obj.barber.barbers import WEEK
 from utils.local_time import at_local, local_day
 
 
+def add_a_second_person(screen, service) -> None:
+    """Their service is chosen, never left to whatever the shop lists first: another test's
+    service that waits for the barber's yes turned a booking for two into a request."""
+    screen.by("add-person").click()
+    screen.settled()
+    screen.by("service-2").select_option(value=service["id"])
+    screen.settled()
+
+
 def test_the_times_for_two_are_where_both_fit_and_one_booking_makes_two(
     barbers, shop, account, bookings, ui_haircut, shop_tz
 ):
@@ -21,8 +30,7 @@ def test_the_times_for_two_are_where_both_fit_and_one_booking_makes_two(
         "09:30",
     ]
 
-    signed_in.by("add-person").click()
-    signed_in.settled()
+    add_a_second_person(signed_in, ui_haircut)
     signed_in.by("person-name").fill("יוני")
     signed_in.settled()
 
@@ -42,8 +50,7 @@ def test_removing_the_second_person_brings_back_the_single_times(barbers, shop, 
     barbers.set_hours(barber["id"], {"hours": dict.fromkeys(WEEK, ["09:00", "10:00"])}).assert_ok(200)
     signed_in = shop.sign_in_as(account)
     signed_in.choose(barber["id"], ui_haircut["id"], local_day(shop_tz, 6))
-    signed_in.by("add-person").click()
-    signed_in.settled()
+    add_a_second_person(signed_in, ui_haircut)
     assert signed_in.times() == ["09:00"]
 
     signed_in.by("remove-person").click()
@@ -67,8 +74,7 @@ def test_the_control_is_not_offered_while_moving_a_booking(
     )
     signed_in = shop.sign_in_as(account)
     signed_in.choose(barber["id"], ui_haircut["id"], day)
-    signed_in.by("add-person").click()
-    signed_in.settled()
+    add_a_second_person(signed_in, ui_haircut)
 
     signed_in.start_moving(made["start_local"][11:16])
 
@@ -82,8 +88,7 @@ def test_the_confirm_button_keeps_one_line_beside_the_words_for_two(
     barber = barbers.create_fake_barber()
     signed_in = shop.sign_in_as(account)
     signed_in.choose(barber["id"], ui_haircut["id"], local_day(shop_tz, 6))
-    signed_in.by("add-person").click()
-    signed_in.settled()
+    add_a_second_person(signed_in, ui_haircut)
 
     signed_in.pick("10:00")
 

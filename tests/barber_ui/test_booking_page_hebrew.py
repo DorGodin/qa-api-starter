@@ -82,14 +82,6 @@ def test_no_english_from_the_server_ever_reaches_the_customer(
     said = {}
     shop.page.set_extra_http_headers({"X-Forwarded-For": fresh_address()})
 
-    owner, _ = credentials("owner")
-    shop.open().unfold_password_sign_in()
-    shop.page.get_by_label("שם משתמש", exact=True).first.fill(owner)
-    shop.page.get_by_label("סיסמה", exact=True).first.fill("wrong-password")
-    shop.by("login").click()
-    expect(shop.by("login-error")).to_be_visible()
-    said["wrong password"] = shop.text(shop.by("login-error"))
-
     contested = barbers.create_fake_barber()
     shop.sign_in_as(account)
     day = local_day(shop_tz, 4)
