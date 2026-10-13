@@ -380,15 +380,15 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "availability?${params}`);\n  if (!current()) return;"
-    replace: availability?${params}`);
+  - find: "availability?${params}`);\n  arrived();\n  if (!current()) return;"
+    replace: "availability?${params}`);\n  arrived();"
 - name: a late answer for the barber before replaces the bookings on the screen
   file: app/static/index.html
   catches:
   - ui
   changes:
-  - find: "const r = await api(\"GET\", `/bookings?${params}`);\n  if (!current()) return;"
-    replace: const r = await api("GET", `/bookings?${params}`);
+  - find: "const r = await api(\"GET\", `/bookings?${params}`);\n  arrived();\n  if (!current()) return;"
+    replace: "const r = await api(\"GET\", `/bookings?${params}`);\n  arrived();"
 - name: a late answer for the barber before replaces the hours, and saving writes them onto the barber chosen
   file: app/static/index.html
   catches:
@@ -2604,3 +2604,94 @@ mutants:
   changes:
   - find: "  $(\"barber-phone\").value = phone;\n"
     replace: "  $(\"barber-phone\").value = $(\"barber-phone\").value || phone;\n"
+- name: the fresh look - a slow list is never drawn in grey
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "const SKELETON_AFTER = 150;"
+    replace: "const SKELETON_AFTER = 150000;"
+- name: the fresh look - the grey shape stays after the list has arrived
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    if (state.drawn) state.drawn.remove();\n"
+    replace: ""
+- name: the fresh look - the list stays hidden after it has arrived
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    $(id).classList.remove(\"is-loading\");\n"
+    replace: ""
+- name: the fresh look - a list on another tab is drawn in grey behind the one in view
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "      if (!box.offsetParent) return;\n"
+    replace: ""
+- name: the fresh look - the grey shape is read out by a screen reader
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "className: `skeleton ${className}`.trim(), \"aria-hidden\": \"true\" }"
+    replace: "className: `skeleton ${className}`.trim() }"
+- name: the fresh look - the list is not hidden behind its grey shape
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "      box.classList.add(\"is-loading\");\n"
+    replace: ""
+- name: the fresh look - confetti for a person who asked for less motion
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if (!window.matchMedia(\"(prefers-reduced-motion: no-preference)\").matches) return;\n"
+    replace: ""
+- name: the fresh look - a request that waits for the barber is celebrated
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if (!waiting) celebrate($(\"booking-done\").querySelector(\".ring\"));"
+    replace: "  celebrate($(\"booking-done\").querySelector(\".ring\"));"
+- name: the fresh look - the confetti is never cleared away
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    setTimeout(() => bit.remove(), 1700);\n"
+    replace: ""
+- name: the fresh look - the times move for a person who asked for less motion
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  @media (prefers-reduced-motion: no-preference) {\n    @keyframes shimmer"
+    replace: "  @media all {\n    @keyframes shimmer"
+- name: the fresh look - the page's policy does not let it load its letters
+  file: app/main.py
+  catches:
+  - ui
+  changes:
+  - find: "        \"font-src 'self'; \"\n"
+    replace: ""
+- name: the fresh look - any file beside the fonts is served
+  file: app/main.py
+  catches:
+  - api
+  changes:
+  - find: "        if name not in FONT_FILES:\n            raise not_found(\"font\")\n"
+    replace: ""
+- name: the fresh look - the page's letters are the device's own
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "font-family: \"Rubik\", ui-sans-serif, system-ui"
+    replace: "font-family: ui-sans-serif, system-ui"
