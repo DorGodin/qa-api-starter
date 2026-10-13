@@ -312,28 +312,21 @@ def test_of_a_kept_product_that_ran_out_there_is_fewer_and_no_more(
     expect(card.get_by_test_id("product-more")).to_have_count(0)
 
 
-def test_the_booking_says_how_many_and_a_kept_product_is_taken_off_from_its_row(
-    product, ahead, signed_in, products, bookings, account
+def test_the_customers_booking_says_how_many_in_the_diarys_words_and_is_changed_on_the_shelf(
+    product, ahead, signed_in, products, account
 ):
     other = products.create_fake_product()
     products.keep(ahead["id"], product["id"], persona=account["persona"], quantity=2).assert_ok(200)
     products.keep(ahead["id"], other["id"], persona=account["persona"]).assert_ok(200)
     signed_in.reload()
     signed_in.show_tab("mine")
-    chips = signed_in.row_at("11:00").get_by_test_id("kept-product")
 
-    assert [signed_in.text(c.locator("span")) for c in chips.all()] == [
-        f"{product['name']} ×2",
-        other["name"],
-    ]
-    assert product["name"] in chips.first.get_by_test_id("kept-remove").get_attribute("aria-label")
-    chips.first.get_by_test_id("kept-remove").click()
-    signed_in.settled()
+    row = signed_in.row_at("11:00")
 
-    stored = bookings.get_by_id(ahead["id"], persona=account["persona"]).as_dict["products"]
-    assert [p["id"] for p in stored] == [other["id"]]
-    expect(signed_in.row_at("11:00").get_by_test_id("kept-product")).to_have_count(1)
-    assert product["name"] in signed_in.text(signed_in.message())
+    assert signed_in.text(row.get_by_test_id("booking-products")) == (
+        f"שמור לתור: {product['name']} ×2, {other['name']}"
+    )
+    assert sorted(signed_in.text(b) for b in row.locator("button").all()) == ["ביטול", "שינוי מועד"]
 
 
 def test_the_diary_says_how_many_and_offers_no_way_to_take_it_off(
@@ -346,3 +339,17 @@ def test_the_diary_says_how_many_and_offers_no_way_to_take_it_off(
     row = owner.row_at("11:00")
     assert f"{product['name']} ×3" in owner.text(row.get_by_test_id("booking-products"))
     expect(row.get_by_test_id("kept-remove")).to_have_count(0)
+
+
+def test_a_booking_just_cancelled_no_longer_says_anything_is_kept_for_it(
+    product, ahead, signed_in, products, account
+):
+    products.keep(ahead["id"], product["id"], persona=account["persona"]).assert_ok(200)
+    signed_in.reload()
+    signed_in.show_tab("mine")
+    expect(signed_in.row_at("11:00").get_by_test_id("booking-products")).to_have_count(1)
+
+    signed_in.cancel("11:00")
+
+    expect(signed_in.row_at("11:00")).to_have_attribute("data-status", "cancelled")
+    expect(signed_in.row_at("11:00").get_by_test_id("booking-products")).to_have_count(0)

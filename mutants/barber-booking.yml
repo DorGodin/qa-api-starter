@@ -2352,13 +2352,6 @@ mutants:
   changes:
   - find: ".sort((a, b) => Date.parse(a.start) - Date.parse(b.start))[0] || null;"
     replace: ".sort((a, b) => Date.parse(b.start) - Date.parse(a.start))[0] || null;"
-- name: a booking row does not say which products are kept
-  file: app/static/index.html
-  catches:
-  - ui
-  changes:
-  - find: "    const keeps = b.status === \"confirmed\" && b.products.length > 0;"
-    replace: "    const keeps = false;"
 - name: a product's name is written as markup
   file: app/static/index.html
   catches:
@@ -2492,13 +2485,6 @@ mutants:
   changes:
   - find: "    : \"קובעים תור, ואז אפשר לבקש שנשמור לכם מוצר לתור.\";"
     replace: "    : \"\";"
-- name: a kept product cannot be taken off from its booking's row
-  file: app/static/index.html
-  catches:
-  - ui
-  changes:
-  - find: "    remove.addEventListener(\"click\", () => keepProduct(b, p, 0));\n"
-    replace: ""
 - name: a booking's row does not say how many of a product are kept
   file: app/static/index.html
   catches:
@@ -2506,13 +2492,6 @@ mutants:
   changes:
   - find: "const keptWords = (p) => `${isolate(p.name)}${p.quantity > 1 ? ` ×${p.quantity}` : \"\"}`;"
     replace: "const keptWords = (p) => isolate(p.name);"
-- name: the barber's diary lets a kept product be taken off
-  file: app/static/index.html
-  catches:
-  - ui
-  changes:
-  - find: "    if (keeps && me.role === \"customer\") row.append(keptList(b, when.textContent));"
-    replace: "    if (keeps) row.append(keptList(b, when.textContent));"
 - name: the products shelf stays two to a row on the narrowest phone
   file: app/static/index.html
   catches:
@@ -2520,3 +2499,17 @@ mutants:
   changes:
   - find: "  @media (max-width: 360px) { .products { grid-template-columns:minmax(0, 1fr); } }\n"
     replace: ""
+- name: a booking row does not say which products are kept
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    if (b.status === \"confirmed\" && b.products.length > 0) {"
+    replace: "    if (false) {"
+- name: a cancelled booking's row still says a product is kept for it
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    if (b.status === \"confirmed\" && b.products.length > 0) {"
+    replace: "    if (b.products.length > 0) {"
