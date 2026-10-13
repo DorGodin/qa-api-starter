@@ -29,7 +29,8 @@ FINGER, CHECKBOX = 44, 24
 # The times are smaller by the owner's choice (2026-10-04): 36px, five to a row,
 # so a day's times fit the screen. Still above WCAG 2.5.8's 24px.
 TIME = 36
-# The buttons under a booking, small and round by the owner's choice (2026-10-06).
+# The buttons under a booking, small and round by the owner's choice (2026-10-06) - and the
+# shelf's: keep, fewer and more on a product's card (2026-10-13).
 ROW_BUTTON = 36
 
 # Below 16px, Safari on iOS zooms the whole page in when a field takes the
@@ -83,7 +84,7 @@ def too_small_to_tap(page) -> list[str]:
             .filter((el) => el.offsetParent && el.type !== "hidden")
             .map((el) => {
                 const r = el.getBoundingClientRect();
-                const inRow = el.tagName === "BUTTON" && el.closest('[data-testid="booking-row"]');
+                const inRow = el.tagName === "BUTTON" && el.closest('[data-testid="booking-row"], [data-testid="product"]');
                 const need = el.type === "checkbox" ? checkbox : el.dataset.testid === "slot" ? time : inRow ? rowButton : finger;
                 const tooSmall = r.height < need || (el.tagName !== "INPUT" && el.tagName !== "SELECT" && r.width < need) || (el.type === "checkbox" && r.width < need);
                 return tooSmall ? `${el.tagName.toLowerCase()} ${el.dataset.testid || el.textContent.trim().slice(0, 12)}: ${Math.round(r.width)}x${Math.round(r.height)}, needs ${need}` : null;
@@ -627,6 +628,6 @@ def test_the_shelf_fits_a_phone_with_its_four_tabs_and_its_buttons(
     assert too_small_to_tap(phone_shop.page) == []
     assert clipped_labels(phone_shop.page) == []
     phone_shop.show_tab("mine")
-    expect(phone_shop.by("kept-remove").first).to_be_visible()
+    expect(phone_shop.by("booking-products").first).to_be_visible()
     assert sideways_overflow(phone_shop.page) == []
     assert too_small_to_tap(phone_shop.page) == []
