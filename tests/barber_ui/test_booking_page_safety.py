@@ -6,7 +6,7 @@ import re
 import pytest
 from playwright.sync_api import expect
 
-from obj.barber.booking_page import BARBER, DATE, PASSWORD, SERVICE, USERNAME, BookingPage
+from obj.barber.booking_page import BARBER, DATE, SERVICE, BookingPage
 from utils.local_time import local_day
 
 
@@ -38,29 +38,12 @@ def test_a_name_that_looks_like_html_is_shown_as_text_and_never_run(shop, custom
     assert shop.page.evaluate("window.__ran") is None, "a display name was executed as code"
 
 
-def test_a_wrong_password_and_an_unknown_user_look_the_same(page, env_config, credentials, fresh_address):
-    owner, _ = credentials("owner")
-    page.set_extra_http_headers({"X-Forwarded-For": fresh_address()})
-    answers = []
-    for username in (owner, "nobody-at-all"):
-        screen = BookingPage(page, env_config["url"]).open().unfold_password_sign_in()
-        page.get_by_label(USERNAME, exact=True).first.fill(username)
-        page.get_by_label(PASSWORD, exact=True).first.fill("wrong-password")
-        screen.by("login").click()
-        expect(screen.by("login-error")).to_be_visible()
-        answers.append(screen.by("login-error").inner_text())
-        expect(screen.by("app")).to_be_hidden()
-
-    assert answers[0] == answers[1], f"the page tells an attacker which usernames exist: {answers}"
-
-
 def test_every_field_has_a_label_a_screen_reader_can_read(shop, account):
     shop.open()
     for label in ("שם מלא", "מספר טלפון"):
         expect(shop.page.get_by_label(label, exact=True)).to_be_visible()
-    shop.unfold_password_sign_in()
-    for label in (USERNAME, PASSWORD):
-        expect(shop.page.get_by_label(label, exact=True).first).to_be_visible()
+    # One way in, for a customer and for the staff alike: nothing on the page takes a password.
+    expect(shop.page.locator('input[type="password"]')).to_have_count(0)
 
     shop.sign_in_as(account)
     for label in (BARBER, SERVICE):
@@ -68,23 +51,6 @@ def test_every_field_has_a_label_a_screen_reader_can_read(shop, account):
     expect(shop.page.get_by_role("grid", name=re.compile(f"^{DATE} "))).to_be_visible()
     # Booked, taken, cancelled: every outcome is announced, not only painted.
     expect(shop.page.get_by_role("status")).to_have_count(1)
-
-
-def test_too_many_wrong_passwords_are_refused_in_hebrew_with_how_long_to_wait(shop, customers, fresh_address):
-    # The password sign-in, while staff still use it: an account made the old way.
-    account = customers.build_signup_payload()
-    customers.create(account, persona=None).assert_ok(201)
-    shop.page.set_extra_http_headers({"X-Forwarded-For": fresh_address()})
-    shop.open().unfold_password_sign_in()
-    for password in ["not-the-password"] * 5 + [account["password"]]:
-        shop.page.get_by_label(USERNAME, exact=True).first.fill(account["username"])
-        shop.page.get_by_label(PASSWORD, exact=True).first.fill(password)
-        with shop.page.expect_response(lambda r: "/auth/token" in r.url):
-            shop.by("login").click()
-
-    error = shop.text(shop.by("login-error"))
-    assert "יותר מדי ניסיונות" in error and "דקות" in error, error
-    expect(shop.by("app")).to_be_hidden()
 
 
 WATCH_POLICY = """

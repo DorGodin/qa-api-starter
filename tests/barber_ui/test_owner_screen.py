@@ -7,6 +7,7 @@ import secrets
 import pytest
 from playwright.sync_api import expect
 
+from obj.barber.customers import Customers
 from utils.local_time import at_local, local_day, next_weekday, parse_instant
 
 SHOP_HOURS = {day: ["10:00", "19:00"] for day in ("sun", "mon", "tue", "wed", "thu")} | {
@@ -115,10 +116,10 @@ def test_the_same_day_off_twice_is_explained(owner_screen, barbers, shop_tz):
 
 
 def test_a_new_barber_is_bookable_at_once_on_the_shops_hours(owner_screen, barbers, ui_haircut, shop_tz):
-    name, username = f"ספר {secrets.token_hex(3)}", f"qa-ui-barber-{secrets.token_hex(4)}"
+    name = f"ספר {secrets.token_hex(3)}"
     screen = owner_screen()
 
-    screen.add_barber(name, username, "long-enough-password")
+    screen.add_barber(name, Customers.new_phone())
 
     expect(screen.message()).to_have_attribute("data-kind", "ok")
     created = next(
