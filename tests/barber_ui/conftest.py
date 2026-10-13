@@ -7,9 +7,12 @@ exactly the way the API suites make one.
 
 from __future__ import annotations
 
-import pytest
+import secrets
 
-from obj.barber.booking_page import BookingPage, OwnerScreen
+import pytest
+from playwright.sync_api import expect
+
+from obj.barber.booking_page import BookingPage, OwnerScreen, a_device
 from obj.barber.customers import new_device_address
 from tests.barber.conftest import (  # noqa: F401
     approval_rules,
@@ -91,3 +94,37 @@ def browser_context_args(browser_context_args, device):
         return {**browser_context_args, "record_video_size": browser_context_args["viewport"]}
     size = {"width": 1100, "height": 760}
     return {**browser_context_args, "viewport": size, "record_video_size": size}
+
+
+# The journeys' people: each a browser of their own, and an account opened on the screen.
+@pytest.fixture
+def person(browser, browser_context_args, env_config):
+    contexts = []
+
+    def _open(screen: type[BookingPage] = BookingPage) -> BookingPage:
+        context = a_device(browser, **browser_context_args)
+        contexts.append(context)
+        return screen(context.new_page(), env_config["url"])
+
+    yield _open
+    for context in contexts:
+        context.close()
+
+
+@pytest.fixture
+def run_id() -> str:
+    return secrets.token_hex(3)
+
+
+@pytest.fixture
+def signed_up(sms_inbox):  # noqa: F811
+    """A person opening their account on the screen: name, phone, the code from
+    the SMS - the first sign-in opens it."""
+
+    def _sign_up(screen: BookingPage, account: dict, navigate: bool = True) -> BookingPage:
+        screen.sign_in_by_code(account["name"], account["phone"], sms_inbox, navigate=navigate)
+        expect(screen.by("app")).to_be_visible()
+        screen.settled()
+        return screen
+
+    return _sign_up
