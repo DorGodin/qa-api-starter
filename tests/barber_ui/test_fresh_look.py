@@ -4,7 +4,6 @@ nothing ever waits for an animation.
 
 The other page tests run without motion (obj.barber.booking_page.a_device); these ask for it."""
 
-import time
 from urllib.parse import urlparse
 
 import pytest
@@ -24,12 +23,23 @@ def moving(browser, env_config):
     context.close()
 
 
-def held_back(seconds: float):
-    def late(route):
-        time.sleep(seconds)
-        route.continue_()
+def hold(page, pattern):
+    """Keep a request from being answered until the test lets it go. Not a delay: a handler that
+    sleeps also stops the test from looking, and the look then races the answer."""
+    held = []
 
-    return late
+    def keep(route):
+        held.append(route)
+
+    page.route(pattern, keep)
+
+    def let_go():
+        waiting, held[:] = list(held), []
+        for route in waiting:
+            route.continue_()
+        page.unroute(pattern, keep)
+
+    return let_go
 
 
 def animation_of(locator) -> str:
@@ -58,7 +68,7 @@ def test_times_that_are_slow_to_arrive_are_drawn_in_grey_and_gone_when_they_land
     signed_in = shop.sign_in_as(account)
     signed_in.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 5))
     expect(signed_in.by("slot").first).to_be_visible()
-    shop.page.route("**/barbers/*/availability*", held_back(1.2))
+    let_go = hold(shop.page, "**/barbers/*/availability*")
 
     signed_in.day(local_day(shop_tz, 6)).click(no_wait_after=True)
 
@@ -67,7 +77,9 @@ def test_times_that_are_slow_to_arrive_are_drawn_in_grey_and_gone_when_they_land
     expect(grey).to_have_attribute("aria-hidden", "true")
     expect(signed_in.by("slots")).to_be_hidden()
     assert grey.locator(".bone").count() >= 5
+    expect(signed_in.by("app")).to_have_attribute("aria-busy", "true")
     # The page says it is settled only once the grey is gone and the real list is back.
+    let_go()
     signed_in.settled()
     assert grey.count() == 0
     assert signed_in.by("slots").is_visible() and signed_in.by("slot").count() > 0
@@ -87,7 +99,7 @@ def test_each_list_has_its_grey_shape_while_it_is_slow(
     start = at_local(shop_tz, local_day(shop_tz, 6), "11:00")
     bookings.create_booking(barber["id"], ui_haircut["id"], start, persona=account["persona"])
     signed_in = shop.sign_in_as(account)
-    shop.page.route(asks, held_back(1.2))
+    let_go = hold(shop.page, asks)
 
     shop.page.reload()
 
@@ -95,6 +107,7 @@ def test_each_list_has_its_grey_shape_while_it_is_slow(
     expect(grey).to_be_visible()
     expect(signed_in.by(list_id)).to_be_hidden()
     assert shop.page.locator(".skeleton").count() == 1, "only the list that is late"
+    let_go()
     signed_in.settled()
     assert shop.page.locator(".skeleton").count() == 0 and signed_in.by(list_id).is_visible()
 
@@ -103,13 +116,14 @@ def test_a_slow_list_on_another_tab_draws_nothing(browser, env_config, account):
     """On a phone the courses are a tab of their own: their shape is not drawn behind the one in view."""
     context = a_device(browser, **PHONE)
     phone = BookingPage(context.new_page(), env_config["url"]).sign_in_as(account)
-    phone.page.route("**/courses", held_back(1.2))
+    let_go = hold(phone.page, "**/courses")
 
     phone.page.reload()
     expect(phone.by("app")).to_have_attribute("aria-busy", "true")
     phone.page.wait_for_timeout(500)
 
     assert phone.page.locator('[data-testid="courses"] + .skeleton').count() == 0
+    let_go()
     phone.settled()
     assert phone.page.locator(".skeleton").count() == 0
     context.close()
@@ -138,9 +152,10 @@ def test_a_request_that_waits_for_the_barber_is_not_celebrated(moving, account, 
     phone = moving.sign_in_as(account)
     phone.choose(barber["id"], asks_first["id"], local_day(shop_tz, 5)).pick("12:00").book(keep_answer=True)
 
+    # Counted at once, not waited for: confetti that was thrown clears itself away within two seconds,
+    # and a check that waits would find none by then.
+    assert phone.by("booking-done").locator(".bit").count() == 0
     expect(phone.by("booking-done")).to_have_attribute("data-waiting", "")
-    phone.page.wait_for_timeout(400)
-    expect(phone.by("booking-done").locator(".bit")).to_have_count(0)
 
 
 def test_a_person_who_asked_for_less_motion_gets_none(shop, account, ui_barber, ui_haircut, shop_tz):
@@ -151,6 +166,6 @@ def test_a_person_who_asked_for_less_motion_gets_none(shop, account, ui_barber, 
     signed_in.pick("13:00").book(keep_answer=True)
 
     ring = signed_in.by("booking-done").locator(".ring")
+    assert ring.locator(".bit").count() == 0, "counted at once: thrown confetti clears itself away"
     assert animation_of(ring) == "none" and animation_of(ring.locator(".tick")) == "none"
-    expect(ring.locator(".bit")).to_have_count(0)
     assert signed_in.text(ring.locator(".tick")) == "✓"
