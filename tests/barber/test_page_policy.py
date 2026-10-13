@@ -50,3 +50,19 @@ def test_an_api_answer_is_never_a_page(api):
     policy = directives(api.request("GET", "/shop", persona=None).headers["Content-Security-Policy"])
 
     assert policy == {"default-src": ["'none'"], "frame-ancestors": ["'none'"]}
+
+
+def test_only_the_two_font_files_are_served(api):
+    for name in ("rubik-hebrew.woff2", "rubik-latin.woff2"):
+        served = api.request("GET", f"/fonts/{name}", persona=None)
+        assert served.status_code == 200 and served.headers["content-type"] == "font/woff2"
+        assert served.raw.content[:4] == b"wOF2"
+    for name in ("rubik-bold.woff2", "..%2Fsw.js", "..%2Findex.html", "..%2F..%2Fmain.py"):
+        assert api.request("GET", f"/fonts/{name}", persona=None).status_code == 404, name
+
+
+def test_the_policy_lets_the_page_load_its_own_letters_and_no_one_elses(api):
+    policy = api.request("GET", "/", persona=None).headers["content-security-policy"]
+
+    assert "font-src 'self'" in policy
+    assert "https:" not in policy and "http:" not in policy

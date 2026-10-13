@@ -40,6 +40,9 @@ def greeting(display_name: str) -> re.Pattern:
 def a_device(browser, **context_args):
     """A browser context that is a different person's device: an address of its
     own, as the barbershop counts sign-ups and failed sign-ins by address."""
+    # Like a person who asked their device for less motion: the page's animations are extra, and a
+    # test that measures a button mid-pop measures the pop. Motion has its own tests, which ask for it.
+    context_args.setdefault("reduced_motion", "reduce")
     return browser.new_context(**context_args, extra_http_headers={"X-Forwarded-For": new_device_address()})
 
 
