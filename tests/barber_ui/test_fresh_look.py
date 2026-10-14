@@ -90,14 +90,17 @@ def test_times_that_are_slow_to_arrive_are_drawn_in_grey_and_gone_when_they_land
     [("**/bookings?*", "bookings"), ("**/courses", "courses"), ("**/products", "products")],
 )
 def test_each_list_has_its_grey_shape_while_it_is_slow(
-    shop, account, bookings, barbers, courses, products, ui_haircut, shop_tz, asks, list_id
+    browser, env_config, account, bookings, barbers, courses, products, ui_haircut, shop_tz, asks, list_id
 ):
-    """On a wide screen every list is in view. The page is opened again with one of them held back."""
+    """On a wide screen every list is in view - a screen of its own, whatever --device the run is on.
+    The page is opened again with one of them held back."""
     courses.create_fake_course()
     products.create_fake_product()
     barber = barbers.create_fake_barber()
     start = at_local(shop_tz, local_day(shop_tz, 6), "11:00")
     bookings.create_booking(barber["id"], ui_haircut["id"], start, persona=account["persona"])
+    wide = a_device(browser, viewport={"width": 1100, "height": 760}, locale="he-IL")
+    shop = BookingPage(wide.new_page(), env_config["url"])
     signed_in = shop.sign_in_as(account)
     let_go = hold(shop.page, asks)
 
@@ -110,6 +113,7 @@ def test_each_list_has_its_grey_shape_while_it_is_slow(
     let_go()
     signed_in.settled()
     assert shop.page.locator(".skeleton").count() == 0 and signed_in.by(list_id).is_visible()
+    wide.close()
 
 
 def test_a_slow_list_on_another_tab_draws_nothing(browser, env_config, account):
