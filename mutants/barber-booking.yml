@@ -465,8 +465,8 @@ mutants:
   catches:
   - ui-webkit
   changes:
-  - find: ' overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'
-    replace: ''
+  - find: 'padding-left:34px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'
+    replace: 'padding-left:34px;'
 - name: a long name squeezes the sign-out button on a narrow phone
   file: app/static/index.html
   catches:
@@ -893,8 +893,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: 'const who = b.guest_name ? ` · ${isolate(b.guest_name)} (בלי חשבון)` : "";'
-    replace: 'const who = "";'
+  - find: "      ? ` · ${isolate(b.guest_name)} (בלי חשבון)`\n"
+    replace: "      ? \"\"\n"
 - name: a guest's name is written into the diary as HTML
   file: app/static/index.html
   catches:
@@ -2772,3 +2772,73 @@ mutants:
   changes:
   - find: "  [data-testid=\"message\"] { position:fixed; z-index:40;"
     replace: "  [data-testid=\"message\"] { position:static; z-index:40;"
+- name: the staff's day - the staff are not told who is coming
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "        customer_name=session.get(User, booking.customer_id).display_name if booking.customer_id else None,\n"
+    replace: ""
+- name: the staff's day - the diary's row leaves out the customer's name
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "      : b.customer_name && me.role !== \"customer\" ? ` · ${isolate(b.customer_name)}` : \"\";"
+    replace: "      : \"\";"
+- name: the staff's day - a customer is shown the day of cards
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  box.hidden = !me || me.role === \"customer\";"
+    replace: "  box.hidden = !me;"
+- name: the staff's day - a cancelled booking is counted in the day
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    .filter((b) => b.status === \"confirmed\" && b.start_local.slice(0, 10) === shop.today)\n    .sort("
+    replace: "    .filter((b) => b.start_local.slice(0, 10) === shop.today)\n    .sort("
+- name: the staff's day - the products are counted once each whatever the number kept
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "card(\"today-products\", String(kept.reduce((n, p) => n + p.quantity, 0))"
+    replace: "card(\"today-products\", String(kept.length)"
+- name: the staff's day - the next booking is the first of the day even if it is over
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  const next = day.find((b) => minutesOf(b.start_local) >= now);"
+    replace: "  const next = day[0];"
+- name: the staff's day - a request that waits looks like any other block
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "className: b.approval === \"pending\" ? \"slot-block pending\" : \"slot-block\""
+    replace: "className: \"slot-block\""
+- name: the staff's day - the timeline is read out on top of the list
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "<div class=\"timeline\" data-testid=\"timeline\" aria-hidden=\"true\"></div>"
+    replace: "<div class=\"timeline\" data-testid=\"timeline\"></div>"
+- name: the staff's day - the blocks are in the wrong order of the hours
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    block.style.top = `${((start - from * 60) / 60) * HOUR_HEIGHT + 1}px`;"
+    replace: "    block.style.top = `${(day.length - i) * HOUR_HEIGHT}px`;"
+- name: the staff's day - a block does not take the eye to its booking
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    block.addEventListener(\"click\", () => document.querySelector(`[data-testid=\"booking-row\"][data-id=\"${b.id}\"]`)?.scrollIntoView({ block: \"center\", behavior: \"smooth\" }));\n"
+    replace: ""

@@ -116,3 +116,34 @@ def test_the_diary_of_what_is_still_to_come_holds_a_booking_ahead_and_keeps_it_o
 
     assert ([b["id"] for b in ahead["content"]], ahead["total"]) == ([made["id"]], 1)
     assert [(b["id"], b["status"]) for b in after["content"]] == [(made["id"], "cancelled")]
+
+
+def test_the_staff_see_who_is_coming_and_a_walk_in_has_no_account_name(
+    bookings, barbers, haircut, customers, sms_inbox, shop_tz
+):
+    barber = barbers.create_fake_barber()
+    customer = customers.sign_in_by_code(sms_inbox, full_name="דנה בדיקה")
+    made = bookings.create_booking(
+        barber["id"],
+        haircut["id"],
+        at_local(shop_tz, local_day(shop_tz, 4), "11:00"),
+        persona=customer["persona"],
+    )
+    walk_in = (
+        bookings.book_guest(
+            barber["id"],
+            haircut["id"],
+            at_local(shop_tz, local_day(shop_tz, 4), "12:00"),
+            "יואב",
+            persona="owner",
+        )
+        .assert_ok(201)
+        .as_dict
+    )
+
+    diary = {b["id"]: b for b in bookings.listing("owner", barber_id=barber["id"])["content"]}
+
+    assert diary[made["id"]]["customer_name"] == "דנה בדיקה"
+    assert (diary[walk_in["id"]]["customer_name"], diary[walk_in["id"]]["guest_name"]) == (None, "יואב")
+    barber_view = bookings.get_by_id(made["id"], persona=barbers.sign_in_as_persona(barber)).as_dict
+    assert barber_view["customer_name"] == "דנה בדיקה"
