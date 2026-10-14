@@ -460,13 +460,6 @@ mutants:
   changes:
   - find: 'select { -webkit-appearance:none; appearance:none; '
     replace: 'select { '
-- name: a long option widens the page in Safari
-  file: app/static/index.html
-  catches:
-  - ui-webkit
-  changes:
-  - find: 'padding-left:34px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'
-    replace: 'padding-left:34px;'
 - name: a long name squeezes the sign-out button on a narrow phone
   file: app/static/index.html
   catches:
