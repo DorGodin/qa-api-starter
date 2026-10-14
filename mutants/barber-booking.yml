@@ -1254,8 +1254,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '    pill.textContent = b.active ? b.display_name : `${b.display_name} (לא פעיל)`;'
-    replace: '    pill.textContent = b.display_name;'
+  - find: 'textContent: b.active ? b.display_name : `${b.display_name} (לא פעיל)` }));'
+    replace: 'textContent: b.display_name }));'
 - name: a day with no time stays chosen
   file: app/static/index.html
   catches:
@@ -2695,3 +2695,87 @@ mutants:
   changes:
   - find: "font-family: \"Rubik\", ui-sans-serif, system-ui"
     replace: "font-family: ui-sans-serif, system-ui"
+- name: faces and messages - a barber's picture is not shown beside the name
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    if (b.photo_url) face.append(control(\"img\", { src: b.photo_url, alt: \"\" }));\n"
+    replace: ""
+- name: faces and messages - the face is read out with the name
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "const face = control(\"span\", { className: \"face\", \"aria-hidden\": \"true\" });"
+    replace: "const face = control(\"span\", { className: \"face\" });"
+- name: faces and messages - the letter is written into the name
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    face.dataset.initial = b.display_name.trim().slice(0, 1);\n"
+    replace: "    face.textContent = b.display_name.trim().slice(0, 1);\n"
+- name: faces and messages - the owner's picture is not sent
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "const r = await api(\"PUT\", `/barbers/${barberId}/photo`, { data });"
+    replace: "const r = await api(\"PUT\", `/barbers/${barberId}/photo`, { data: \"\" });"
+- name: faces and messages - removing the picture does nothing
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    const r = await api(\"DELETE\", `/barbers/${barberId}/photo`);\n"
+    replace: "    const r = { ok: true };\n"
+- name: faces and messages - a barber's picture is not served
+  file: app/main.py
+  catches:
+  - api
+  changes:
+  - find: "            course_images |= set(session.scalars(select(User.photo).where(User.photo.is_not(None))))\n"
+    replace: ""
+- name: faces and messages - a customer may give a barber a picture
+  file: app/routers/barbers.py
+  catches:
+  - api
+  changes:
+  - find: "def set_barber_photo(\n    barber_id: str,\n    body: ImageIn,\n    _: User = Depends(require(\"owner\")),"
+    replace: "def set_barber_photo(\n    barber_id: str,\n    body: ImageIn,\n    _: User = Depends(require(\"owner\", \"customer\")),"
+- name: faces and messages - an old picture is left in the folder
+  file: app/routers/barbers.py
+  catches:
+  - api
+  changes:
+  - find: "        _forget_photo(directory, barber)\n        barber.photo = name\n"
+    replace: "        barber.photo = name\n"
+- name: faces and messages - the message never fades
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if (text) sayTimer = setTimeout(() => message.classList.add(\"faded\"), SAY_FOR);\n"
+    replace: ""
+- name: faces and messages - a faded message is removed from the page
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if (text) sayTimer = setTimeout(() => message.classList.add(\"faded\"), SAY_FOR);"
+    replace: "  if (text) sayTimer = setTimeout(() => { message.classList.add(\"faded\"); message.textContent = \"\"; }, SAY_FOR);"
+- name: faces and messages - the empty message is taken out of a screen reader's reach
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  [data-testid=\"message\"]:empty { padding:0; background:none; box-shadow:none; pointer-events:none; }"
+    replace: "  [data-testid=\"message\"]:empty { display:none; }"
+- name: faces and messages - the message sits in the page, not over it
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  [data-testid=\"message\"] { position:fixed; z-index:40;"
+    replace: "  [data-testid=\"message\"] { position:static; z-index:40;"
