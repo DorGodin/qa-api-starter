@@ -133,7 +133,9 @@ def test_a_booking_for_two_is_one_step_counts_once_and_each_is_then_its_own(
 
     diary = diary_of(barber)
     expect(diary.page.locator('[data-testid="booking-row"][data-status="confirmed"]')).to_have_count(2)
-    expect(diary.row_at("10:30")).to_have_attribute("data-status", "cancelled")
+    expect(diary.row_at("10:30")).to_have_count(0)
+    note = diary.text(diary.by("cancel-note"))
+    assert "יוני" in note and "10:30" in note, "told whose booking it was: the child's, by name"
 
     mine = bookings.listing(persona=as_persona(customers, parent, f"journey-parent-{run_id}"))["content"]
     by_start = {parse_instant(b["start"]): b for b in mine}

@@ -133,8 +133,10 @@ def test_a_barber_who_says_no_frees_the_time(
 
     shop.answer("15:00", "decline")
 
-    expect(shop.row_at("15:00")).to_have_attribute("data-approval", "declined")
-    assert "נדחה" in shop.text(shop.row_at("15:00").get_by_test_id("booking-detail"))
+    # Said no to, it is cancelled: the diary lists no cancelled booking, and the barber needs no
+    # telling of their own no.
+    expect(shop.row_at("15:00")).to_have_count(0)
+    expect(shop.by("cancel-notes")).to_be_hidden()
     free = [
         s["start"]
         for s in barbers.slots(

@@ -4,6 +4,7 @@ fit, one card for both, and the list that says who the second is for."""
 from playwright.sync_api import expect
 
 from obj.barber.barbers import WEEK
+from tests.barber_ui.test_owner_today import later_today
 from utils.local_time import at_local, local_day
 
 
@@ -97,3 +98,21 @@ def test_the_confirm_button_keeps_one_line_beside_the_words_for_two(
     )
     assert lines == 1, f"the button's words are on {lines} lines"
     assert "סך הכול" not in signed_in.text(signed_in.by("confirm-text"))
+
+
+def test_the_staffs_day_names_the_second_person_not_the_parent(
+    barbers, bookings, account, ui_haircut, owner_screen, shop_tz
+):
+    barber = barbers.create_fake_barber()
+    start = later_today(1, shop_tz)
+
+    bookings.create_group(
+        barber["id"],
+        start,
+        [{"service_id": ui_haircut["id"]}, {"service_id": ui_haircut["id"], "name": "יוני"}],
+        persona=account["persona"],
+    )
+    owner = owner_screen().select_barber(barber["id"])
+
+    blocks = [owner.text(b) for b in owner.by("timeline-booking").all()]
+    assert any(account["display_name"] in b for b in blocks) and any("יוני" in b for b in blocks), blocks
