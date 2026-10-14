@@ -632,3 +632,12 @@ def test_the_shelf_fits_a_phone_with_its_four_tabs_and_its_buttons(
     expect(phone_shop.by("booking-products").first).to_be_visible()
     assert sideways_overflow(phone_shop.page) == []
     assert too_small_to_tap(phone_shop.page) == []
+
+
+def test_a_service_with_a_very_long_name_does_not_widen_the_page(phone_shop, account, services):
+    """Safari sizes a select to its longest option unless it is told to cut it."""
+    services.create_fake_service(name="תספורת " + "ארוכה מאוד " * 6 + secrets.token_hex(2))
+    phone_shop.sign_in_as(account)
+
+    expect(phone_shop.by("service")).to_be_visible()
+    assert sideways_overflow(phone_shop.page) == []

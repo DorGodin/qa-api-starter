@@ -1,7 +1,7 @@
 """The staff's day, above the diary: four cards - how many today, how many wait for a yes, what to have
 ready, who is next - and today by its hours. And who is coming: the customer's name, to the staff."""
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pytest
 from playwright.sync_api import expect
@@ -41,6 +41,8 @@ def day(barbers, services, bookings, products, account, shop_tz):
     waiting = bookings.create_booking(
         barber["id"], asks["id"], later_today(3, shop_tz), persona=account["persona"]
     )
+    gone = bookings.book_guest(barber["id"], cut["id"], later_today(4, shop_tz), "בוטל", persona="owner")
+    bookings.cancel(gone.assert_ok(201).as_dict["id"], persona="owner").assert_ok(200)
     return {"barber": barber, "walk_in": walk_in, "kept": kept, "waiting": waiting, "product": product}
 
 
@@ -120,3 +122,15 @@ def test_a_day_with_nothing_says_so(barbers, owner_screen):
     expect(owner.by("timeline-empty")).to_be_visible()
     expect(owner.by("today-waiting")).to_be_disabled()
     assert owner.text(owner.by("today-next").locator("small")) == "אין עוד היום"
+
+
+def test_the_next_booking_is_the_first_still_to_come(day, owner_screen, page):
+    """What is over cannot be booked from outside, but the cards read the time from the browser:
+    its clock is moved past the first booking of the day."""
+    first = day["walk_in"]["start_local"]
+    page.clock.set_fixed_time(datetime.fromisoformat(first) + timedelta(minutes=20))
+
+    owner = owner_screen().select_barber(day["barber"]["id"])
+
+    assert owner.text(owner.by("today-next").locator("strong")) == day["kept"]["start_local"][11:16]
+    assert owner.text(owner.by("today-count").locator("strong")) == "3", "the one that is over still counts"
