@@ -240,7 +240,8 @@ def test_the_owner_jumps_to_each_section_without_scrolling_through_the_rest(phon
 
     nav.get_by_role("link", name=section, exact=True).tap()
 
-    heading = phone_owner.by(panel).locator("h2")
+    # The section's first title - the diary's is the day's, over its cards.
+    heading = phone_owner.by(panel).locator("h2").first
     expect(heading).to_be_in_viewport()
     assert (
         heading.bounding_box()["y"] >= nav.bounding_box()["y"] + nav.bounding_box()["height"] - 1
