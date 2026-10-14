@@ -29,9 +29,9 @@ FINGER, CHECKBOX = 44, 24
 # The times are smaller by the owner's choice (2026-10-04): 36px, five to a row,
 # so a day's times fit the screen. Still above WCAG 2.5.8's 24px.
 TIME = 36
-# The buttons under a booking, small and round by the owner's choice (2026-10-06) - and the
-# shelf's: keep, fewer and more on a product's card (2026-10-13).
-ROW_BUTTON = 36
+# The shelf's buttons, small and round by the owner's choice (2026-10-13): keep, fewer and more
+# on a product's card. The buttons under a booking smaller still, centred (2026-10-14).
+ROW_BUTTON, BOOKING_BUTTON = 36, 32
 
 # Below 16px, Safari on iOS zooms the whole page in when a field takes the
 # focus, and leaves it zoomed. Only a font size of 16px or more prevents it.
@@ -80,18 +80,19 @@ def sideways_overflow(page) -> list[str]:
 
 def too_small_to_tap(page) -> list[str]:
     return page.evaluate(
-        """([selector, finger, checkbox, time, rowButton]) => [...document.querySelectorAll(selector)]
+        """([selector, finger, checkbox, time, rowButton, bookingButton]) => [...document.querySelectorAll(selector)]
             .filter((el) => el.offsetParent && el.type !== "hidden")
             .map((el) => {
                 const r = el.getBoundingClientRect();
-                const inRow = el.tagName === "BUTTON" && el.closest('[data-testid="booking-row"], [data-testid="product"]');
-                const need = el.type === "checkbox" ? checkbox : el.dataset.testid === "slot" ? time : inRow ? rowButton : finger;
+                const inBooking = el.tagName === "BUTTON" && el.closest('[data-testid="booking-row"]');
+                const inRow = el.tagName === "BUTTON" && el.closest('[data-testid="product"]');
+                const need = el.type === "checkbox" ? checkbox : el.dataset.testid === "slot" ? time : inBooking ? bookingButton : inRow ? rowButton : finger;
                 const tooSmall = r.height < need || (el.tagName !== "INPUT" && el.tagName !== "SELECT" && r.width < need) || (el.type === "checkbox" && r.width < need);
                 return tooSmall ? `${el.tagName.toLowerCase()} ${el.dataset.testid || el.textContent.trim().slice(0, 12)}: ${Math.round(r.width)}x${Math.round(r.height)}, needs ${need}` : null;
             })
             .filter(Boolean)
             .slice(0, 10)""",
-        [CONTROLS, FINGER, CHECKBOX, TIME, ROW_BUTTON],
+        [CONTROLS, FINGER, CHECKBOX, TIME, ROW_BUTTON, BOOKING_BUTTON],
     )
 
 

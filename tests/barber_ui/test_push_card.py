@@ -168,11 +168,22 @@ def test_a_barber_is_asked_in_the_wording_of_a_barber_and_gets_the_barbers_worke
     shop.sign_in(barber["username"], barber["password"])
 
     card = shop.by("push-card")
-    assert "בקשה חדשה" in shop.text(card.locator("h3"))
+    assert "תור חדש" in shop.text(card.locator("h3")) and "ביטול" in shop.text(card.locator("h3"))
     shop.by("push-on").click()
     shop.settled()
 
     assert shop.page.evaluate("window.__push.registered") == "/sw.js?role=barber"
+
+
+def test_the_owner_is_asked_too_and_gets_the_staffs_worker(ready, owner_screen, page):
+    page.add_init_script(STUB)
+    owner = owner_screen()
+
+    assert "תור חדש" in owner.text(owner.by("push-card").locator("h3"))
+    owner.by("push-on").click()
+    owner.settled()
+
+    assert page.evaluate("window.__push.registered") == "/sw.js?role=barber"
 
 
 def test_on_an_iphone_that_is_not_installed_the_card_says_how_to_add_the_page_to_the_home_screen(

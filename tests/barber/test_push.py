@@ -82,17 +82,38 @@ def test_a_no_tells_the_customer_too_and_the_same_answer_twice_tells_once(
     assert len(push_inbox.stays_quiet(endpoint)) == 2
 
 
-def test_the_barber_is_told_of_a_request_and_not_of_an_ordinary_booking(
+def test_the_barber_is_told_of_every_booking_a_customer_makes_in_the_words_for_it(
     push, push_inbox, ready, bookings, own_barber, haircut, new_customer, shop_tz
 ):
     me, endpoint = new_customer(), push_inbox.new_endpoint()
     push.subscribe(endpoint, own_barber["persona"]).assert_ok(201)
 
     waiting(bookings, own_barber, haircut, me, shop_tz, "10:00")
-    assert push_inbox.stays_quiet(endpoint) == []
+    push_inbox.wait_for(endpoint)
+    plain = push.notice(endpoint).assert_ok(200).as_dict
     waiting(bookings, own_barber, haircut, me, shop_tz, "15:00")
+    push_inbox.wait_for(endpoint, count=2)
+    asked = push.notice(endpoint).assert_ok(200).as_dict
 
-    assert len(push_inbox.wait_for(endpoint)) == 1
+    assert plain["title"] == "תור חדש" and "10:00" in plain["body"]
+    assert asked["title"] == "בקשה חדשה ביומן" and "15:00" in asked["body"]
+
+
+def test_the_barber_is_told_when_a_customer_cancels_and_not_when_the_owner_does(
+    push, push_inbox, ready, bookings, own_barber, haircut, new_customer, shop_tz
+):
+    me, endpoint = new_customer(), push_inbox.new_endpoint()
+    first = waiting(bookings, own_barber, haircut, me, shop_tz, "10:00")
+    second = waiting(bookings, own_barber, haircut, me, shop_tz, "11:00")
+    push.subscribe(endpoint, own_barber["persona"]).assert_ok(201)
+
+    bookings.cancel(first["id"], persona=me).assert_ok(200)
+    push_inbox.wait_for(endpoint)
+    told = push.notice(endpoint).assert_ok(200).as_dict
+    bookings.cancel(second["id"], persona="owner").assert_ok(200)
+
+    assert len(push_inbox.stays_quiet(endpoint)) == 1, "the owner's own cancellation wakes nobody"
+    assert told["title"] == "ביטול תור" and "10:00" in told["body"]
 
 
 def test_a_customer_is_not_told_about_someone_elses_booking(
