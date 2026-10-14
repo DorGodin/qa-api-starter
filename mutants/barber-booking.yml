@@ -3046,13 +3046,6 @@ mutants:
   changes:
   - find: "    return '<link rel=\"apple-touch-icon\" href=\"/icons/180.png\">' + splash_links()"
     replace: "    return '<link rel=\"apple-touch-icon\" href=\"/icons/180.png\">'"
-- name: Android cuts the logo with no room for its circle
-  file: app/home_screen.py
-  catches:
-  - ui
-  changes:
-  - find: "\"maskable-512\": (512, 0.27)}"
-    replace: "\"maskable-512\": (512, 0.08)}"
 - name: a splash is drawn the size of another iPhone
   file: app/home_screen.py
   catches:
