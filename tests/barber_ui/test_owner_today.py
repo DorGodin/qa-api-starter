@@ -54,8 +54,11 @@ def test_the_owner_sees_the_day_in_four_cards(day, owner_screen, account):
         return owner.text(box.locator("strong")), owner.text(box.locator("small"))
 
     assert card("count")[0] == "3"
+    # The customer's booking may itself fall in the hours that wait for the barber, by the hour the
+    # test runs at: what waits is read from what the shop said, not assumed.
+    waiting = [b for b in (day["walk_in"], day["kept"], day["waiting"]) if b["approval"] == "pending"]
     number, times = card("waiting")
-    assert number == "1" and day["waiting"]["start_local"][11:16] in times
+    assert number == str(len(waiting)) and all(b["start_local"][11:16] in times for b in waiting)
     number, names = card("products")
     assert number == "2" and "ווקס QA ×2" in names
     time, who = card("next")
