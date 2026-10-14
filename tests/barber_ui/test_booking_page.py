@@ -63,7 +63,9 @@ def test_cancelling_from_the_list_gives_the_time_back(
 
     expect(signed_in.message()).to_contain_text("בוטל")
     expect(signed_in.message()).to_have_attribute("data-kind", "cancelled")
-    expect(signed_in.message()).to_have_css("color", "rgb(168, 50, 58)")
+    # Said with the red mark beside it - the colour is the mark's, the words are white on the dark pill.
+    mark = signed_in.message().evaluate("e => getComputedStyle(e, '::before').backgroundColor")
+    assert mark == "rgb(213, 80, 63)", mark
     expect(signed_in.row_at("12:00")).to_contain_text("בוטל")
     assert "12:00" in signed_in.times()
     assert bookings.listing(persona=account["persona"], status="confirmed")["total"] == 0
