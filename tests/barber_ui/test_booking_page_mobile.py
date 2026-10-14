@@ -573,7 +573,15 @@ def test_the_chosen_service_shows_its_price_in_full_on_every_phone(phone_shop, a
     """A field cuts what does not fit and puts dots in its place: the words are measured in the
     field's own letters against the room between its paddings. The name is as long as the shop's
     longest."""
-    service = services.create_fake_service(name=f"גילוח פנים כמו {secrets.token_hex(1)}", price_minor=14000)
+    # As long as the shop's longest, with two hex digits of its own - and another two if those are taken.
+    for _ in range(5):
+        made = services.create(
+            services.build_service_payload(name=f"גילוח פנים כמו {secrets.token_hex(1)}", price_minor=14000),
+            persona="owner",
+        )
+        if made.status_code == 201:
+            break
+    service = made.assert_ok(201).as_dict
     phone_shop.sign_in_as(account)
     phone_shop.by("service").select_option(service["id"])
     phone_shop.settled()
