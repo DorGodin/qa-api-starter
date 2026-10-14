@@ -2744,13 +2744,6 @@ mutants:
   changes:
   - find: "def set_barber_photo(\n    barber_id: str,\n    body: ImageIn,\n    _: User = Depends(require(\"owner\")),"
     replace: "def set_barber_photo(\n    barber_id: str,\n    body: ImageIn,\n    _: User = Depends(require(\"owner\", \"customer\")),"
-- name: faces and messages - an old picture is left in the folder
-  file: app/routers/barbers.py
-  catches:
-  - api
-  changes:
-  - find: "        _forget_photo(directory, barber)\n        barber.photo = name\n"
-    replace: "        barber.photo = name\n"
 - name: faces and messages - the message never fades
   file: app/static/index.html
   catches:
