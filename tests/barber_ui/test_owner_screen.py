@@ -232,10 +232,13 @@ def test_a_customers_list_keeps_the_past(signed_in):
 
 
 def test_when_more_are_ahead_than_the_page_holds_the_diary_says_so(owner_screen, page):
+    totals = []
+
     def more(route):
         response = route.fetch()
         body = response.json()
-        route.fulfill(response=response, json={**body, "total": len(body["content"]) + 37})
+        totals.append(len(body["content"]) + 37)
+        route.fulfill(response=response, json={**body, "total": totals[-1]})
 
     page.route("**/bookings?*", more)
 
@@ -243,7 +246,8 @@ def test_when_more_are_ahead_than_the_page_holds_the_diary_says_so(owner_screen,
 
     words = owner.text(owner.by("more-bookings"))
     expect(owner.by("more-bookings")).to_be_visible()
-    assert "הקרובים" in words and words.rstrip(".").endswith(str(owner.rows().count() + 37)), words
+    # Out of the total the page was told - not out of the rows on the screen, which leave out cancellations.
+    assert "הקרובים" in words and words.rstrip(".").endswith(str(totals[-1])), words
 
 
 def test_with_everything_on_the_page_the_diary_adds_nothing(owner_screen):
