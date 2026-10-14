@@ -30,6 +30,9 @@ runs:
         .venv/bin/pip install -q -r requirements.lock.txt
         cp .env.example .env
         set -a; . ./.env; set +a
+        # A profile picture, so the icons and the iPhone splash drawn from it are there to be tested.
+        mkdir -p media && .venv/bin/python -c "from PIL import Image; Image.new('RGB', (400, 400), 'white').save('media/profile.png')"
+        export SHOP_PROFILE_IMAGE=profile.png
         # A key pair for this run, and the fake push service the suites read what was sent from.
         export $(.venv/bin/python -m app.push_keys | xargs) PUSH_EXTRA_HOSTS=127.0.0.1
         DATABASE_URL=sqlite:///./barber-test.db SMS_URL=http://127.0.0.1:8109/messages .venv/bin/python -m uvicorn app.main:create_app --factory --port 8101 --workers 2 &

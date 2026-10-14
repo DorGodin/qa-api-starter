@@ -104,7 +104,7 @@ def test_the_staffs_day_names_the_second_person_not_the_parent(
     barbers, bookings, account, ui_haircut, owner_screen, shop_tz
 ):
     barber = barbers.create_fake_barber()
-    start = later_today(1, shop_tz)
+    start = later_today(1, shop_tz, minutes=2 * ui_haircut["duration_minutes"])
 
     bookings.create_group(
         barber["id"],

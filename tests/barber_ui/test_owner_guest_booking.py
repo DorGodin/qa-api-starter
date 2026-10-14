@@ -58,7 +58,7 @@ def test_a_name_that_looks_like_html_is_shown_as_text(owner_screen, barbers, ui_
     ).pick("10:00").book_for(name)
 
     expect(screen.row_at("10:00")).to_contain_text(name)
-    assert screen.page.locator('[data-testid="bookings"] img').count() == 0
+    assert screen.page.locator('[data-testid="booking-row"] img').count() == 0
 
 
 def test_a_customer_never_gets_the_name_field(signed_in):

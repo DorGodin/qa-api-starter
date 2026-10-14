@@ -4,6 +4,7 @@ stand-ins that keep a record; what is tested is what the page does with them and
 server."""
 
 import json
+import re
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -186,22 +187,6 @@ def test_the_owner_is_asked_too_and_gets_the_staffs_worker(ready, owner_screen, 
     assert page.evaluate("window.__push.registered") == "/sw.js?role=barber"
 
 
-def test_on_an_iphone_that_is_not_installed_the_card_says_how_to_add_the_page_to_the_home_screen(
-    ready, upcoming, shop, account
-):
-    shop.page.add_init_script(
-        "delete window.PushManager; delete window.Notification;"
-        "Object.defineProperty(navigator, 'userAgent', {value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)'});"
-    )
-    signed_in = shop.sign_in_as(account)
-    signed_in.show_tab("mine")
-
-    card = signed_in.by("push-card")
-
-    expect(card).to_have_attribute("data-state", "install")
-    assert "הוספה למסך הבית" in signed_in.text(card)
-
-
 def test_the_service_worker_and_the_manifest_are_served_from_the_root(api):
     worker = api.request("GET", "/sw.js", persona=None)
     manifest = api.request("GET", "/manifest.webmanifest", persona=None)
@@ -211,6 +196,32 @@ def test_the_service_worker_and_the_manifest_are_served_from_the_root(api):
     assert manifest.status_code == 200
     body = manifest.as_dict
     assert (body["start_url"], body["display"], body["lang"], body["dir"]) == ("/", "standalone", "he", "rtl")
+
+
+def png_size(answer) -> tuple[int, int]:
+    assert answer.status_code == 200 and answer.headers["content-type"] == "image/png"
+    head = answer.raw.content
+    assert head[:8] == b"\x89PNG\r\n\x1a\n"
+    return int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")
+
+
+def test_on_the_home_screen_the_shop_opens_on_black_with_every_picture_it_names(api):
+    page = api.request("GET", "/", persona=None).text
+    manifest = api.request("GET", "/manifest.webmanifest", persona=None).as_dict
+
+    assert manifest["background_color"] == manifest["theme_color"] == "#111111"
+    assert '<meta name="theme-color" content="#111111">' in page
+    for icon in manifest["icons"]:
+        width, height = (int(n) for n in icon["sizes"].split("x"))
+        assert png_size(api.request("GET", icon["src"], persona=None)) == (width, height)
+    if manifest["icons"]:
+        assert any(icon.get("purpose") == "maskable" for icon in manifest["icons"])
+        touch = re.search(r'<link rel="apple-touch-icon" href="([^"]+)">', page)
+        assert touch and png_size(api.request("GET", touch.group(1), persona=None)) == (180, 180)
+        splashes = re.findall(r'rel="apple-touch-startup-image" href="(/splash/(\d+)x(\d+)\.png)"', page)
+        assert splashes
+        for src, width, height in splashes:
+            assert png_size(api.request("GET", src, persona=None)) == (int(width), int(height))
 
 
 def test_a_customer_with_nothing_ahead_is_not_asked(ready, shop, account):
@@ -264,3 +275,20 @@ def test_a_customer_who_said_yes_can_still_turn_it_off_after_the_day(ready, upco
     signed_in.show_tab("mine")
 
     expect(signed_in.by("push-off")).to_be_visible()
+
+
+def test_while_the_shop_is_offered_for_the_home_screen_it_is_the_only_offer(ready, upcoming, shop, account):
+    shop.page.add_init_script(STUB)
+    shop.page.add_init_script(
+        'addEventListener("load", () => { const offer = new Event("beforeinstallprompt", { cancelable: true });'
+        " offer.prompt = async () => ({ outcome: 'dismissed' }); dispatchEvent(offer); });"
+    )
+    signed_in = shop.sign_in_as(account)
+    signed_in.show_tab("mine")
+
+    expect(signed_in.by("install-card")).to_be_visible()
+    expect(signed_in.by("push-card")).to_have_count(0)
+    signed_in.by("install-later").click()
+    signed_in.settled()
+
+    expect(signed_in.by("push-card")).to_have_attribute("data-state", "ask")
