@@ -517,7 +517,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '  for (const id of ["bookings", "slots", "hours", "approval-hours", "days-off", "services", "barber", "service", "courses", "courses-admin", "service-2", "products", "products-admin", "timeline", "cancel-list"]) $(id).replaceChildren();
+  - find: '  for (const id of ["bookings", "slots", "hours", "approval-hours", "days-off", "services", "barber", "service", "courses", "courses-admin", "service-2", "products", "products-admin", "timeline", "cancel-list", "install-card"]) $(id).replaceChildren();
 
       '
     replace: ''
@@ -2854,8 +2854,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "\"products-admin\", \"timeline\", \"cancel-list\"]) $(id).replaceChildren();"
-    replace: "\"products-admin\"]) $(id).replaceChildren();"
+  - find: "\"products-admin\", \"timeline\", \"cancel-list\", \"install-card\"]) $(id).replaceChildren();"
+    replace: "\"products-admin\", \"cancel-list\", \"install-card\"]) $(id).replaceChildren();"
 - name: cancellations - the staff's diary lists cancelled bookings
   file: app/static/index.html
   catches:
@@ -2976,3 +2976,87 @@ mutants:
   changes:
   - find: "  [data-testid=\"booking-row\"] { flex-wrap:wrap; justify-content:center; gap:8px 8px; }"
     replace: "  [data-testid=\"booking-row\"] { flex-wrap:wrap; justify-content:flex-start; gap:8px 8px; }"
+- name: a booking from before the last day still brings the home screen card
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    ? freshBookings(all).some((b) => !later.ids.includes(b.id))"
+    replace: "    ? all.some((b) => !later.ids.includes(b.id))"
+- name: not now does not put the home screen card away
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    ? freshBookings(all).some((b) => !later.ids.includes(b.id))"
+    replace: "    ? freshBookings(all).length > 0"
+- name: the staff are never offered the home screen again after not now
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    : Date.now() - later.at > PUSH_ASK_HOURS * 3600000;"
+    replace: "    : later.at === 0;"
+- name: the shop already on the home screen is offered it again
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if (!me || installed() || (!iphone && !installPrompt)) return false;"
+    replace: "  if (!me || (!iphone && !installPrompt)) return false;"
+- name: the install button does not ask the browser to install
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "      await asked.prompt();"
+    replace: ""
+- name: the notifications card stands beside the home screen band
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  const notify = renderInstall(r.ok ? r.data.content : []) ? null : pushCard(r.ok ? r.data.content : []);"
+    replace: "  const notify = (renderInstall(r.ok ? r.data.content : []), pushCard(r.ok ? r.data.content : []));"
+- name: the shop opens from the home screen on white
+  file: app/main.py
+  catches:
+  - ui
+  changes:
+  - find: "                \"background_color\": \"#111111\","
+    replace: "                \"background_color\": \"#ffffff\","
+- name: an iPhone puts a picture of the page on its home screen
+  file: app/identity.py
+  catches:
+  - ui
+  changes:
+  - find: "    return '<link rel=\"apple-touch-icon\" href=\"/icons/180.png\">' + splash_links()"
+    replace: "    return splash_links()"
+- name: the home screen band shows on every tab of a phone
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    [data-role=\"customer\"]:not([data-tab=\"mine\"]) [data-testid=\"install-card\"] { display:none; }"
+    replace: "    [data-role=\"customer\"]:not([data-tab=\"mine\"]) [data-testid=\"nothing\"] { display:none; }"
+- name: an iPhone opens the shop on a white screen
+  file: app/identity.py
+  catches:
+  - ui
+  changes:
+  - find: "    return '<link rel=\"apple-touch-icon\" href=\"/icons/180.png\">' + splash_links()"
+    replace: "    return '<link rel=\"apple-touch-icon\" href=\"/icons/180.png\">'"
+- name: Android cuts the logo with no room for its circle
+  file: app/home_screen.py
+  catches:
+  - ui
+  changes:
+  - find: "\"maskable-512\": (512, 0.27)}"
+    replace: "\"maskable-512\": (512, 0.08)}"
+- name: a splash is drawn the size of another iPhone
+  file: app/home_screen.py
+  catches:
+  - ui
+  changes:
+  - find: "    width, height = (int(n) for n in size.split(\"x\"))"
+    replace: "    width, height = 1170, 2532"

@@ -11,12 +11,14 @@ from utils.helpers import now_utc, to_iso
 from utils.local_time import at_local, local_day
 
 
-def later_today(hours: float, shop_tz) -> str:
-    """A quarter hour on the shop's clock, today, the given hours from now - or a skip in the last
-    hours of the day, when there is no later today to book."""
+def later_today(hours: float, shop_tz, minutes: int = 30) -> str:
+    """A quarter hour on the shop's clock, today, the given hours from now, for a booking of that many
+    minutes that ends today too - or a skip in the last hours of the day, when there is no later today."""
     t = now_utc() + timedelta(hours=hours)
     t = t.replace(second=0, microsecond=0) + timedelta(minutes=15 - t.minute % 15)
-    if t.astimezone(shop_tz).date() != local_day(shop_tz, 0):
+    if (t + timedelta(minutes=minutes) - timedelta(seconds=1)).astimezone(shop_tz).date() != local_day(
+        shop_tz, 0
+    ):
         pytest.skip("too late in the shop's day to book later today")
     return to_iso(t)
 
