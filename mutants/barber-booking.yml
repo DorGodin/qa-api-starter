@@ -517,7 +517,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '  for (const id of ["bookings", "slots", "hours", "approval-hours", "days-off", "services", "barber", "service", "courses", "courses-admin", "service-2", "products", "products-admin"]) $(id).replaceChildren();
+  - find: '  for (const id of ["bookings", "slots", "hours", "approval-hours", "days-off", "services", "barber", "service", "courses", "courses-admin", "service-2", "products", "products-admin", "timeline", "cancel-list"]) $(id).replaceChildren();
 
       '
     replace: ''
@@ -2791,8 +2791,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "    .filter((b) => b.status === \"confirmed\" && b.start_local.slice(0, 10) === shop.today)\n    .sort("
-    replace: "    .filter((b) => b.start_local.slice(0, 10) === shop.today)\n    .sort("
+  - find: "    .filter((b) => b.status === \"confirmed\" && b.start_local.slice(0, 10) === today)\n    .sort("
+    replace: "    .filter((b) => b.start_local.slice(0, 10) === today)\n    .sort("
 - name: the staff's day - the products are counted once each whatever the number kept
   file: app/static/index.html
   catches:
