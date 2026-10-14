@@ -109,7 +109,10 @@ def test_a_shop_opened_on_the_screen_is_booked_cancelled_and_booked_again(
 
     owner.select_barber(barber["id"])
     expect(owner.page.locator('[data-testid="booking-row"][data-status="confirmed"]')).to_have_count(1)
-    expect(owner.page.locator('[data-testid="booking-row"][data-status="cancelled"]')).to_have_count(1)
+    # The diary lists no cancelled booking; the customer's cancellation is told above it.
+    expect(owner.page.locator('[data-testid="booking-row"][data-status="cancelled"]')).to_have_count(0)
+    expect(owner.by("cancel-note")).to_have_count(1)
+    assert "12:15" in owner.text(owner.by("cancel-note"))
 
     # Each customer's own view, through the sign-in their screen holds.
     for screen, account in ((first, first_account), (second, second_account)):

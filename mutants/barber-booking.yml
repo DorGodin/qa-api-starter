@@ -2835,3 +2835,59 @@ mutants:
   changes:
   - find: "    block.addEventListener(\"click\", () => document.querySelector(`[data-testid=\"booking-row\"][data-id=\"${b.id}\"]`)?.scrollIntoView({ block: \"center\", behavior: \"smooth\" }));\n"
     replace: ""
+- name: the staff's day - a child in a booking for two is named as the parent
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "const whoIsComing = (b) => b.guest_name || b.for_name || b.customer_name || \"\";"
+    replace: "const whoIsComing = (b) => b.guest_name || b.customer_name || \"\";"
+- name: the staff's day - the day's span ends at the last start
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "${hhmm(Math.max(...day.map(endOf)))}"
+    replace: "${clock(day[day.length - 1].start_local)}"
+- name: the staff's day - signing out leaves the day in the page
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "\"products-admin\", \"timeline\", \"cancel-list\"]) $(id).replaceChildren();"
+    replace: "\"products-admin\"]) $(id).replaceChildren();"
+- name: cancellations - the staff's diary lists cancelled bookings
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "(me.role === \"customer\" ? shownToCustomer(b) : b.status !== \"cancelled\")"
+    replace: "(me.role === \"customer\" ? shownToCustomer(b) : true)"
+- name: cancellations - a customer's cancellation is not told
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  $(\"cancel-notes\").hidden = fresh.length === 0;"
+    replace: "  $(\"cancel-notes\").hidden = true;"
+- name: cancellations - the shop's own cancellation is told
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "b.status === \"cancelled\" && b.cancelled_by === \"customer\" && !seen.has(b.id)"
+    replace: "b.status === \"cancelled\" && !seen.has(b.id)"
+- name: cancellations - seen is forgotten
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "      localStorage.setItem(SEEN_CANCELLED_KEY, JSON.stringify([...seen, ...fresh.map((b) => b.id)].slice(-300)));\n"
+    replace: ""
+- name: cancellations - the diary does not refresh itself
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  staffPoll = setTimeout(() => refreshBookings(), 60000);\n"
+    replace: ""
