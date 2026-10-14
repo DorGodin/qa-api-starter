@@ -722,8 +722,8 @@ mutants:
   changes:
   - find: '  :focus-visible { outline:3px solid var(--brand); outline-offset:2px; }'
     replace: '  :focus-visible { outline:none; }'
-  - find: '  input:focus, select:focus { outline:3px solid var(--brand); outline-offset:2px; }'
-    replace: '  input:focus, select:focus { outline:none; }'
+  - find: '  input:focus, select:focus, textarea:focus { outline:3px solid var(--brand); outline-offset:2px; }'
+    replace: '  input:focus, select:focus, textarea:focus { outline:none; }'
 - name: checkboxes too small to hit with a mouse
   file: app/static/index.html
   catches:
@@ -1748,8 +1748,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "me.role !== \"barber\" && (me.role !== \"customer\" || canCancel)"
-    replace: "me.role !== \"barber\""
+  - find: "(me.role === \"customer\" ? canCancel : Date.parse(b.start) > Date.now())"
+    replace: "(me.role === \"customer\" ? true : Date.parse(b.start) > Date.now())"
 - name: a customer is offered a move button on a booking too close
   file: app/static/index.html
   catches:
@@ -1790,7 +1790,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "(me.role !== \"customer\" || canCancel)"
+  - find: "(me.role === \"customer\" ? canCancel : Date.parse(b.start) > Date.now())"
     replace: "canCancel"
 - name: a tap on a star sends five whatever the star
   file: app/static/index.html
@@ -1846,8 +1846,8 @@ mutants:
   catches:
   - api
   changes:
-  - find: "cancels >= config.flag_cancels"
-    replace: "cancels > config.flag_cancels"
+  - find: "cancels + no_shows >= config.flag_cancels"
+    replace: "cancels + no_shows > config.flag_cancels"
 - name: a third move does not flag the customer
   file: app/booking_rules.py
   catches:
@@ -2037,13 +2037,13 @@ mutants:
   changes:
   - find: "\"cancelled\", now, user.id\n        background.add_task(hub.tell, [booking.customer_id])"
     replace: "\"cancelled\", now, user.id"
-- name: a barber is not told of a request
+- name: a request is told to the staff as a plain booking
   file: app/routers/bookings.py
   catches:
   - api
   changes:
-  - find: "        if booking.approval == \"pending\":\n            background.add_task(hub.tell, [booking.barber_id])\n        if idempotency_key is not None:"
-    replace: "        if idempotency_key is not None:"
+  - find: "session, background, hub, booking, \"בקשה חדשה ביומן\", _who_and_when(session, booking, config)"
+    replace: "session, background, hub, booking, \"תור חדש\", _who_and_when(session, booking, config)"
 - name: a barber is given the customer's worker
   file: app/static/index.html
   catches:
@@ -2891,3 +2891,88 @@ mutants:
   changes:
   - find: "  staffPoll = setTimeout(() => refreshBookings(), 60000);\n"
     replace: ""
+- name: the staff are not told when a customer cancels
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "        if user.role == \"customer\":\n            _tell_staff(\n                session, background, hub, booking, \"ביטול תור\""
+    replace: "        if False:\n            _tell_staff(\n                session, background, hub, booking, \"ביטול תור\""
+- name: the staff are told of the owner's own cancellation too
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "        if user.role == \"customer\":\n            _tell_staff(\n                session, background, hub, booking, \"ביטול תור\""
+    replace: "        if True:\n            _tell_staff(\n                session, background, hub, booking, \"ביטול תור\""
+- name: a barber sees the customer's phone on the card
+  file: app/routers/customer_cards.py
+  catches:
+  - api
+  changes:
+  - find: "customer.phone if viewer.role == \"owner\" else None"
+    replace: "customer.phone"
+- name: a barber opens the card of a customer who never booked with them
+  file: app/routers/customer_cards.py
+  catches:
+  - api
+  changes:
+  - find: "    if viewer.role == \"barber\" and not session.scalar("
+    replace: "    if False and not session.scalar("
+- name: the staff's note is not kept
+  file: app/routers/customer_cards.py
+  catches:
+  - api
+  - ui
+  changes:
+  - find: "customer.staff_note = body.text or None"
+    replace: "customer.staff_note = None"
+- name: the card counts the cancellations the shop made
+  file: app/routers/customer_cards.py
+  catches:
+  - api
+  changes:
+  - find: "Booking.status == \"cancelled\", Booking.cancelled_by == customer.id"
+    replace: "Booking.status == \"cancelled\""
+- name: a booking is marked not come to before its time
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "    if booking.start_utc > now:\n        raise DomainError(409, \"not_started\""
+    replace: "    if False:\n        raise DomainError(409, \"not_started\""
+- name: a booking still ahead offers not come to
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "me.role !== \"customer\" && Date.parse(b.start) <= Date.now()) {"
+    replace: "me.role !== \"customer\") {"
+- name: a walk-in is offered a customer card
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    if (b.customer_id && me.role !== \"customer\") {"
+    replace: "    if (me.role !== \"customer\") {"
+- name: every cancellation is told however many
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "const shown = fresh.slice(0, 3);"
+    replace: "const shown = fresh;"
+- name: a closed card leaves the customer's note in the page
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "$(\"customer-card\").addEventListener(\"close\", clearCustomerCard);"
+    replace: ""
+- name: the buttons under a booking hug its side
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  [data-testid=\"booking-row\"] { flex-wrap:wrap; justify-content:center; gap:8px 8px; }"
+    replace: "  [data-testid=\"booking-row\"] { flex-wrap:wrap; justify-content:flex-start; gap:8px 8px; }"
