@@ -2,8 +2,6 @@
 offers the shop's WhatsApp; when the connection comes back the very same booking is sent again - made once,
 however many times it is sent."""
 
-import re
-
 from playwright.sync_api import expect
 
 from utils.local_time import at_local, local_day
@@ -22,7 +20,7 @@ def mine(bookings, account):
 
 
 def test_with_no_connection_the_screen_says_so_and_the_booking_goes_through_once_it_is_back(
-    shop, account, barbers, bookings, ui_haircut, shop_tz
+    shop, account, barbers, bookings, ui_haircut, shop_tz, api
 ):
     screen, _ = ready_to_book(shop, account, barbers, ui_haircut, shop_tz)
     shop.page.context.set_offline(True)
@@ -34,8 +32,12 @@ def test_with_no_connection_the_screen_says_so_and_the_booking_goes_through_once
     expect(trouble).to_have_attribute("data-kind", "offline")
     expect(screen.by("trouble-title")).to_have_text("אין חיבור כרגע")
     expect(screen.by("trouble-close")).to_be_focused()
-    expect(screen.by("trouble-reach")).to_have_text("וואטסאפ למספרה")
-    expect(screen.by("trouble-reach")).to_have_attribute("href", re.compile(r"^https://wa\.me/"))
+    whatsapp = api.request("GET", "/shop", persona=None).as_dict.get("links", {}).get("whatsapp")
+    if whatsapp:
+        expect(screen.by("trouble-reach")).to_have_text("וואטסאפ למספרה")
+        expect(screen.by("trouble-reach")).to_have_attribute("href", whatsapp)
+    else:
+        expect(screen.by("trouble-reach")).to_be_hidden()
     shop.page.context.set_offline(False)
     shop.page.evaluate("window.dispatchEvent(new Event('online'))")
 
