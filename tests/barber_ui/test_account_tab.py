@@ -80,3 +80,15 @@ def test_the_staff_have_no_account_tab(owner_screen):
 
     expect(owner.by("account-panel")).to_be_hidden()
     expect(owner.by("tab-account")).to_be_hidden()
+
+
+def test_on_a_phone_the_personal_area_is_a_tab_of_its_own(shop, account):
+    shop.page.set_viewport_size({"width": 390, "height": 844})
+    signed_in = shop.sign_in_as(account)
+
+    signed_in.show_tab("mine")
+    expect(signed_in.by("account-panel")).to_be_hidden()
+    signed_in.show_tab("account")
+
+    expect(signed_in.by("account-panel")).to_be_visible()
+    expect(signed_in.by("right-panel")).to_be_hidden()
