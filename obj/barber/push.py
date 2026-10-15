@@ -24,6 +24,17 @@ class Push(Base):
         """What the service worker asks when a push wakes it: no sign-in, its own address as the proof."""
         return self.client.request("POST", f"{self.path}/notice", persona=None, json={"endpoint": endpoint})
 
+    def register_device(self, token: str, persona: str, platform: str = "ios") -> Response:
+        """The shop's app on a phone, after the person allowed notifications."""
+        return self.client.request(
+            "POST", f"{self.path}/devices", persona=persona, json={"platform": platform, "token": token}
+        )
+
+    def remove_device(self, token: str, persona: str) -> Response:
+        return self.client.request(
+            "POST", f"{self.path}/devices/remove", persona=persona, json={"token": token}
+        )
+
     def unsubscribe(self, endpoint: str, persona: str) -> Response:
         return self.client.request(
             "POST", f"{self.path}/unsubscribe", persona=persona, json={"endpoint": endpoint}
@@ -60,3 +71,28 @@ class PushInbox:
     def stays_quiet(self, endpoint: str, seconds: float = 1.5) -> list[dict]:
         time.sleep(seconds)
         return self.posts(endpoint)
+
+    # Firebase, for the shop's app on a phone.
+
+    @staticmethod
+    def new_device_token() -> str:
+        return f"qa-device-{secrets.token_hex(16)}"
+
+    def phone_messages(self, token: str) -> list[dict]:
+        return requests.get(f"{self.base_url}/fcm/{token}", timeout=5).json()
+
+    def wait_for_phone(self, token: str, count: int = 1, seconds: float = 5) -> list[dict]:
+        deadline = time.monotonic() + seconds
+        while True:
+            found = self.phone_messages(token)
+            if len(found) >= count or time.monotonic() > deadline:
+                return found
+            time.sleep(0.1)
+
+    def phone_answers_with(self, token: str, status: int) -> None:
+        """What Firebase answers for this device from now on - 404: the app was removed from the phone."""
+        requests.put(f"{self.base_url}/answer/{token}/{status}", timeout=5).raise_for_status()
+
+    def phone_stays_quiet(self, token: str, seconds: float = 1.5) -> list[dict]:
+        time.sleep(seconds)
+        return self.phone_messages(token)

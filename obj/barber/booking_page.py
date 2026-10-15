@@ -98,6 +98,18 @@ class BookingPage:
         self.page.evaluate("token => sessionStorage.setItem('barber.session', token)", account["token"])
         return self.reload()
 
+    def sign_out(self) -> BookingPage:
+        """Sign out as the person would: the staff from the bar on top, a customer from the personal
+        area - their screen has no bar."""
+        if self.by("logout").is_visible():
+            self.by("logout").click()
+        else:
+            # Tapped, not waited on: signing out may come while the page still fetches.
+            if self.by("tab-account").is_visible():
+                self.by("tab-account").click()
+            self.by("account-logout").click()
+        return self
+
     def sign_in_by_code(self, name: str, phone: str, inbox, navigate: bool = True) -> BookingPage:
         """Sign in as a person does: name and phone, then the code from the SMS.
         A code asked for too soon after the last one is refused with how long

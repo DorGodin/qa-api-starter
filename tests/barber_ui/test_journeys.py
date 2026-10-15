@@ -192,7 +192,7 @@ def test_on_a_shared_device_the_next_person_finds_nothing_of_the_one_before(
     device.choose_by_name(barber["name"], service, day).pick("10:00").book()
     expect(device.row_at("10:00")).to_have_attribute("data-status", "confirmed")
 
-    device.by("logout").click()
+    device.sign_out()
     expect(device.by("code-request-form")).to_be_visible()
     left = values_left_in_the_page(device)
     for value in (first["name"], first["phone"]):
@@ -212,7 +212,7 @@ def test_on_a_shared_device_the_next_person_finds_nothing_of_the_one_before(
     expect(device.by("display-name")).to_have_text(greeting(second["name"]))
     expect(device.row_at("11:00")).to_have_attribute("data-status", "confirmed")
 
-    device.by("logout").click()
+    device.sign_out()
     device.reload()
     expect(device.by("code-request-form")).to_be_visible()
     expect(device.by("app")).to_be_hidden()

@@ -129,7 +129,7 @@ def test_an_answer_for_the_person_who_signed_out_never_lands_in_the_page_they_le
     shop.show_tab("book")
     held = Held(shop.page, lambda url: "/availability" in url or "/bookings?" in url)
     shop.barber_pill(ui_barber["id"]).click()
-    shop.by("logout").click()
+    shop.sign_out()
     held.release()
     shop.settled()
 

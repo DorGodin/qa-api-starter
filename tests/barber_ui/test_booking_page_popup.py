@@ -135,7 +135,7 @@ def test_a_failure_nobody_planned_for_owns_up_to_going_wrong(shop, account, ui_b
     shop.page.route(
         "**/bookings",
         lambda route: route.fulfill(
-            status=500, content_type="application/json", body='{"detail":"x","code":"boom"}'
+            status=409, content_type="application/json", body='{"detail":"x","code":"boom"}'
         )
         if route.request.method == "POST"
         else route.continue_(),

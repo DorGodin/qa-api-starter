@@ -215,6 +215,18 @@ class ProductServer:
             cwd=self.workdir,
             check=True,
         )
+        # Phone notifications to the fake Firebase in utils/fake_push.py, as a service account of its own.
+        subprocess.run(
+            [
+                str(self.python),
+                "-m",
+                "app.fcm_dev_account",
+                str(self.workdir / "fcm.json"),
+                "http://127.0.0.1:8110/token",
+            ],
+            cwd=self.product,
+            check=True,
+        )
         keys = subprocess.run(
             [str(self.python), "-m", "app.push_keys"],
             cwd=self.product,
@@ -228,6 +240,8 @@ class ProductServer:
             "DATABASE_URL": f"sqlite:///{self.workdir / 'm.db'}",
             "MEDIA_DIR": str(self.workdir / "media"),
             "SHOP_PROFILE_IMAGE": "profile.png",
+            "FCM_CREDENTIALS": str(self.workdir / "fcm.json"),
+            "FCM_URL": "http://127.0.0.1:8110",
             # Its codes go to the fake SMS provider the suites read them from.
             "SMS_URL": "http://127.0.0.1:8109/messages",
             # A key pair of its own, and the fake push service the suites read what was sent from.

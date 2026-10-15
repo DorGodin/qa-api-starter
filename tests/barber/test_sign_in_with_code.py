@@ -1,6 +1,7 @@
 """Signing in with a code by SMS, from outside: the code is read from the fake
 provider's inbox, as a person reads it off their phone."""
 
+import secrets
 from concurrent.futures import ThreadPoolExecutor
 
 from obj.barber.customers import new_device_address
@@ -89,3 +90,10 @@ def test_one_address_gets_only_so_many_codes_an_hour(customers):
 def test_only_a_mobile_number_gets_a_code(customers):
     for phone in ("12345", "0721234567", "05012345678"):
         assert_refused(customers.request_code(phone, "דנה כהן"), 422, "bad_phone")
+
+
+def test_a_name_longer_than_twenty_five_characters_is_refused(customers):
+    phone = f"054{secrets.randbelow(10**7):07d}"
+
+    assert customers.request_code(phone, "א" * 26).status_code == 422
+    assert customers.request_code(phone, "א" * 25).status_code == 202

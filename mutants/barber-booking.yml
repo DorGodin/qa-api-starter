@@ -435,14 +435,14 @@ mutants:
   catches:
   - ui
   changes:
-  - find: ' [data-section] { scroll-margin-top:72px; } }'
+  - find: ' [data-section] { scroll-margin-top:calc(72px + var(--safe-top)); } }'
     replace: ' }'
 - name: a field the keyboard reaches on a phone lands under the owner's menu
   file: app/static/index.html
   catches:
   - ui-webkit
   changes:
-  - find: '{ html { scroll-padding-top:72px; }'
+  - find: '{ html { scroll-padding-top:calc(72px + var(--safe-top)); }'
     replace: '{'
 - name: a row squeezes its button below the width of its own label
   file: app/static/index.html
@@ -1083,7 +1083,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '  .owner-nav { position:sticky; top:52px;'
+  - find: '  .owner-nav { position:sticky; top:calc(52px + var(--safe-top));'
     replace: '  .owner-nav { position:sticky; top:0;'
 - name: the slim bar slides for whoever asked for less motion
   file: app/static/index.html
@@ -3126,3 +3126,164 @@ mutants:
   changes:
   - find: "  $(\"account-deleted\").hidden = false;"
     replace: ""
+- name: a phone with the app is never told
+  file: app/push.py
+  catches:
+  - api
+  changes:
+  - find: "        self.tell_phones(user_ids)\n"
+    replace: ""
+- name: a customer's phone is told the staff's words
+  file: app/native_push.py
+  catches:
+  - api
+  changes:
+  - find: "    return WORDS[\"customer\" if role == \"customer\" else \"staff\"]"
+    replace: "    return WORDS[\"staff\"]"
+- name: a phone Firebase says is gone is told again and again
+  file: app/push.py
+  catches:
+  - api
+  changes:
+  - find: "                    if not self.native.send(device.token, *words_for(role)):"
+    replace: "                    if self.native.send(device.token, *words_for(role)) and False:"
+- name: Firebase's word that a phone is gone is not heard
+  file: app/native_push.py
+  catches:
+  - api
+  changes:
+  - find: "        if answer.status_code == 404:\n            return False"
+    replace: "        if False:\n            return False"
+- name: anyone turns off someone else's phone
+  file: app/routers/push.py
+  catches:
+  - api
+  changes:
+  - find: "delete(PushDevice).where(PushDevice.token == body.token, PushDevice.user_id == user.id)"
+    replace: "delete(PushDevice).where(PushDevice.token == body.token)"
+- name: a device token is not checked
+  file: app/routers/push.py
+  catches:
+  - api
+  changes:
+  - find: "    token: str = Field(min_length=20, max_length=512, pattern=r\"^[A-Za-z0-9_:\\-]+$\")"
+    replace: "    token: str = Field(min_length=1, max_length=512)"
+- name: an answer that never comes is waited for forever
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  const timer = setTimeout(() => stop.abort(), API_WAIT_MS);"
+    replace: "  const timer = 0;"
+- name: the connection coming back does not send the booking again
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "      if (await trouble(\"offline\")) continue;"
+    replace: "      if (await trouble(\"offline\")) return { ok: false, status: 0, data: { code: \"offline\" } };"
+- name: the server failing is not told as trouble
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    if (resp.status >= 500) {"
+    replace: "    if (false) {"
+- name: the connection coming back sends nothing
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "window.addEventListener(\"online\", () => { if ($(\"trouble\").dataset.kind === \"offline\") troubleDone(true); });"
+    replace: ""
+- name: offline the customer's booking is not shown
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  $(\"trouble-booking\").hidden = !(offline && next);"
+    replace: "  $(\"trouble-booking\").hidden = true;"
+- name: closing the trouble screen, it opens again at once
+  file: app/static/index.html
+  catches:
+  - ui-webkit
+  changes:
+  - find: "  troubleDone(false);\n  troubleQuiet = true;"
+    replace: "  troubleDone(false);"
+- name: the trouble screen offers no way to the shop
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if (whatsapp) $(\"trouble-reach\").href = whatsapp;"
+    replace: ""
+- name: in the app the phone is never registered
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  const r = await api(\"POST\", \"/push/devices\", { platform: window.Capacitor.getPlatform(), token: device });"
+    replace: "  const r = { ok: true };"
+- name: signing out in the app leaves the phone registered
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    fetch(\"/push/devices/remove\", { method: \"POST\""
+    replace: "    void (\"/push/devices/remove\", { method: \"POST\""
+- name: the phone field takes any number of digits
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if ($(\"phone\").value !== digits.slice(0, 10)) $(\"phone\").value = digits.slice(0, 10);"
+    replace: "  if ($(\"phone\").value !== digits) $(\"phone\").value = digits;"
+- name: a pasted +972 number is not turned into its ten digits
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if (digits.startsWith(\"972\")) digits = `0${digits.slice(3)}`;"
+    replace: ""
+- name: the name field takes eighty characters
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "<input id=\"full-name\" data-testid=\"full-name\" autocomplete=\"name\" maxlength=\"25\" required>"
+    replace: "<input id=\"full-name\" data-testid=\"full-name\" autocomplete=\"name\" maxlength=\"80\" required>"
+- name: a number that is not a mobile is sent to the shop
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if (!/^05\\d{8}$/.test(otp.phone)) {"
+    replace: "  if (false) {"
+- name: the shop takes a name of eighty characters
+  file: app/schemas.py
+  catches:
+  - api
+  changes:
+  - find: "    full_name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=25)]\n    # Checked and normalised by app.phones"
+    replace: "    full_name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=80)]\n    # Checked and normalised by app.phones"
+- name: a customer's screen keeps the bar on top
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  body:has([data-testid=\"app\"][data-role=\"customer\"]:not([hidden])) .bar { display:none; }"
+    replace: ""
+- name: signing out from the personal area does nothing
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "$(\"account-logout\").addEventListener(\"click\", signOut);"
+    replace: ""
+- name: the personal area has no way to the privacy policy
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  $(\"account-foot\").querySelector('a[href=\"/privacy\"]').dataset.testid = \"account-privacy\";"
+    replace: "  $(\"account-foot\").replaceChildren();"

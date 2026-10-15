@@ -92,3 +92,31 @@ def test_on_a_phone_the_personal_area_is_a_tab_of_its_own(shop, account):
 
     expect(signed_in.by("account-panel")).to_be_visible()
     expect(signed_in.by("right-panel")).to_be_hidden()
+
+
+def test_a_customers_screen_has_no_bar_on_top_and_signs_out_from_the_personal_area(shop, account):
+    signed_in = shop.sign_in_as(account)
+    expect(signed_in.by("logout")).to_be_hidden()
+    signed_in.show_tab("account")
+
+    signed_in.by("account-logout").click()
+
+    expect(signed_in.by("auth")).to_be_visible()
+
+
+def test_the_personal_area_has_the_foot_of_the_page_the_ways_to_the_shop_and_the_two_pages(shop, account):
+    signed_in = shop.sign_in_as(account)
+    signed_in.show_tab("account")
+
+    foot = signed_in.by("account-foot")
+
+    expect(signed_in.by("account-privacy")).to_have_attribute("href", "/privacy")
+    expect(signed_in.by("account-accessibility")).to_have_attribute("href", "/accessibility")
+    assert foot.locator("a.action").count() == signed_in.page.locator("body > footer a.action").count()
+    expect(foot.locator("[data-testid]")).to_have_count(2)
+
+
+def test_the_staff_still_sign_out_from_the_bar(owner_screen):
+    owner = owner_screen()
+
+    expect(owner.by("logout")).to_be_visible()

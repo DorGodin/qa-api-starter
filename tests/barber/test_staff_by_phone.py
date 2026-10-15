@@ -29,7 +29,7 @@ def test_a_barber_with_a_phone_signs_in_by_code_whatever_name_is_typed(barbers, 
 def test_a_barbers_name_typed_with_another_phone_is_only_a_customer(barbers, customers, sms_inbox, api):
     barber = barbers.create_fake_barber(phone=Customers.new_phone())
 
-    signed = customers.sign_in_by_code(sms_inbox, full_name=barber["display_name"])
+    signed = customers.sign_in_by_code(sms_inbox, full_name=barber["display_name"][:25])
 
     assert me(api, signed["persona"])["role"] == "customer"
     assert_refused(barbers.set_phone(barber["id"], "", persona=signed["persona"]), 403, "forbidden")

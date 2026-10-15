@@ -60,7 +60,7 @@ def test_every_screen_meets_wcag_2_2_aa(shop, account, credentials, ui_barber, u
     assert violations(shop.page) == [], "the card that answers a booking"
     shop.go_to_my_bookings()
 
-    shop.by("logout").click()
+    shop.sign_out()
     shop.sign_in(*credentials("owner"), navigate=False)
     expect(shop.by("owner")).to_be_visible()
     assert violations(shop.page) == [], "the owner's screen"
@@ -83,6 +83,16 @@ def test_the_account_tab_and_its_delete_dialog_meet_wcag_2_2_aa(signed_in):
     signed_in.by("account-delete").click()
 
     assert violations(signed_in.page) == [], "the dialog that asks before deleting the account"
+
+
+def test_the_trouble_screen_meets_wcag_2_2_aa(signed_in):
+    signed_in.page.context.set_offline(True)
+    signed_in.show_tab("book")
+    signed_in.by("barbers").locator("[data-id]").first.click()
+
+    expect(signed_in.by("trouble")).to_be_visible()
+    assert violations(signed_in.page) == [], "the screen that says there is no connection"
+    signed_in.page.context.set_offline(False)
 
 
 def test_the_review_card_meets_wcag_2_2_aa(shop, account, bookings, barbers, ui_haircut, shop_tz):
