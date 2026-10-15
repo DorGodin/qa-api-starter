@@ -142,4 +142,3 @@ def test_offline_a_customer_still_sees_the_booking_they_have(
     expect(screen.by("trouble-booking")).to_be_visible()
     assert made["start_local"][11:16] in screen.text(screen.by("trouble-when"))
     shop.page.context.set_offline(False)
-
