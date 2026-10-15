@@ -2235,6 +2235,20 @@ mutants:
   changes:
   - find: "minimumFractionDigits: minor % 100 ? 2 : 0"
     replace: "minimumFractionDigits: 2"
+- name: booking for two shows no badge
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  $("pair-badge").hidden = !companion;'
+    replace: '  $("pair-badge").hidden = true;'
+- name: the second person's card does not follow the name typed
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "$(\"person-name\").addEventListener(\"input\", drawCompanion);\n"
+    replace: ""
 - name: the service list says no minutes
   file: app/static/index.html
   catches:
