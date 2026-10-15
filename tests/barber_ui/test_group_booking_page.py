@@ -1,5 +1,5 @@
-"""Booking for two on the page: the second service and name under the first, the times where both
-fit, one card for both, and the list that says who the second is for."""
+"""Booking for two on the page: the second person's own card under the first service, the times where
+both fit, one card for both, and the list that says who the second is for."""
 
 from playwright.sync_api import expect
 
@@ -115,3 +115,23 @@ def test_the_staffs_day_names_the_second_person_not_the_parent(
 
     blocks = [owner.text(b) for b in owner.by("timeline-booking").all()]
     assert any(account["display_name"] in b for b in blocks) and any("יוני" in b for b in blocks), blocks
+
+
+def test_a_second_person_is_told_at_a_glance_by_a_badge_and_a_card_headed_by_their_name(shop, account):
+    signed_in = shop.sign_in_as(account)
+    expect(signed_in.by("pair-badge")).to_be_hidden()
+
+    signed_in.by("add-person").click()
+    signed_in.settled()
+    expect(signed_in.by("pair-badge")).to_be_visible()
+    expect(signed_in.by("pair-badge")).to_have_text("2 אנשים")
+    expect(signed_in.by("companion-title")).to_have_text("תור נוסף")
+
+    signed_in.by("person-name").fill("Yoni")
+    expect(signed_in.by("companion-title")).to_have_text("התור של \u2068Yoni\u2069")
+    expect(signed_in.by("companion-face")).to_have_attribute("data-initial", "Y")
+    expect(signed_in.page.get_by_label("השירות של \u2068Yoni\u2069")).to_be_visible()
+
+    signed_in.by("remove-person").click()
+    signed_in.settled()
+    expect(signed_in.by("pair-badge")).to_be_hidden()
