@@ -2770,7 +2770,7 @@ mutants:
   catches:
   - api
   changes:
-  - find: "        customer_name=session.get(User, booking.customer_id).display_name if booking.customer_id else None,\n"
+  - find: "        customer_name=customer.display_name if customer and not customer.deleted_at else None,\n"
     replace: ""
 - name: the staff's day - the diary's row leaves out the customer's name
   file: app/static/index.html
@@ -2840,8 +2840,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "const whoIsComing = (b) => b.guest_name || b.for_name || b.customer_name || \"\";"
-    replace: "const whoIsComing = (b) => b.guest_name || b.customer_name || \"\";"
+  - find: "const whoIsComing = (b) => b.guest_name || b.for_name || b.customer_name ||"
+    replace: "const whoIsComing = (b) => b.guest_name || b.customer_name ||"
 - name: the staff's day - the day's span ends at the last start
   file: app/static/index.html
   catches:
@@ -2953,8 +2953,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "    if (b.customer_id && me.role !== \"customer\") {"
-    replace: "    if (me.role !== \"customer\") {"
+  - find: "    if (b.customer_id && !b.customer_deleted && me.role !== \"customer\") {"
+    replace: "    if (!b.customer_deleted && me.role !== \"customer\") {"
 - name: every cancellation is told however many
   file: app/static/index.html
   catches:
@@ -3037,8 +3037,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "    [data-role=\"customer\"]:not([data-tab=\"mine\"]) [data-testid=\"install-card\"] { display:none; }"
-    replace: "    [data-role=\"customer\"]:not([data-tab=\"mine\"]) [data-testid=\"nothing\"] { display:none; }"
+  - find: "    [data-role=\"customer\"]:not([data-tab=\"mine\"]) [data-testid=\"install-card\"],"
+    replace: "    [data-role=\"customer\"]:not([data-tab=\"mine\"]) [data-testid=\"nothing\"],"
 - name: an iPhone opens the shop on a white screen
   file: app/identity.py
   catches:
@@ -3053,3 +3053,76 @@ mutants:
   changes:
   - find: "    width, height = (int(n) for n in size.split(\"x\"))"
     replace: "    width, height = 1170, 2532"
+- name: a customer's deletion leaves the bookings ahead standing
+  file: app/routers/accounts.py
+  catches:
+  - api
+  - ui
+  changes:
+  - find: "            booking.status, booking.cancelled_at, booking.cancelled_by = \"cancelled\", now, user.id"
+    replace: "            pass"
+- name: a deleted account still signs in
+  file: app/routers/accounts.py
+  catches:
+  - api
+  - ui
+  changes:
+  - find: "        user.active, user.deleted_at = False, now"
+    replace: "        user.deleted_at = now"
+- name: a deleted customer keeps their phone and it opens the old account
+  file: app/routers/accounts.py
+  catches:
+  - api
+  changes:
+  - find: "        user.display_name, user.phone, user.staff_note = \"\", None, None"
+    replace: "        user.display_name, user.staff_note = \"\", None"
+- name: the owner deletes their own account
+  file: app/routers/accounts.py
+  catches:
+  - api
+  changes:
+  - find: "    user: User = Depends(require(\"customer\")),"
+    replace: "    user: User = Depends(require(\"customer\", \"owner\", \"barber\")),"
+- name: a deleted customer's booking still carries their name
+  file: app/routers/bookings.py
+  catches:
+  - api
+  - ui
+  changes:
+  - find: "        customer_name=customer.display_name if customer and not customer.deleted_at else None,"
+    replace: "        customer_name=customer.display_name if customer else None,"
+- name: the diary says nothing of who cancelled once they deleted their account
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: " || (b.customer_deleted ? \"לקוח שנמחק\" : \"\");"
+    replace: " || \"\";"
+- name: the account tab shows on every tab of a phone
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    [data-role=\"customer\"]:not([data-tab=\"account\"]) [data-testid=\"account-panel\"],"
+    replace: ""
+- name: deleting the account does not sign the browser out
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  signOut();\n  // The sign-in screen says it"
+    replace: "  // The sign-in screen says it"
+- name: the delete dialog does not ask, it deletes
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "$(\"account-delete\").addEventListener(\"click\", () => $(\"delete-dialog\").showModal());"
+    replace: "$(\"account-delete\").addEventListener(\"click\", () => $(\"delete-confirm\").click());"
+- name: the sign-in screen does not say the account was deleted
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  $(\"account-deleted\").hidden = false;"
+    replace: ""

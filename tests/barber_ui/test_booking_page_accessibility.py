@@ -76,6 +76,15 @@ def test_the_courses_tab_meets_wcag_2_2_aa(courses, signed_in):
     assert violations(signed_in.page) == [], "the courses tab, a course with a picture"
 
 
+def test_the_account_tab_and_its_delete_dialog_meet_wcag_2_2_aa(signed_in):
+    signed_in.show_tab("account")
+    assert violations(signed_in.page) == [], "the account tab"
+
+    signed_in.by("account-delete").click()
+
+    assert violations(signed_in.page) == [], "the dialog that asks before deleting the account"
+
+
 def test_the_review_card_meets_wcag_2_2_aa(shop, account, bookings, barbers, ui_haircut, shop_tz):
     from tests.barber_ui.test_review_card import Told, over
 
