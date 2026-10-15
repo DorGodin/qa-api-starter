@@ -3236,8 +3236,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "  if ($(\"phone\").value !== digits.slice(0, 10)) $(\"phone\").value = digits.slice(0, 10);"
-    replace: "  if ($(\"phone\").value !== digits) $(\"phone\").value = digits;"
+  - find: "    if ($(field).value !== digits.slice(0, 10)) $(field).value = digits.slice(0, 10);"
+    replace: "    if ($(field).value !== digits) $(field).value = digits;"
 - name: a pasted +972 number is not turned into its ten digits
   file: app/static/index.html
   catches:
@@ -3257,8 +3257,36 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "  if (!/^05\\d{8}$/.test(otp.phone)) {"
-    replace: "  if (false) {"
+  - find: "  if (!phoneReady(\"phone\")) return;"
+    replace: ""
+- name: a wrong start is not told as it is typed
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if (value && !\"05\".startsWith(value.slice(0, 2))) return PHONE_START;"
+    replace: ""
+- name: a number too short goes to the shop
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if (sending && value.length !== 10) return PHONE_LENGTH;"
+    replace: ""
+- name: the button waits for nothing while the start is wrong
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    $(button).disabled = Boolean(problem);"
+    replace: ""
+- name: a barber's phone is saved with any start
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if (!phoneReady(\"barber-phone\")) return;"
+    replace: ""
 - name: the shop takes a name of eighty characters
   file: app/schemas.py
   catches:
