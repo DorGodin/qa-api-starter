@@ -403,7 +403,7 @@ def test_a_signed_in_customer_has_no_legal_links_and_no_empty_foot_and_the_sign_
     phone_shop.show_tab("mine")
     expect(phone_shop.page.locator("footer")).to_be_hidden()
 
-    phone_shop.by("logout").click()
+    phone_shop.sign_out()
     expect(phone_shop.by("accessibility-link")).to_be_visible()
     expect(phone_shop.by("privacy-link")).to_be_visible()
 

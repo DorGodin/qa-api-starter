@@ -66,7 +66,7 @@ def test_a_whole_booking_and_the_owners_screen_run_without_a_single_policy_viola
     shop = BookingPage(page, env_config["url"]).sign_in_as(account)
     shop.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 3)).pick("12:00").book()
     expect(shop.row_at("12:00")).to_be_visible()
-    shop.by("logout").click()
+    shop.sign_out()
     shop.sign_in(*credentials("owner"), navigate=False)
     expect(shop.by("owner")).to_be_visible()
 
@@ -96,7 +96,7 @@ def test_signing_out_on_the_page_ends_the_sign_in_on_the_server_too(shop, accoun
     token = shop.page.evaluate("() => sessionStorage.getItem('barber.session')")
 
     with shop.page.expect_response(lambda r: "/auth/logout" in r.url and r.status == 204):
-        shop.by("logout").click()
+        shop.sign_out()
 
     stolen = {"Authorization": f"Bearer {token}"}
     assert (
@@ -108,7 +108,7 @@ def test_signing_out_with_no_connection_still_signs_this_device_out(shop, accoun
     shop.sign_in_as(account)
     shop.page.route("**/auth/logout", lambda route: route.abort())
 
-    shop.by("logout").click()
+    shop.sign_out()
     shop.reload()
 
     expect(shop.by("code-request-form")).to_be_visible()

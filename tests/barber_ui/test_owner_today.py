@@ -217,7 +217,7 @@ def test_signing_out_leaves_nothing_of_the_day_in_the_page(day, owner_screen, ac
     owner = owner_screen().select_barber(day["barber"]["id"])
     expect(owner.by("timeline-booking")).to_have_count(3)
 
-    owner.by("logout").click()
+    owner.sign_out()
 
     expect(owner.by("today")).to_be_hidden()
     expect(owner.page.locator('[data-testid="timeline-booking"]')).to_have_count(0)

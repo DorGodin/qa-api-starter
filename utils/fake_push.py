@@ -10,6 +10,13 @@ browser's, and reads what arrived - the product has no hook for it and needs non
     GET  /pushes/<name>      every post to that name, oldest first: its headers and the size of its body
     PUT  /answer/<name>/<n>  the status POST /push/<name> gives from now on (410: the subscription is gone)
     GET  /health
+
+And Firebase, for the shop's app on a phone - the server signs in as its service account, then posts a
+message for a device's token:
+
+    POST /token                                   an access token for any signed assertion
+    POST /v1/projects/<project>/messages:send     answered 200, or what PUT /answer/<token>/<n> set (404: gone)
+    GET  /fcm/<token>                             every message for that device, oldest first
 """
 
 from __future__ import annotations
@@ -24,6 +31,7 @@ from urllib.parse import urlparse
 _lock = threading.Lock()
 _posts: dict[str, list[dict]] = {}
 _answers: dict[str, int] = {}
+_fcm: dict[str, list[dict]] = {}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -35,8 +43,32 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _firebase(self, parts: list[str], body: bytes) -> None:
+        if parts == ["token"]:
+            return self._answer(200, {"access_token": "fake-access-token", "expires_in": 3600})
+        try:
+            message = json.loads(body)["message"]
+        except (ValueError, KeyError):
+            return self._answer(400)
+        with _lock:
+            _fcm.setdefault(message["token"], []).append(
+                {
+                    "project": parts[2],
+                    "authorization": self.headers.get("Authorization", ""),
+                    "message": message,
+                    "at": time.time(),
+                }
+            )
+            status = _answers.get(message["token"], 200)
+        self._answer(status, {"error": {"status": "NOT_FOUND"}} if status == 404 else {"name": "fake"})
+
     def do_POST(self) -> None:
         parts = urlparse(self.path).path.strip("/").split("/")
+        if parts == ["token"] or (
+            len(parts) == 4 and parts[:2] == ["v1", "projects"] and parts[3] == "messages:send"
+        ):
+            size = int(self.headers.get("Content-Length", 0))
+            return self._firebase(parts, self.rfile.read(size) if size else b"")
         if len(parts) != 2 or parts[0] != "push":
             return self._answer(404)
         size = int(self.headers.get("Content-Length", 0))
@@ -67,6 +99,9 @@ class Handler(BaseHTTPRequestHandler):
         if len(parts) == 2 and parts[0] == "pushes":
             with _lock:
                 return self._answer(200, list(_posts.get(parts[1], [])))
+        if len(parts) == 2 and parts[0] == "fcm":
+            with _lock:
+                return self._answer(200, list(_fcm.get(parts[1], [])))
         self._answer(404)
 
     def log_message(self, *_args) -> None:

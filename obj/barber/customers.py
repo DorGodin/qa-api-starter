@@ -75,7 +75,8 @@ class Customers(Base):
         provider's inbox. The first time opens the account. Registered as a
         persona of its own; the token is kept too, for a browser to resume with."""
         phone = phone or self.new_phone()
-        full_name = full_name or f"{fake.first_name()} {fake.last_name()}"
+        # The shop takes a name of up to 25 characters.
+        full_name = full_name or f"{fake.first_name()} {fake.last_name()}"[:25].strip()
         seen = inbox.last_id(phone)
         self.request_code(phone, full_name).assert_ok(202)
         token = (

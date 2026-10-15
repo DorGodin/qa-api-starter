@@ -24,6 +24,7 @@ from tests.barber.conftest import (  # noqa: F401
     new_customer,
     products,
     push,
+    push_inbox,
     services,
     shop_tz,
     sms_inbox,

@@ -33,7 +33,7 @@ def test_a_customer_and_a_barber_never_get_the_management_screen(shop, account, 
     shop.sign_in_as(account)
     expect(shop.by("owner")).to_be_hidden()
 
-    shop.by("logout").click()
+    shop.sign_out()
     username, password = credentials("barber")
     shop.sign_in(username, password)
     expect(shop.by("owner")).to_be_hidden()

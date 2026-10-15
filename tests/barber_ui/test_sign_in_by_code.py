@@ -53,7 +53,7 @@ def test_a_wrong_code_says_how_many_tries_are_left_and_locks_the_button_until_a_
 
     shop.by("code").fill(wrong(code))
 
-    expect(shop.by("code-error")).to_contain_text("נשארו 2 ניסיונות")
+    expect(shop.by("code-error")).to_have_text("הקוד שגוי, נסו שוב.")
     expect(shop.by("code")).to_have_attribute("aria-invalid", "true")
     borders = shop.page.locator(".code-boxes span").evaluate_all(
         "bs => bs.map(b => getComputedStyle(b).borderTopColor)"
@@ -147,3 +147,39 @@ def test_a_cursor_blinks_in_the_box_the_next_digit_goes_to(shop, sms_inbox):
     )
 
     assert caret == ['""', "2px", "caret"], f"no blinking cursor in the third box: {caret}"
+
+
+def test_the_phone_takes_ten_digits_whatever_is_typed_or_pasted(shop):
+    shop.open()
+    phone = shop.by("phone")
+
+    phone.fill("054123456789")
+    assert phone.input_value() == "0541234567"
+    phone.fill("+972-54-123-4567")
+    assert phone.input_value() == "0541234567"
+    phone.fill("054abc12")
+    assert phone.input_value() == "05412"
+
+
+def test_the_name_takes_twenty_five_characters(shop):
+    shop.open()
+    name = shop.by("full-name")
+
+    name.fill("א" * 30)
+
+    assert name.input_value() == "א" * 25
+
+
+def test_a_number_that_is_not_a_mobile_is_refused_before_anything_is_sent(shop):
+    shop.open()
+    sent = []
+    shop.page.on("request", lambda r: sent.append(r.url) if "/auth/otp" in r.url else None)
+    shop.by("full-name").fill("דנה כהן")
+
+    for number in ("0312345678", "054123456"):
+        shop.by("phone").fill(number)
+        shop.by("send-code").click()
+        expect(shop.by("code-request-error")).to_contain_text("05 ועוד 8 ספרות")
+
+    expect(shop.by("phone")).to_be_focused()
+    assert sent == []

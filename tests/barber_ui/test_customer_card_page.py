@@ -97,7 +97,7 @@ def test_a_closed_card_and_signing_out_leave_no_note_in_the_page(
     owner.page.keyboard.press("Escape")
     expect(owner.by("customer-card")).to_be_hidden()
     expect(owner.by("card-note")).to_have_value("")
-    owner.by("logout").click()
+    owner.sign_out()
 
     assert "סוד של הצוות" not in owner.page.evaluate(
         "document.body.innerHTML + document.getElementById('card-note').value"

@@ -33,6 +33,9 @@ runs:
         # A profile picture, so the icons and the iPhone splash drawn from it are there to be tested.
         mkdir -p media && .venv/bin/python -c "from PIL import Image; Image.new('RGB', (400, 400), 'white').save('media/profile.png')"
         export SHOP_PROFILE_IMAGE=profile.png
+        # Phone notifications to the fake Firebase in utils/fake_push.py, signed in as a service account of its own.
+        .venv/bin/python -m app.fcm_dev_account barber-test-fcm.json http://127.0.0.1:8110/token
+        export FCM_CREDENTIALS=barber-test-fcm.json FCM_URL=http://127.0.0.1:8110
         # A key pair for this run, and the fake push service the suites read what was sent from.
         export $(.venv/bin/python -m app.push_keys | xargs) PUSH_EXTRA_HOSTS=127.0.0.1
         DATABASE_URL=sqlite:///./barber-test.db SMS_URL=http://127.0.0.1:8109/messages .venv/bin/python -m uvicorn app.main:create_app --factory --port 8101 --workers 2 &
