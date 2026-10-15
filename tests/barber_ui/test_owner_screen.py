@@ -252,3 +252,19 @@ def test_when_more_are_ahead_than_the_page_holds_the_diary_says_so(owner_screen,
 
 def test_with_everything_on_the_page_the_diary_adds_nothing(owner_screen):
     expect(owner_screen().by("more-bookings")).to_be_hidden()
+
+
+def test_the_owner_is_told_at_once_that_a_barbers_phone_must_start_05(owner_screen, barbers):
+    barber = barbers.create_fake_barber()
+    screen = owner_screen().select_barber(barber["id"])
+
+    screen.by("new-barber-phone").fill("02")
+    expect(screen.by("new-barber-phone-error")).to_have_text("המספר חייב להתחיל ב־05")
+    expect(screen.by("add-barber")).to_be_disabled()
+    screen.by("barber-phone").fill("077")
+    expect(screen.by("barber-phone-error")).to_have_text("המספר חייב להתחיל ב־05")
+    expect(screen.by("save-barber-phone")).to_be_disabled()
+    screen.by("barber-phone").fill("0541")
+    screen.by("save-barber-phone").click()
+
+    expect(screen.by("barber-phone-error")).to_have_text("המספר חייב להכיל 10 ספרות")

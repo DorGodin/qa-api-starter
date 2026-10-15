@@ -113,10 +113,8 @@ def test_the_phone_shown_is_the_selected_barbers(owner_screen, barbers):
     expect(owner.by("barber-phone")).to_have_value("")
 
 
-@pytest.mark.parametrize(("typed", "word"), [("12345", "נייד"), ("taken", "שייך")])
-def test_a_phone_that_is_not_a_mobile_or_is_somebody_elses_is_refused_in_words(
-    owner_screen, barbers, typed, word
-):
+@pytest.mark.parametrize(("typed", "word"), [("taken", "שייך")])
+def test_a_phone_that_is_somebody_elses_is_refused_in_words(owner_screen, barbers, typed, word):
     other = barbers.create_fake_barber(phone=Customers.new_phone())
     barber = barbers.create_fake_barber()
     stored = next(b for b in barbers.find(persona="owner").assert_ok(200).content if b["id"] == other["id"])
@@ -133,7 +131,9 @@ def test_a_phone_that_is_not_a_mobile_or_is_somebody_elses_is_refused_in_words(
 def test_a_new_barber_with_a_bad_phone_is_not_added(owner_screen, barbers, name):
     owner: OwnerScreen = owner_screen()
 
-    owner.add_barber(name, "12345")
+    owner.by("new-barber-name").fill(name)
+    owner.by("new-barber-phone").fill("12345")
 
-    expect(owner.message()).to_have_attribute("data-kind", "error")
+    expect(owner.by("new-barber-phone-error")).to_have_text("המספר חייב להתחיל ב־05")
+    expect(owner.by("add-barber")).to_be_disabled()
     assert name not in [b["display_name"] for b in barbers.find(persona="owner").assert_ok(200).content]

@@ -101,9 +101,9 @@ def test_a_number_that_is_not_a_mobile_is_explained_in_hebrew(shop):
     shop.open()
     shop.by("full-name").fill("דנה כהן")
     shop.by("phone").fill("031234567")
-    shop.by("send-code").click()
 
-    expect(shop.by("code-request-error")).to_contain_text("05 ועוד 8 ספרות")
+    expect(shop.by("phone-error")).to_have_text("המספר חייב להתחיל ב־05")
+    expect(shop.by("send-code")).to_be_disabled()
     expect(shop.by("code-form")).to_be_hidden()
 
 
@@ -170,16 +170,32 @@ def test_the_name_takes_twenty_five_characters(shop):
     assert name.input_value() == "א" * 25
 
 
-def test_a_number_that_is_not_a_mobile_is_refused_before_anything_is_sent(shop):
+def test_a_number_that_does_not_start_05_is_told_as_it_is_typed_and_nothing_is_sent(shop):
     shop.open()
     sent = []
     shop.page.on("request", lambda r: sent.append(r.url) if "/auth/otp" in r.url else None)
     shop.by("full-name").fill("דנה כהן")
 
-    for number in ("0312345678", "054123456"):
-        shop.by("phone").fill(number)
-        shop.by("send-code").click()
-        expect(shop.by("code-request-error")).to_contain_text("05 ועוד 8 ספרות")
+    shop.by("phone").fill("03")
 
+    expect(shop.by("phone-error")).to_have_text("המספר חייב להתחיל ב־05")
+    expect(shop.by("phone")).to_have_attribute("aria-invalid", "true")
+    expect(shop.by("send-code")).to_be_disabled()
+    shop.by("phone").fill("05")
+    expect(shop.by("phone-error")).to_be_hidden()
+    expect(shop.by("send-code")).to_be_enabled()
+    assert sent == []
+
+
+def test_a_number_too_short_is_told_when_it_is_sent(shop):
+    shop.open()
+    sent = []
+    shop.page.on("request", lambda r: sent.append(r.url) if "/auth/otp" in r.url else None)
+    shop.by("full-name").fill("דנה כהן")
+    shop.by("phone").fill("054123")
+
+    shop.by("send-code").click()
+
+    expect(shop.by("phone-error")).to_have_text("המספר חייב להכיל 10 ספרות")
     expect(shop.by("phone")).to_be_focused()
     assert sent == []
