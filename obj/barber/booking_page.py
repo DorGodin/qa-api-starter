@@ -172,9 +172,22 @@ class BookingPage:
         choice are on screen."""
         self.show_tab("book")
         self.barber_pill(barber_id).click()
-        self.by("service").select_option(value=service_id)
-        self.settled()
+        self.choose_service(service_id)
         return self.choose_day(day)
+
+    def choose_service(self, service_id: str, field: str = "service") -> BookingPage:
+        """Open the service list - the page's own, not the browser's - and tap the service."""
+        self.service_list(field).locator(f'[data-value="{service_id}"]').click()
+        expect(self.by(f"{field}-list")).to_be_hidden()
+        self.settled()
+        return self
+
+    def service_list(self, field: str = "service") -> Locator:
+        """The list of services, opened; each one is a `{field}-option` with its name, minutes and price."""
+        if self.by(f"{field}-button").get_attribute("aria-expanded") != "true":
+            self.by(f"{field}-button").click()
+        expect(self.by(f"{field}-list")).to_be_visible()
+        return self.by(f"{field}-list")
 
     def barber_pill(self, barber_id: str) -> Locator:
         return self.by("barbers").locator(f'[data-id="{barber_id}"]')
@@ -224,7 +237,7 @@ class BookingPage:
         screen, not by ids taken from somewhere else."""
         self.show_tab("book")
         barber_id = self.by("barbers").get_by_role("radio", name=barber, exact=True).get_attribute("data-id")
-        service_id = self.by("service").locator("option", has_text=service).get_attribute("value")
+        service_id = self.service_list().get_by_role("option", name=service).first.get_attribute("data-value")
         return self.choose(barber_id, service_id, day)
 
     def times(self) -> list[str]:

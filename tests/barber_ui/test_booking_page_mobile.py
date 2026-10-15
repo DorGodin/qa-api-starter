@@ -571,9 +571,8 @@ def test_what_was_said_on_one_tab_is_gone_on_the_next(
 
 
 def test_the_chosen_service_shows_its_price_in_full_on_every_phone(phone_shop, account, services):
-    """A field cuts what does not fit and puts dots in its place: the words are measured in the
-    field's own letters against the room between its paddings. The name is as long as the shop's
-    longest."""
+    """The field cuts a long name and puts dots in its place - never the minutes and the price beside
+    it. The name is as long as the shop's longest."""
     # As long as the shop's longest, with two hex digits of its own - and another two if those are taken.
     for _ in range(5):
         made = services.create(
@@ -584,22 +583,13 @@ def test_the_chosen_service_shows_its_price_in_full_on_every_phone(phone_shop, a
             break
     service = made.assert_ok(201).as_dict
     phone_shop.sign_in_as(account)
-    phone_shop.by("service").select_option(service["id"])
-    phone_shop.settled()
+    phone_shop.choose_service(service["id"])
 
-    words, room = phone_shop.page.evaluate(
-        """() => {
-            const field = document.querySelector('[data-testid="service"]');
-            const cs = getComputedStyle(field);
-            const pen = document.createElement("canvas").getContext("2d");
-            pen.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-            return [pen.measureText(field.selectedOptions[0].textContent).width,
-                    field.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)];
-        }"""
-    )
-
-    assert words <= room, f"the words need {words:.0f}px and the field has {room:.0f}px"
-    assert re.search(r"140\s*₪$", phone_shop.text(phone_shop.by("service").locator("option:checked")))
+    meta = phone_shop.by("service-meta")
+    expect(meta).to_have_text(re.compile(r"\d+ דק׳ · \S*140\s*\S*₪$"))
+    assert meta.evaluate("e => e.scrollWidth <= e.clientWidth"), "the minutes and the price are cut"
+    box, field = meta.bounding_box(), phone_shop.by("service-button").bounding_box()
+    assert field["x"] <= box["x"] and box["x"] + box["width"] <= field["x"] + field["width"]
 
 
 def test_the_shelf_fits_a_phone_with_its_four_tabs_and_its_buttons(
@@ -644,9 +634,11 @@ def test_the_shelf_fits_a_phone_with_its_four_tabs_and_its_buttons(
 
 
 def test_a_service_with_a_very_long_name_does_not_widen_the_page(phone_shop, account, services):
-    """Safari sizes a select to its longest option unless it is told to cut it."""
+    """A long name is cut inside the service field and inside its open list - neither widens the page."""
     services.create_fake_service(name="תספורת " + "ארוכה מאוד " * 6 + secrets.token_hex(2))
     phone_shop.sign_in_as(account)
 
-    expect(phone_shop.by("service")).to_be_visible()
+    expect(phone_shop.by("service-button")).to_be_visible()
+    assert sideways_overflow(phone_shop.page) == []
+    phone_shop.service_list()
     assert sideways_overflow(phone_shop.page) == []

@@ -13,8 +13,7 @@ def add_a_second_person(screen, service) -> None:
     service that waits for the barber's yes turned a booking for two into a request."""
     screen.by("add-person").click()
     screen.settled()
-    screen.by("service-2").select_option(value=service["id"])
-    screen.settled()
+    screen.choose_service(service["id"], "service-2")
 
 
 def test_the_times_for_two_are_where_both_fit_and_one_booking_makes_two(

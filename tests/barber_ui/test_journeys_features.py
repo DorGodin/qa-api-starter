@@ -107,7 +107,7 @@ def test_a_booking_for_two_is_one_step_counts_once_and_each_is_then_its_own(
     parent.choose_by_name(barber["name"], cut, day)
     parent.by("add-person").click()
     parent.settled()
-    parent.by("service-2").select_option(value=child_id)
+    parent.choose_service(child_id, "service-2")
     parent.by("person-name").fill("יוני")
     parent.settled()
     assert "11:30" not in parent.times(), "the last time has room for one, not for both"
