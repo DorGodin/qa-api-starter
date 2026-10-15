@@ -27,7 +27,7 @@ def test_a_customer_moves_a_booking_and_it_is_the_same_booking_at_the_new_time(
     expect(signed_in.by("moving-text")).to_contain_text("11:00")
     expect(signed_in.by("stop-moving")).to_have_text("השארת המועד הקיים")
     expect(signed_in.barber_pill(ui_barber["id"])).to_be_disabled()
-    expect(signed_in.by("service")).to_be_disabled()
+    expect(signed_in.by("service-button")).to_be_disabled()
     # The booking's own time is not in its way: a quarter later is offered.
     assert "11:15" in signed_in.times()
 
@@ -87,6 +87,6 @@ def test_stopping_a_move_puts_the_panel_back_and_changes_nothing(
 
     expect(signed_in.by("left-title")).to_have_text("קביעת תור")
     expect(signed_in.by("book")).to_have_text("קביעת התור")
-    expect(signed_in.by("service")).to_be_enabled()
+    expect(signed_in.by("service-button")).to_be_enabled()
     [kept] = bookings.listing(persona=account["persona"])["content"]
     assert parse_instant(kept["start"]) == at_local(shop_tz, day, "12:00")

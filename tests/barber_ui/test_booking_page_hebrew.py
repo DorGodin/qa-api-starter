@@ -102,19 +102,59 @@ def test_the_service_choice_drops_the_agorot_of_a_whole_price_and_keeps_real_one
     signed_in.reload()
 
     def words(service):
-        return signed_in.text(signed_in.by("service").locator(f'option[value="{service["id"]}"]'))
+        return signed_in.text(signed_in.service_list().locator(f'[data-value="{service["id"]}"]'))
 
     assert re.search(r"· 140\s*₪$", words(whole)), words(whole)
     assert re.search(r"· 92\.50\s*₪$", words(odd)), words(odd)
 
 
-def test_how_long_the_chosen_service_takes_stands_beside_its_label(signed_in, services):
+def test_the_service_list_opens_below_its_field_with_each_service_on_one_line(signed_in, services):
+    """An iPhone opens its own list upward when the field is low, and folds a long line in two: the page's
+    own list opens under the field, and every service is its name, its minutes and its price."""
+    long = services.create_fake_service(duration_minutes=45)
+    signed_in.reload()
+
+    listed = signed_in.service_list()
+    assert listed.bounding_box()["y"] >= signed_in.by("service-button").bounding_box()["y"]
+    item = listed.locator(f'[data-value="{long["id"]}"]')
+    expect(item).to_contain_text(long["name"])
+    expect(item.locator("small")).to_have_text(re.compile(r"^45 דק׳ · "))
+    assert item.locator("small").evaluate("e => e.getBoundingClientRect().height < 2 * parseFloat(getComputedStyle(e).fontSize)"), "the minutes and price fold"
+
+
+def test_the_chosen_service_says_how_long_it_takes_beside_its_name(signed_in, services):
     short = services.create_fake_service(duration_minutes=15)
     long = services.create_fake_service(duration_minutes=45)
     signed_in.reload()
 
-    signed_in.by("service").select_option(short["id"])
-    expect(signed_in.by("service-length")).to_have_text("15 דק׳")
-    signed_in.by("service").select_option(long["id"])
-    expect(signed_in.by("service-length")).to_have_text("45 דק׳")
-    assert "דק׳" not in signed_in.text(signed_in.by("service").locator("option:checked"))
+    signed_in.choose_service(short["id"])
+    expect(signed_in.by("service-meta")).to_have_text(re.compile(r"^15 דק׳ · "))
+    signed_in.choose_service(long["id"])
+    expect(signed_in.by("service-meta")).to_have_text(re.compile(r"^45 דק׳ · "))
+    expect(signed_in.by("service-name")).to_contain_text(long["name"])
+
+
+def test_the_service_list_is_used_from_the_keyboard(signed_in, services):
+    services.create_fake_service()
+    signed_in.reload()
+    button, listed = signed_in.by("service-button"), signed_in.by("service-list")
+
+    button.focus()
+    signed_in.page.keyboard.press("ArrowDown")
+    expect(listed).to_be_visible()
+    expect(button).to_have_attribute("aria-expanded", "true")
+    expect(listed.locator('[aria-selected="true"]')).to_be_focused()
+
+    signed_in.page.keyboard.press("Escape")
+    expect(listed).to_be_hidden()
+    expect(button).to_be_focused()
+
+    signed_in.page.keyboard.press("Enter")
+    signed_in.page.keyboard.press("End")
+    last = listed.locator("li").last
+    expect(last).to_be_focused()
+    chosen = last.get_attribute("data-value")
+    signed_in.page.keyboard.press("Enter")
+    expect(listed).to_be_hidden()
+    expect(button).to_be_focused()
+    expect(signed_in.by("service")).to_have_value(chosen)
