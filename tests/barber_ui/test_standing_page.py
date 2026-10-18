@@ -13,6 +13,8 @@ def test_a_booking_just_made_becomes_a_standing_one_and_stops_from_the_list(
     signed_in = shop.sign_in_as(account)
     signed_in.choose(barber["id"], ui_haircut["id"], local_day(shop_tz, 3)).pick("10:00").book(keep_answer=True)
 
+    expect(signed_in.by("standing-offer")).to_be_hidden()
+    signed_in.by("standing-open").click()
     expect(signed_in.by("standing-offer")).to_be_visible()
     expect(signed_in.by("standing-make")).to_have_text("כן, תור קבוע כל 3 שבועות")
     expect(signed_in.by("standing-next")).to_contain_text("10:00")

@@ -194,7 +194,9 @@ def test_a_whole_booking_and_its_cancellation_with_the_keyboard_alone(
     expect(shop.by("booking-done")).to_be_visible()
     assert focused(page)["testid"] == "booking-done-title", "the card takes the focus"
     page.keyboard.press("Tab")
-    assert focused(page)["testid"] == "booking-done-mine", "its first way on is the list"
+    assert focused(page)["testid"] == "standing-open", "then the offer to make it a standing booking, folded"
+    page.keyboard.press("Tab")
+    assert focused(page)["testid"] == "booking-done-mine", "and the list"
     page.keyboard.press("Enter")
     expect(shop.row_at("10:45"), "the focus goes to the new booking, not the top of the page").to_be_focused()
 
