@@ -135,3 +135,23 @@ def test_a_second_person_is_told_at_a_glance_by_a_badge_and_a_card_headed_by_the
     signed_in.by("remove-person").click()
     signed_in.settled()
     expect(signed_in.by("pair-badge")).to_be_hidden()
+
+
+def test_with_one_place_left_a_second_person_is_not_offered(
+    barbers, bookings, shop, account, ui_haircut, shop_tz, bookings_ahead_limit
+):
+    barber = barbers.create_fake_barber()
+    day = local_day(shop_tz, 13)
+    for hour in range(bookings_ahead_limit - 1):
+        bookings.create_booking(
+            barber["id"],
+            ui_haircut["id"],
+            at_local(shop_tz, day, f"{8 + hour:02d}:00"),
+            persona=account["persona"],
+        )
+    signed_in = shop.sign_in_as(account)
+    signed_in.choose(barber["id"], ui_haircut["id"], day).pick("20:00")
+
+    expect(signed_in.by("confirm")).to_be_visible()
+    expect(signed_in.by("add-person")).to_be_hidden()
+    expect(signed_in.by("limit-note")).to_be_hidden()

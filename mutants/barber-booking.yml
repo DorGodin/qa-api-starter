@@ -2270,6 +2270,20 @@ mutants:
   changes:
   - find: '"bookings_ahead_limit": config.max_future_bookings,'
     replace: '"bookings_ahead_limit": 2,'
+- name: a group takes one place toward the limit again
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "        if _held_ahead(session, user.id, now) + len(body.people) > config.max_future_bookings:"
+    replace: "        if _held_ahead(session, user.id, now) + 1 > config.max_future_bookings:"
+- name: a second person is offered with one place left
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  $("app").classList.toggle("no-room-for-two", Boolean(me) && held + 2 > limit);'
+    replace: '  $("app").classList.toggle("no-room-for-two", false);'
 - name: the service list says no minutes
   file: app/static/index.html
   catches:

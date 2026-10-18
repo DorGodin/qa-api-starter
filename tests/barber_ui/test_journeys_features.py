@@ -119,10 +119,10 @@ def test_a_booking_for_two_is_one_step_counts_once_and_each_is_then_its_own(
     expect(parent.rows()).to_have_count(2)
     assert "עבור יוני" in parent.text(parent.row_at("10:30").get_by_test_id("booking-detail"))
 
-    # The two count once toward the bookings a customer may hold: the rest of the places go through - all but
-    # the last made elsewhere, the last on this screen - and then the screen says it is full.
+    # Each of the two takes a place toward the bookings a customer may hold: the rest go through - all but the
+    # last made elsewhere, the last on this screen - and then the screen says it is full.
     me = as_persona(customers, parent, f"journey-parent-{run_id}")
-    weeks = range(1, bookings_ahead_limit - 1)
+    weeks = range(1, bookings_ahead_limit - 2)
     others = [at_local(shop_tz, day + timedelta(days=7 * week), "09:00") for week in weeks]
     for start in others:
         bookings.create_booking(barber["id"], cut_id, start, persona=me)
