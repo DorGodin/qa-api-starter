@@ -97,3 +97,11 @@ def test_a_name_longer_than_twenty_five_characters_is_refused(customers):
 
     assert customers.request_code(phone, "א" * 26).status_code == 422
     assert customers.request_code(phone, "א" * 25).status_code == 202
+
+
+def test_a_name_with_a_digit_or_a_symbol_is_refused_and_no_code_is_sent(customers, sms_inbox):
+    phone = customers.new_phone()
+    for name in ("דנה 2", "Dana1", "דנה!"):
+        assert_refused(customers.request_code(phone, name), 422, "name_not_letters")
+    assert sms_inbox.messages(phone) == [], "a code went to a refused name"
+    assert customers.request_code(phone, "ג'ורג' בן-דוד").status_code == 202
