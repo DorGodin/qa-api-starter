@@ -2263,13 +2263,13 @@ mutants:
   changes:
   - find: "    part.inert = full;\n"
     replace: ""
-- name: a shop lets a customer hold two bookings ahead again
-  file: app/config.py
+- name: the page is told a limit of bookings ahead the shop does not hold
+  file: app/main.py
   catches:
   - api
   changes:
-  - find: 'max_future_bookings=int(os.environ.get("MAX_FUTURE_BOOKINGS", "5")),'
-    replace: 'max_future_bookings=int(os.environ.get("MAX_FUTURE_BOOKINGS", "2")),'
+  - find: '"bookings_ahead_limit": config.max_future_bookings,'
+    replace: '"bookings_ahead_limit": 2,'
 - name: the service list says no minutes
   file: app/static/index.html
   catches:
