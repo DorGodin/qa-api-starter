@@ -23,6 +23,12 @@ def short_barber(barbers):
     return barber
 
 
+def an_open_day(shop_tz):
+    """Six days on, or seven when that is a Saturday: the ordinary service needs the barber's hours, and the
+    barber is closed on Saturday - on a Sunday, six days on was one."""
+    return next(d for d in (local_day(shop_tz, n) for n in (6, 7)) if d.weekday() != 5)
+
+
 def starts(barbers, barber, service, day, persona):
     return [s["start"] for s in barbers.slots(barber["id"], day, service["id"], persona=persona)]
 
@@ -67,7 +73,7 @@ def test_it_offers_a_day_the_barber_is_closed_and_a_day_off(
 def test_a_booking_already_there_still_takes_its_time(
     barbers, bookings, short_barber, haircut, emergency, new_customer, shop_tz
 ):
-    day = local_day(shop_tz, 6)
+    day = an_open_day(shop_tz)
     bookings.create_booking(
         short_barber["id"], haircut["id"], at_local(shop_tz, day, "09:00"), persona=new_customer()
     )
@@ -92,7 +98,7 @@ def test_a_booking_already_there_still_takes_its_time(
 def test_an_emergency_booking_takes_the_time_from_the_ordinary_services_too(
     bookings, short_barber, haircut, emergency, new_customer, shop_tz
 ):
-    day = local_day(shop_tz, 6)
+    day = an_open_day(shop_tz)
     bookings.create_booking(
         short_barber["id"], emergency["id"], at_local(shop_tz, day, "09:00"), persona=new_customer()
     )
