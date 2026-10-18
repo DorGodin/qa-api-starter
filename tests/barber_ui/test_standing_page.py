@@ -27,7 +27,7 @@ def test_a_booking_just_made_becomes_a_standing_one_and_stops_from_the_list(
     expect(signed_in.by("standing-offer")).to_be_hidden()
     signed_in.go_to_my_bookings()
     row = signed_in.row_at("10:00")
-    expect(row.get_by_test_id("booking-standing")).to_have_text("🔁 תור קבוע · כל שבועיים")
+    expect(row.get_by_test_id("booking-standing")).to_have_text("קבוע כל שבועיים · הבא ייקבע אחרי הביקור")
 
     row.get_by_test_id("stop-standing").click()
     signed_in.settled()
