@@ -143,6 +143,8 @@ def test_the_statement_and_the_policy_lead_back_to_the_personal_area(shop, accou
         signed_in.by(link).click()
         back = signed_in.page.get_by_test_id("back-top")
         expect(back).to_be_visible()
+        expect(back).to_have_accessible_name("חזרה")
+        expect(back).to_have_text("")
         box, width = back.bounding_box(), signed_in.page.viewport_size["width"]
         assert box["x"] + box["width"] < width / 2, "top left, out of the title's way"
 

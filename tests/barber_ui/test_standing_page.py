@@ -16,10 +16,17 @@ def test_a_booking_just_made_becomes_a_standing_one_and_stops_from_the_list(
     expect(signed_in.by("standing-offer")).to_be_hidden()
     signed_in.by("standing-open").click()
     expect(signed_in.by("standing-offer")).to_be_visible()
-    expect(signed_in.by("standing-make")).to_have_text("כן, תור קבוע כל 3 שבועות")
+    expect(signed_in.by("standing-make")).to_contain_text("כן, להפוך לקבוע")
     expect(signed_in.by("standing-next")).to_contain_text("10:00")
-    signed_in.by("standing-every").get_by_role("radio", name="כל שבועיים").click()
-    expect(signed_in.by("standing-make")).to_have_text("כן, תור קבוע כל שבועיים")
+    three_weeks = signed_in.text(signed_in.by("standing-next"))
+    every = signed_in.by("standing-every")
+    expect(every.get_by_role("radio", name="3 שבועות")).to_have_attribute("aria-checked", "true")
+    every.get_by_role("radio", name="שבועיים").click()
+    expect(every.get_by_role("radio", name="שבועיים")).to_have_attribute("aria-checked", "true")
+    assert signed_in.text(signed_in.by("standing-next")) != three_weeks, "the next date follows the choice"
+    # The three choices share one row.
+    tops = {round(b.bounding_box()["y"]) for b in every.get_by_role("radio").all()}
+    assert len(tops) == 1, tops
     signed_in.by("standing-make").click()
     signed_in.settled()
 
