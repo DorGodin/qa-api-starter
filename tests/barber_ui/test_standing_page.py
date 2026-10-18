@@ -34,3 +34,17 @@ def test_a_booking_just_made_becomes_a_standing_one_and_stops_from_the_list(
     expect(signed_in.message()).to_contain_text("התור הקבוע הופסק")
     expect(signed_in.row_at("10:00").get_by_test_id("booking-standing")).to_have_count(0)
     expect(signed_in.row_at("10:00")).to_have_attribute("data-status", "confirmed")
+
+
+def test_no_thanks_folds_the_offer_back_and_makes_nothing(barbers, shop, account, bookings, ui_haircut, shop_tz):
+    barber = barbers.create_fake_barber()
+    signed_in = shop.sign_in_as(account)
+    signed_in.choose(barber["id"], ui_haircut["id"], local_day(shop_tz, 3)).pick("11:00").book(keep_answer=True)
+    signed_in.by("standing-open").click()
+
+    signed_in.by("standing-cancel").click()
+
+    expect(signed_in.by("standing-offer")).to_be_hidden()
+    expect(signed_in.by("standing-open")).to_be_focused()
+    mine = bookings.listing(persona=account["persona"])["content"]
+    assert all(b["standing"] is None for b in mine)

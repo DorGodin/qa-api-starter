@@ -133,3 +133,20 @@ def test_on_a_phone_the_personal_area_shows_the_ways_to_the_shop_once(shop, acco
     if signed_in.page.locator("body > footer a.action").count():
         signed_in.show_tab("book")
         expect(signed_in.page.locator("body > footer")).to_be_visible()
+
+
+def test_the_statement_and_the_policy_lead_back_to_the_personal_area(shop, account):
+    shop.page.set_viewport_size({"width": 390, "height": 844})
+    signed_in = shop.sign_in_as(account)
+    for link in ("account-privacy", "account-accessibility"):
+        signed_in.show_tab("account")
+        signed_in.by(link).click()
+        back = signed_in.page.get_by_test_id("back-top")
+        expect(back).to_be_visible()
+        box, width = back.bounding_box(), signed_in.page.viewport_size["width"]
+        assert box["x"] + box["width"] < width / 2, "top left, out of the title's way"
+
+        back.click()
+        signed_in.settled()
+        expect(signed_in.by("account-panel")).to_be_visible()
+        assert "#" not in signed_in.page.url
