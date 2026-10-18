@@ -84,8 +84,8 @@ mutants:
   catches:
   - api
   changes:
-  - find: "\n        _refuse_clashes(session, wanted, body.barber_id, user.id)\n"
-    replace: "\n        _refuse_clashes(session, wanted, body.barber_id, None)\n"
+  - find: "\n    _refuse_clashes(session, wanted, barber_id, customer_id)\n"
+    replace: "\n    _refuse_clashes(session, wanted, barber_id, None)\n"
 - name: a price change reaches back into bookings
   file: app/views.py
   catches:
@@ -774,15 +774,15 @@ mutants:
   catches:
   - api
   changes:
-  - find: "        # is taken.\n        if _held_ahead(session, user.id, now) >= config.max_future_bookings:"
-    replace: "        # is taken.\n        if False:"
+  - find: "    # is taken.\n    if _held_ahead(session, customer_id, now) >= config.max_future_bookings:"
+    replace: "    # is taken.\n    if False:"
 - name: one more booking ahead than the limit is allowed
   file: app/routers/bookings.py
   catches:
   - api
   changes:
-  - find: "        # is taken.\n        if _held_ahead(session, user.id, now) >= config.max_future_bookings:"
-    replace: "        # is taken.\n        if _held_ahead(session, user.id, now) > config.max_future_bookings:"
+  - find: "    # is taken.\n    if _held_ahead(session, customer_id, now) >= config.max_future_bookings:"
+    replace: "    # is taken.\n    if _held_ahead(session, customer_id, now) > config.max_future_bookings:"
 - name: a cancelled booking still counts against the limit
   file: app/routers/bookings.py
   catches:
@@ -1869,15 +1869,15 @@ mutants:
   catches:
   - api
   changes:
-  - find: "        if service.requires_approval or is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n        elif"
-    replace: "        if service.requires_approval or False:\n            booking.approval = \"pending\"\n        elif"
+  - find: "    if service.requires_approval or is_flagged(session, config, customer_id, now):\n        booking.approval = \"pending\"\n    elif"
+    replace: "    if service.requires_approval or False:\n        booking.approval = \"pending\"\n    elif"
 - name: a flagged customer is approved by silence after two hours
   file: app/routers/bookings.py
   catches:
   - api
   changes:
-  - find: "        if service.requires_approval or is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n        elif"
-    replace: "        if service.requires_approval or is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n            booking.decide_by = decide_by(config, now, wanted.start)\n        elif"
+  - find: "    if service.requires_approval or is_flagged(session, config, customer_id, now):\n        booking.approval = \"pending\"\n    elif"
+    replace: "    if service.requires_approval or is_flagged(session, config, customer_id, now):\n        booking.approval = \"pending\"\n        booking.decide_by = decide_by(config, now, wanted.start)\n    elif"
 - name: a customer's moves are not counted
   file: app/routers/bookings.py
   catches:
@@ -1904,15 +1904,15 @@ mutants:
   catches:
   - api
   changes:
-  - find: "        if service.requires_approval or is_flagged(session, config, user.id, now):"
-    replace: "        if is_flagged(session, config, user.id, now):"
+  - find: "    if service.requires_approval or is_flagged(session, config, customer_id, now):"
+    replace: "    if is_flagged(session, config, customer_id, now):"
 - name: a service that needs the barber is approved by silence after two hours
   file: app/routers/bookings.py
   catches:
   - api
   changes:
-  - find: "        if service.requires_approval or is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n        elif"
-    replace: "        if service.requires_approval or is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n            booking.decide_by = decide_by(config, now, wanted.start)\n        elif"
+  - find: "    if service.requires_approval or is_flagged(session, config, customer_id, now):\n        booking.approval = \"pending\"\n    elif"
+    replace: "    if service.requires_approval or is_flagged(session, config, customer_id, now):\n        booking.approval = \"pending\"\n        booking.decide_by = decide_by(config, now, wanted.start)\n    elif"
 - name: moving a booking of a service that needs the barber does not wait again
   file: app/routers/bookings.py
   catches:
