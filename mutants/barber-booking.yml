@@ -2249,6 +2249,13 @@ mutants:
   changes:
   - find: "$(\"person-name\").addEventListener(\"input\", drawCompanion);\n"
     replace: ""
+- name: the personal area shows the ways to the shop twice
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    body:has([data-testid="app"][data-role="customer"][data-tab="account"]:not([hidden])) footer { display:none; }'
+    replace: ""
 - name: the service list says no minutes
   file: app/static/index.html
   catches:

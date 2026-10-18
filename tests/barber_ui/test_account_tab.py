@@ -120,3 +120,14 @@ def test_the_staff_still_sign_out_from_the_bar(owner_screen):
     owner = owner_screen()
 
     expect(owner.by("logout")).to_be_visible()
+
+
+def test_on_a_phone_the_personal_area_shows_the_ways_to_the_shop_once(shop, account):
+    shop.page.set_viewport_size({"width": 390, "height": 844})
+    signed_in = shop.sign_in_as(account)
+    signed_in.show_tab("account")
+
+    expect(signed_in.by("account-foot")).to_be_visible()
+    expect(signed_in.page.locator("body > footer")).to_be_hidden()
+    signed_in.show_tab("book")
+    expect(signed_in.page.locator("body > footer")).to_be_visible()
