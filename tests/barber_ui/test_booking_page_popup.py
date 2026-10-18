@@ -196,7 +196,7 @@ def test_at_the_limit_the_screen_says_so_and_the_choice_waits_until_one_is_cance
     shop.show_tab("book")
 
     expect(shop.by("limit-note")).to_be_visible()
-    expect(shop.by("limit-note-text")).to_have_text(f"יש לך כבר {bookings_ahead_limit} תורים קדימה")
+    expect(shop.by("limit-note-text")).to_have_text(f"יש לך {bookings_ahead_limit} תורים. בטלו אחד כדי לקבוע חדש")
     expect(shop.by("book-panel")).to_have_attribute("inert", "")
 
     shop.by("limit-note-mine").click()

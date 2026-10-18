@@ -2074,13 +2074,13 @@ mutants:
   changes:
   - find: "        await api(\"POST\", \"/push/unsubscribe\", { endpoint: subscription.endpoint });\n"
     replace: ""
-- name: a group takes a place for each person toward the limit
+- name: the bookings held ahead count a group once again
   file: app/routers/bookings.py
   catches:
   - api
   changes:
-  - find: "select(func.count(func.distinct(func.coalesce(Booking.group_id, Booking.id))))"
-    replace: "select(func.count())"
+  - find: "        select(func.count())\n        .select_from(Booking)\n        .where(Booking.customer_id == customer_id, Booking.status == \"confirmed\""
+    replace: "        select(func.count(func.distinct(func.coalesce(Booking.group_id, Booking.id))))\n        .select_from(Booking)\n        .where(Booking.customer_id == customer_id, Booking.status == \"confirmed\""
 - name: a group may be as big as the schema lets it
   file: app/routers/bookings.py
   catches:
