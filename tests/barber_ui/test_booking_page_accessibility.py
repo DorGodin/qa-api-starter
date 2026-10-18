@@ -186,8 +186,10 @@ def test_a_whole_booking_and_its_cancellation_with_the_keyboard_alone(
 
     page.keyboard.press("Tab")
     assert (
-        focused(page)["testid"] == "book"
-    ), "the times are one stop: one Tab from the chosen one to the book button"
+        focused(page)["testid"] == "add-person"
+    ), "the times are one stop: one Tab from the chosen one leaves them, to the offer of a second person"
+    page.keyboard.press("Tab")
+    assert focused(page)["testid"] == "book", "and the next is the book button"
     page.keyboard.press("Enter")
     expect(shop.by("booking-done")).to_be_visible()
     assert focused(page)["testid"] == "booking-done-title", "the card takes the focus"
