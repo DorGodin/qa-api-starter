@@ -246,7 +246,9 @@ def test_the_accessibility_statement_is_one_step_from_the_sign_in_screen_and_say
     assert "{{" not in statement.content(), "a placeholder was left unfilled"
     assert violations(statement) == [], "the statement itself"
 
-    statement.get_by_test_id("back").click()
+    # The way back is the round button top left; the link at the foot is gone (the owner's choice, 2026-10-18).
+    expect(statement.get_by_role("link", name="חזרה לקביעת תור")).to_have_count(0)
+    statement.get_by_test_id("back-top").click()
     expect(shop.by("code-request-form")).to_be_visible()
 
 
