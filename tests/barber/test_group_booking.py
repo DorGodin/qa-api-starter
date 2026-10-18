@@ -76,8 +76,8 @@ def test_if_the_second_time_is_taken_nothing_is_booked(bookings, own_barber, hai
     assert bookings.listing(persona=me)["total"] == 0
 
 
-def test_a_group_counts_as_one_toward_the_limit_of_bookings_ahead(
-    bookings, own_barber, haircut, new_customer, shop_tz
+def test_each_person_of_a_group_takes_a_place_toward_the_limit_of_bookings_ahead(
+    bookings, own_barber, haircut, new_customer, shop_tz, bookings_ahead_limit
 ):
     me = new_customer()
     bookings.create_group(
@@ -87,9 +87,13 @@ def test_a_group_counts_as_one_toward_the_limit_of_bookings_ahead(
         persona=me,
     )
 
-    bookings.create_booking(
-        own_barber["id"], haircut["id"], at_local(shop_tz, local_day(shop_tz, 5), "10:00"), persona=me
-    )
+    for hour in range(bookings_ahead_limit - 2):
+        bookings.create_booking(
+            own_barber["id"],
+            haircut["id"],
+            at_local(shop_tz, local_day(shop_tz, 5), f"{9 + hour:02d}:00"),
+            persona=me,
+        )
 
     refused = bookings.book(
         own_barber["id"], haircut["id"], at_local(shop_tz, local_day(shop_tz, 6), "10:00"), persona=me
@@ -97,11 +101,16 @@ def test_a_group_counts_as_one_toward_the_limit_of_bookings_ahead(
     assert_refused(refused, 409, "too_many_bookings")
 
 
-def test_a_customer_at_the_limit_cannot_book_a_group(bookings, own_barber, haircut, new_customer, shop_tz):
+def test_a_customer_at_the_limit_cannot_book_a_group(
+    bookings, own_barber, haircut, new_customer, shop_tz, bookings_ahead_limit
+):
     me = new_customer()
-    for hhmm in ("09:00", "11:00"):
+    for hour in range(bookings_ahead_limit):
         bookings.create_booking(
-            own_barber["id"], haircut["id"], at_local(shop_tz, local_day(shop_tz, 3), hhmm), persona=me
+            own_barber["id"],
+            haircut["id"],
+            at_local(shop_tz, local_day(shop_tz, 3), f"{9 + hour:02d}:00"),
+            persona=me,
         )
 
     refused = bookings.book_group(
@@ -199,3 +208,36 @@ def test_afterwards_each_is_a_booking_of_its_own(bookings, own_barber, haircut, 
 
     assert cancelled["status"] == "cancelled"
     assert bookings.get_by_id(second["id"], persona=me).assert_ok(200).as_dict["status"] == "confirmed"
+
+
+def test_the_second_persons_name_is_letters_only(bookings, own_barber, haircut, new_customer, shop_tz):
+    refused = bookings.book_group(
+        own_barber["id"],
+        at_local(shop_tz, local_day(shop_tz, 4), "10:00"),
+        people(haircut, haircut, name="יוני 2"),
+        persona=new_customer(),
+    )
+
+    assert_refused(refused, 422, "name_not_letters")
+
+
+def test_with_one_place_left_a_group_is_refused(
+    bookings, own_barber, haircut, new_customer, shop_tz, bookings_ahead_limit
+):
+    me = new_customer()
+    for hour in range(bookings_ahead_limit - 1):
+        bookings.create_booking(
+            own_barber["id"],
+            haircut["id"],
+            at_local(shop_tz, local_day(shop_tz, 3), f"{9 + hour:02d}:00"),
+            persona=me,
+        )
+
+    refused = bookings.book_group(
+        own_barber["id"],
+        at_local(shop_tz, local_day(shop_tz, 4), "10:00"),
+        people(haircut, haircut),
+        persona=me,
+    )
+
+    assert_refused(refused, 409, "too_many_bookings")

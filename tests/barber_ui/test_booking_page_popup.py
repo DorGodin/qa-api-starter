@@ -79,16 +79,23 @@ def test_while_a_refusal_is_open_nothing_behind_it_can_be_pressed(refused_bookin
 
 
 def test_a_refusal_for_too_many_bookings_offers_the_list_to_cancel_one(
-    shop, account, bookings, barbers, ui_haircut, shop_tz
+    shop, account, bookings, barbers, ui_haircut, shop_tz, bookings_ahead_limit
 ):
     barber = barbers.create_fake_barber()
     day = local_day(shop_tz, 10)
-    for hhmm in ("10:00", "11:00"):
+
+    def hold(hhmm):
         bookings.create_booking(
             barber["id"], ui_haircut["id"], at_local(shop_tz, day, hhmm), persona=account["persona"]
         )
+
+    for hour in range(bookings_ahead_limit - 1):
+        hold(f"{8 + hour:02d}:00")
     shop.sign_in_as(account)
-    shop.choose(barber["id"], ui_haircut["id"], day).pick("13:00").book(keep_answer=True)
+    shop.choose(barber["id"], ui_haircut["id"], day).pick("18:00")
+    # The last place is taken elsewhere - another device - while this screen still offers it.
+    hold("20:00")
+    shop.book(keep_answer=True)
 
     expect(shop.by("popup")).to_have_attribute("data-kind", "error")
     expect(shop.by("popup-action")).to_have_text("התורים שלי")
@@ -96,7 +103,7 @@ def test_a_refusal_for_too_many_bookings_offers_the_list_to_cancel_one(
 
     expect(shop.by("popup")).to_be_hidden()
     expect(shop.by("right-panel")).to_be_visible()
-    expect(shop.rows()).to_have_count(2)
+    expect(shop.rows()).to_have_count(bookings_ahead_limit)
 
 
 def test_a_refusal_for_a_taken_time_closes_with_a_button_that_says_to_choose_another(
@@ -148,21 +155,53 @@ def test_a_failure_nobody_planned_for_owns_up_to_going_wrong(shop, account, ui_b
     assert shop.last_answer["text"] == "לא הצלחנו להשלים את הפעולה. אפשר לנסות שוב בעוד רגע."
 
 
-def test_a_third_booking_ahead_is_refused_saying_how_many_may_be_held(
-    shop, account, bookings, barbers, ui_haircut, shop_tz
+def test_a_booking_past_the_limit_is_refused_saying_how_many_may_be_held(
+    shop, account, bookings, barbers, ui_haircut, shop_tz, bookings_ahead_limit
 ):
     barber = barbers.create_fake_barber()
     day = local_day(shop_tz, 10)
-    for hhmm in ("10:00", "11:00"):
+
+    def hold(hhmm):
         bookings.create_booking(
             barber["id"], ui_haircut["id"], at_local(shop_tz, day, hhmm), persona=account["persona"]
         )
-    shop.sign_in_as(account)
 
-    shop.choose(barber["id"], ui_haircut["id"], day).pick("13:00").book()
+    for hour in range(bookings_ahead_limit - 1):
+        hold(f"{8 + hour:02d}:00")
+    shop.sign_in_as(account)
+    shop.choose(barber["id"], ui_haircut["id"], day).pick("18:00")
+    hold("20:00")
+
+    shop.book()
 
     assert shop.last_answer["kind"] == "error"
     assert shop.last_answer["title"] == "נראה שכבר קבעת מספיק"
-    assert "עד 2 תורים" in shop.last_answer["text"] and "לבטל" in shop.last_answer["text"], shop.last_answer[
-        "text"
-    ]
+    text = shop.last_answer["text"]
+    assert f"עד {bookings_ahead_limit} תורים" in text and "לבטל" in text, text
+
+
+def test_at_the_limit_the_screen_says_so_and_the_choice_waits_until_one_is_cancelled(
+    shop, account, bookings, barbers, ui_haircut, shop_tz, bookings_ahead_limit
+):
+    barber = barbers.create_fake_barber()
+    day = local_day(shop_tz, 12)
+    for hour in range(bookings_ahead_limit):
+        bookings.create_booking(
+            barber["id"],
+            ui_haircut["id"],
+            at_local(shop_tz, day, f"{8 + hour:02d}:00"),
+            persona=account["persona"],
+        )
+    shop.sign_in_as(account)
+    shop.show_tab("book")
+
+    expect(shop.by("limit-note")).to_be_visible()
+    expect(shop.by("limit-note-text")).to_have_text(f"יש לך {bookings_ahead_limit} תורים. בטלו אחד כדי לקבוע חדש")
+    expect(shop.by("book-panel")).to_have_attribute("inert", "")
+
+    shop.by("limit-note-mine").click()
+    expect(shop.by("right-panel")).to_be_visible()
+    shop.cancel("08:00")
+    shop.show_tab("book")
+    expect(shop.by("limit-note")).to_be_hidden()
+    expect(shop.by("book-panel")).not_to_have_attribute("inert", "")

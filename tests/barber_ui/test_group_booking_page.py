@@ -181,3 +181,42 @@ def test_a_time_with_no_room_for_the_second_person_is_let_go_and_said_why(
     expect(signed_in.by("confirm")).to_be_hidden()
     assert signed_in.times() == ["09:00"]
     expect(signed_in.by("companion")).to_be_visible()
+
+
+def test_the_second_persons_name_is_letters_only_and_the_button_waits(
+    barbers, shop, account, ui_haircut, shop_tz
+):
+    barber = barbers.create_fake_barber()
+    signed_in = shop.sign_in_as(account)
+    signed_in.choose(barber["id"], ui_haircut["id"], local_day(shop_tz, 6))
+    add_a_second_person(signed_in, ui_haircut)
+    if signed_in.by("confirm").is_hidden():
+        signed_in.by("slot").first.click()
+
+    signed_in.by("person-name").fill("יוני 2")
+
+    expect(signed_in.by("person-name-error")).to_have_text("השם יכול להכיל רק אותיות")
+    expect(signed_in.by("book")).to_be_disabled()
+    signed_in.by("person-name").fill("יוני")
+    expect(signed_in.by("person-name-error")).to_be_hidden()
+    expect(signed_in.by("book")).to_be_enabled()
+
+
+def test_with_one_place_left_a_second_person_is_not_offered(
+    barbers, bookings, shop, account, ui_haircut, shop_tz, bookings_ahead_limit
+):
+    barber = barbers.create_fake_barber()
+    day = local_day(shop_tz, 13)
+    for hour in range(bookings_ahead_limit - 1):
+        bookings.create_booking(
+            barber["id"],
+            ui_haircut["id"],
+            at_local(shop_tz, day, f"{8 + hour:02d}:00"),
+            persona=account["persona"],
+        )
+    signed_in = shop.sign_in_as(account)
+    signed_in.choose(barber["id"], ui_haircut["id"], day).pick("20:00")
+
+    expect(signed_in.by("confirm")).to_be_visible()
+    expect(signed_in.by("add-person")).to_be_hidden()
+    expect(signed_in.by("limit-note")).to_be_hidden()

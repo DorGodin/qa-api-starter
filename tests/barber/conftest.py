@@ -42,6 +42,13 @@ def fresh_address():
 
 
 @pytest.fixture(scope="session")
+def bookings_ahead_limit(api) -> int:
+    """How many bookings ahead the shop lets one customer hold, as the shop says it - five by default,
+    whatever a shop sets; the tests count up to it rather than assume it."""
+    return api.request("GET", "/shop", persona=None).assert_ok(200).as_dict["bookings_ahead_limit"]
+
+
+@pytest.fixture(scope="session")
 def shop_tz(env_config) -> ZoneInfo:
     if "shop_tz" not in env_config:
         raise KeyError(
