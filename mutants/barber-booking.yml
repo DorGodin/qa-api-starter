@@ -141,10 +141,10 @@ mutants:
   changes:
   - find: |-
       function book() {
-        if (!selected || booking) return;
+        if (!selected || booking || (companion && nameProblem($("person-name").value))) return;
     replace: |-
       function book() {
-        if (!selected) return;
+        if (!selected || (companion && nameProblem($("person-name").value))) return;
   - find: |2-
         booking = true;
         $("book").disabled = true;
@@ -2170,15 +2170,43 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "$(\"remove-person\").addEventListener(\"click\", () => busyWhile(async () => {\n  setCompanion(false);"
-    replace: "$(\"remove-person\").addEventListener(\"click\", () => busyWhile(async () => {"
+  - find: '$("remove-person").addEventListener("click", () => busyWhile(() => keepingTime(() => setCompanion(false))));'
+    replace: '$("remove-person").addEventListener("click", () => busyWhile(() => keepingTime(() => {})));'
 - name: booking for two is offered while moving a booking
   file: app/static/index.html
   catches:
   - ui
   changes:
-  - find: "    setCompanion(false);\n    $(\"companion-field\").hidden = true;\n    $(\"moving\").hidden = false;"
-    replace: "    $(\"moving\").hidden = false;"
+  - find: '$("companion-field").hidden = !me || me.role !== "customer" || Boolean(moving) || (!companion && !selected);'
+    replace: '$("companion-field").hidden = !me || me.role !== "customer" || (!companion && !selected);'
+- name: a second person is offered before the first person's time is chosen
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '$("companion-field").hidden = !me || me.role !== "customer" || Boolean(moving) || (!companion && !selected);'
+    replace: '$("companion-field").hidden = !me || me.role !== "customer" || Boolean(moving);'
+- name: adding a second person forgets the time chosen
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  if (again) again.click();\n"
+    replace: "  if (again) say(\"\", \"ok\");\n"
+- name: a time with no room for two goes without a word
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "  else say(`אין מקום לשניכם ברצף"
+    replace: "  else void (`אין מקום לשניכם ברצף"
+- name: the second person's time does not start when the first ends
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "const next = laterClock(clock(slot.start_local), service.duration_minutes);"
+    replace: "const next = laterClock(clock(slot.start_local), 0);"
 - name: the confirm button is squeezed by the words for two
   file: app/static/index.html
   catches:
@@ -2249,6 +2277,34 @@ mutants:
   changes:
   - find: "$(\"person-name\").addEventListener(\"input\", drawCompanion);\n"
     replace: ""
+- name: a name with digits is given a code
+  file: app/routers/auth.py
+  catches:
+  - api
+  changes:
+  - find: "    name_or_error(body.full_name)\n"
+    replace: ""
+- name: the page lets a name with digits through
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "const nameProblem = (value) => ("
+    replace: "const nameProblem = (value) => \"\" && ("
+- name: the second person's name may hold digits
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "        if person.name:\n            name_or_error(person.name)\n"
+    replace: "        pass\n"
+- name: the page lets the second person's name hold digits
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  const problem = companion ? nameProblem(name) : "";'
+    replace: '  const problem = "";'
 - name: the personal area shows the ways to the shop twice
   file: app/static/index.html
   catches:
@@ -3294,8 +3350,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "<input id=\"full-name\" data-testid=\"full-name\" autocomplete=\"name\" maxlength=\"25\" required>"
-    replace: "<input id=\"full-name\" data-testid=\"full-name\" autocomplete=\"name\" maxlength=\"80\" required>"
+  - find: "<input id=\"full-name\" aria-describedby=\"full-name-error\" data-testid=\"full-name\" autocomplete=\"name\" maxlength=\"25\" required>"
+    replace: "<input id=\"full-name\" aria-describedby=\"full-name-error\" data-testid=\"full-name\" autocomplete=\"name\" maxlength=\"80\" required>"
 - name: a number that is not a mobile is sent to the shop
   file: app/static/index.html
   catches:
@@ -3322,7 +3378,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "    $(button).disabled = Boolean(problem);"
+  - find: '    $(button).disabled = Boolean(problem) || (field === "phone" && Boolean(nameProblem($("full-name").value)));'
     replace: ""
 - name: a barber's phone is saved with any start
   file: app/static/index.html

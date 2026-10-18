@@ -31,13 +31,18 @@ from utils.local_time import at_local, local_day, parse_instant
 WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 
 
+def letters(run_id: str) -> str:
+    """The run's id as letters: a name typed on the sign-in screen is letters only, and stays the run's own."""
+    return run_id.translate(str.maketrans("0123456789", "abcdefghij"))
+
+
 def new_account(run_id: str, who: str) -> dict:
-    return {"name": f"QA {who} {run_id}", "phone": Customers.new_phone()}
+    return {"name": f"QA {who} {letters(run_id)}", "phone": Customers.new_phone()}
 
 
 def new_barber(run_id: str, who: str) -> dict:
     # A barber signs in as a customer does: the mobile the owner typed, and the code sent to it.
-    return {"name": f"QA {who} {run_id}", "phone": Customers.new_phone()}
+    return {"name": f"QA {who} {letters(run_id)}", "phone": Customers.new_phone()}
 
 
 def quarter_hours(first: str, last: str) -> list[str]:
@@ -52,7 +57,7 @@ def open_a_barber(owner: OwnerScreen, run_id: str, weekday: str, opening: str, c
     # A Hebrew name, as the shop's barbers have. The list is sorted by name, and
     # a Latin "QA ..." sorts first - which hid a new barber not being selected,
     # because the first barber happened to be the new one.
-    barber = {**new_barber(run_id, "barber"), "name": f"תומר {run_id}"}
+    barber = {**new_barber(run_id, "barber"), "name": f"תומר {letters(run_id)}"}
     owner.add_barber(barber["name"], barber["phone"])
     expect(owner.message()).to_have_attribute("data-kind", "ok")
     expect(owner.chosen_barber()).to_have_text(barber["name"])
