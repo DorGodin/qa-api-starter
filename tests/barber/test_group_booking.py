@@ -77,7 +77,7 @@ def test_if_the_second_time_is_taken_nothing_is_booked(bookings, own_barber, hai
 
 
 def test_a_group_counts_as_one_toward_the_limit_of_bookings_ahead(
-    bookings, own_barber, haircut, new_customer, shop_tz
+    bookings, own_barber, haircut, new_customer, shop_tz, bookings_ahead_limit
 ):
     me = new_customer()
     bookings.create_group(
@@ -87,9 +87,13 @@ def test_a_group_counts_as_one_toward_the_limit_of_bookings_ahead(
         persona=me,
     )
 
-    bookings.create_booking(
-        own_barber["id"], haircut["id"], at_local(shop_tz, local_day(shop_tz, 5), "10:00"), persona=me
-    )
+    for hour in range(bookings_ahead_limit - 1):
+        bookings.create_booking(
+            own_barber["id"],
+            haircut["id"],
+            at_local(shop_tz, local_day(shop_tz, 5), f"{9 + hour:02d}:00"),
+            persona=me,
+        )
 
     refused = bookings.book(
         own_barber["id"], haircut["id"], at_local(shop_tz, local_day(shop_tz, 6), "10:00"), persona=me
@@ -97,11 +101,16 @@ def test_a_group_counts_as_one_toward_the_limit_of_bookings_ahead(
     assert_refused(refused, 409, "too_many_bookings")
 
 
-def test_a_customer_at_the_limit_cannot_book_a_group(bookings, own_barber, haircut, new_customer, shop_tz):
+def test_a_customer_at_the_limit_cannot_book_a_group(
+    bookings, own_barber, haircut, new_customer, shop_tz, bookings_ahead_limit
+):
     me = new_customer()
-    for hhmm in ("09:00", "11:00"):
+    for hour in range(bookings_ahead_limit):
         bookings.create_booking(
-            own_barber["id"], haircut["id"], at_local(shop_tz, local_day(shop_tz, 3), hhmm), persona=me
+            own_barber["id"],
+            haircut["id"],
+            at_local(shop_tz, local_day(shop_tz, 3), f"{9 + hour:02d}:00"),
+            persona=me,
         )
 
     refused = bookings.book_group(

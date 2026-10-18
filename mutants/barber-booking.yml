@@ -2249,6 +2249,27 @@ mutants:
   changes:
   - find: "$(\"person-name\").addEventListener(\"input\", drawCompanion);\n"
     replace: ""
+- name: a customer at the limit is not told before choosing
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  const full = Boolean(me) && me.role === "customer" && !moving && heldAhead() >= shop.bookings_ahead_limit;'
+    replace: '  const full = false;'
+- name: a customer at the limit can still choose a time
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    part.inert = full;\n"
+    replace: ""
+- name: a shop lets a customer hold two bookings ahead again
+  file: app/config.py
+  catches:
+  - api
+  changes:
+  - find: 'max_future_bookings=int(os.environ.get("MAX_FUTURE_BOOKINGS", "5")),'
+    replace: 'max_future_bookings=int(os.environ.get("MAX_FUTURE_BOOKINGS", "2")),'
 - name: the service list says no minutes
   file: app/static/index.html
   catches:

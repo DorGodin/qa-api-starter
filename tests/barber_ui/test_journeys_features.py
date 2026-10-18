@@ -8,6 +8,8 @@ only at the end, to check that what the screens showed is what was stored."""
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 from playwright.sync_api import expect
 
 from obj.barber.booking_page import BookingPage, OwnerScreen
@@ -94,13 +96,13 @@ def test_a_request_waits_for_the_barber_and_their_yes_and_no_reach_each_customer
 
 
 def test_a_booking_for_two_is_one_step_counts_once_and_each_is_then_its_own(
-    person, run_id, credentials, customers, bookings, shop_tz, signed_up, diary_of
+    person, run_id, credentials, customers, bookings, shop_tz, signed_up, diary_of, bookings_ahead_limit
 ):
     day = local_day(shop_tz, 7)
     owner = person(OwnerScreen).sign_in(*credentials("owner"))
     barber = open_a_barber(owner, run_id, WEEKDAYS[day.weekday()], "09:00", "12:00")
     cut, child = f"QA cut {run_id}", f"QA child {run_id}"
-    add_a_service(owner, cut, 30, "80")
+    cut_id = add_a_service(owner, cut, 30, "80")
     child_id = add_a_service(owner, child, 15, "60")
 
     parent = signed_up(person(), new_account(run_id, "parent"))
@@ -117,32 +119,41 @@ def test_a_booking_for_two_is_one_step_counts_once_and_each_is_then_its_own(
     expect(parent.rows()).to_have_count(2)
     assert "עבור יוני" in parent.text(parent.row_at("10:30").get_by_test_id("booking-detail"))
 
-    # The two count once toward the two a customer may hold: one more goes through, the next does not.
+    # The two count once toward the bookings a customer may hold: the rest of the places go through - all but
+    # the last made elsewhere, the last on this screen - and then the screen says it is full.
+    me = as_persona(customers, parent, f"journey-parent-{run_id}")
+    weeks = range(1, bookings_ahead_limit - 1)
+    others = [at_local(shop_tz, day + timedelta(days=7 * week), "09:00") for week in weeks]
+    for start in others:
+        bookings.create_booking(barber["id"], cut_id, start, persona=me)
+    parent.reload()
     parent.choose_by_name(barber["name"], cut, day)
     if parent.by("remove-person").is_visible():
         parent.by("remove-person").click()
         parent.settled()
     parent.pick("11:00").book()
     assert parent.last_answer["kind"] == "ok"
-    parent.choose_by_name(barber["name"], cut, day).pick("11:30").book()
-    assert parent.last_answer["kind"] != "ok" and "מספיק" in parent.last_answer["title"], parent.last_answer
+    parent.show_tab("book")
+    expect(parent.by("limit-note")).to_be_visible()
 
     parent.show_tab("mine")
     parent.cancel("10:30")
     expect(parent.row_at("10:00")).to_have_attribute("data-status", "confirmed")
 
     diary = diary_of(barber)
-    expect(diary.page.locator('[data-testid="booking-row"][data-status="confirmed"]')).to_have_count(2)
+    # The parent's own of the two, the one booked on the screen and those made elsewhere; the child's went.
+    confirmed = diary.page.locator('[data-testid="booking-row"][data-status="confirmed"]')
+    expect(confirmed).to_have_count(2 + len(others))
     expect(diary.row_at("10:30")).to_have_count(0)
     note = diary.text(diary.by("cancel-note"))
     assert "יוני" in note and "10:30" in note, "told whose booking it was: the child's, by name"
 
-    mine = bookings.listing(persona=as_persona(customers, parent, f"journey-parent-{run_id}"))["content"]
+    mine = bookings.listing(persona=me)["content"]
     by_start = {parse_instant(b["start"]): b for b in mine}
     first, second = by_start[at_local(shop_tz, day, "10:00")], by_start[at_local(shop_tz, day, "10:30")]
     assert first["group_id"] and first["group_id"] == second["group_id"]
     assert (second["for_name"], second["service_id"], second["status"]) == ("יוני", child_id, "cancelled")
-    assert len(mine) == 3, "the third booking was refused and never stored"
+    assert len(mine) == 2 + len(others) + 1, "only the bookings that went through are stored"
 
 
 def test_a_product_goes_from_the_owners_shelf_to_a_booking_and_the_barber_reads_it(
