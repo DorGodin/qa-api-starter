@@ -2254,7 +2254,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '  const full = Boolean(me) && me.role === "customer" && !moving && heldAhead() >= shop.bookings_ahead_limit;'
+  - find: '  const full = Boolean(me) && me.role === "customer" && !moving && held >= limit;'
     replace: '  const full = false;'
 - name: a customer at the limit can still choose a time
   file: app/static/index.html
