@@ -177,10 +177,15 @@ def test_a_time_with_no_room_for_the_second_person_is_let_go_and_said_why(
 
     add_a_second_person(signed_in, ui_haircut)
 
-    expect(signed_in.message()).to_contain_text("אין מקום לשניכם ברצף ב־09:30")
+    # Said in the card, until another time is chosen - not in the message that fades.
+    expect(signed_in.by("companion-note")).to_have_text("⚠ אין מקום לשניכם ברצף ב־09:30. בחרו שעה מהרשימה למעלה.")
+    expect(signed_in.message()).not_to_contain_text("אין מקום")
     expect(signed_in.by("confirm")).to_be_hidden()
     assert signed_in.times() == ["09:00"]
     expect(signed_in.by("companion")).to_be_visible()
+    signed_in.pick("09:00")
+    expect(signed_in.by("companion-note")).to_be_hidden()
+    expect(signed_in.by("companion-when")).to_be_visible()
 
 
 def test_the_second_persons_name_is_letters_only_and_the_button_waits(
