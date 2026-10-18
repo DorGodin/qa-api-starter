@@ -107,6 +107,7 @@ def test_a_booking_for_two_is_one_step_counts_once_and_each_is_then_its_own(
 
     parent = signed_up(person(), new_account(run_id, "parent"))
     parent.choose_by_name(barber["name"], cut, day)
+    parent.pick("10:00")
     parent.by("add-person").click()
     parent.settled()
     parent.choose_service(child_id, "service-2")

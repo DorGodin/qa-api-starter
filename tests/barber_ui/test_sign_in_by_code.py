@@ -199,3 +199,20 @@ def test_a_number_too_short_is_told_when_it_is_sent(shop):
     expect(shop.by("phone-error")).to_have_text("המספר חייב להכיל 10 ספרות")
     expect(shop.by("phone")).to_be_focused()
     assert sent == []
+
+
+def test_a_name_with_a_digit_is_told_as_it_is_typed_and_nothing_is_sent(shop):
+    shop.open()
+    sent = []
+    shop.page.on("request", lambda r: sent.append(r.url) if "/auth/otp" in r.url else None)
+    shop.by("phone").fill("0501234567")
+
+    shop.by("full-name").fill("דנה 2")
+
+    expect(shop.by("full-name-error")).to_have_text("השם יכול להכיל רק אותיות")
+    expect(shop.by("full-name")).to_have_attribute("aria-invalid", "true")
+    expect(shop.by("send-code")).to_be_disabled()
+    shop.by("full-name").fill("ג'ורג' בן-דוד")
+    expect(shop.by("full-name-error")).to_be_hidden()
+    expect(shop.by("send-code")).to_be_enabled()
+    assert sent == []

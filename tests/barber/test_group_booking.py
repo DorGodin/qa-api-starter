@@ -210,6 +210,17 @@ def test_afterwards_each_is_a_booking_of_its_own(bookings, own_barber, haircut, 
     assert bookings.get_by_id(second["id"], persona=me).assert_ok(200).as_dict["status"] == "confirmed"
 
 
+def test_the_second_persons_name_is_letters_only(bookings, own_barber, haircut, new_customer, shop_tz):
+    refused = bookings.book_group(
+        own_barber["id"],
+        at_local(shop_tz, local_day(shop_tz, 4), "10:00"),
+        people(haircut, haircut, name="יוני 2"),
+        persona=new_customer(),
+    )
+
+    assert_refused(refused, 422, "name_not_letters")
+
+
 def test_with_one_place_left_a_group_is_refused(
     bookings, own_barber, haircut, new_customer, shop_tz, bookings_ahead_limit
 ):
