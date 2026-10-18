@@ -2249,6 +2249,41 @@ mutants:
   changes:
   - find: "$(\"person-name\").addEventListener(\"input\", drawCompanion);\n"
     replace: ""
+- name: a booking for two can stand
+  file: app/routers/standing.py
+  catches:
+  - api
+  changes:
+  - find: "        if booking.group_id is not None:\n"
+    replace: "        if False:\n"
+- name: a booking stands twice
+  file: app/routers/standing.py
+  catches:
+  - api
+  changes:
+  - find: "        if current is not None and current.stopped_at is None:\n"
+    replace: "        if False:\n"
+- name: stopping a standing booking stops nothing
+  file: app/routers/standing.py
+  catches:
+  - api
+  changes:
+  - find: "            standing.stopped_at = now_utc()\n"
+    replace: "            pass\n"
+- name: a booking does not say it stands
+  file: app/views.py
+  catches:
+  - api
+  changes:
+  - find: "            if standing is not None and standing.stopped_at is None\n"
+    replace: "            if False\n"
+- name: a booking just made is not offered to stand
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "      offerStanding(r.data);\n"
+    replace: ""
 - name: the service list says no minutes
   file: app/static/index.html
   catches:
