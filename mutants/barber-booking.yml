@@ -1321,7 +1321,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '    showDone(r.data.approval === "pending" ? "הבקשה נשלחה" : "התור נקבע", r.data);'
+  - find: '    showDone(r.data.approval === "pending" ? "הבקשה נשלחה" : "התור נקבע", r.data, null, true);'
     replace: '    popup("✓ התור נקבע", "", "ok");'
 - name: a moved time is answered by a popup and not by the card
   file: app/static/index.html
@@ -1498,8 +1498,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "    showDone(r.data.approval === \"pending\" ? \"הבקשה נשלחה\" : \"התור נקבע\", r.data);"
-    replace: "    showDone(\"התור נקבע\", r.data);"
+  - find: "    showDone(r.data.approval === \"pending\" ? \"הבקשה נשלחה\" : \"התור נקבע\", r.data, null, true);"
+    replace: "    showDone(\"התור נקבע\", r.data, null, true);"
 - name: a request is marked with a tick like a booking
   file: app/static/index.html
   catches:
@@ -2380,8 +2380,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "      offerStanding(r.data);\n"
-    replace: ""
+  - find: '"התור נקבע", r.data, null, true);'
+    replace: '"התור נקבע", r.data);'
 - name: the service list says no minutes
   file: app/static/index.html
   catches:
