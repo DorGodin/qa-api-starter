@@ -2382,6 +2382,20 @@ mutants:
   changes:
   - find: '"התור נקבע", r.data, null, true);'
     replace: '"התור נקבע", r.data);'
+- name: no thanks leaves the standing offer open
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "$(\"standing-cancel\").addEventListener(\"click\", () => {\n  $(\"standing-offer\").hidden = true;"
+    replace: "$(\"standing-cancel\").addEventListener(\"click\", () => {\n  $(\"standing-offer\").hidden = false;"
+- name: back from the statement lands on the booking screen
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    if (customer) showTab("account");'
+    replace: '    if (customer) showTab("book");'
 - name: the service list says no minutes
   file: app/static/index.html
   catches:
