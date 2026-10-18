@@ -1,5 +1,6 @@
-"""Booking for two on the page: the second person's own card under the first service, the times where
-both fit, one card for both, and the list that says who the second is for."""
+"""Booking for two on the page: offered once the first person's time is chosen, the second person's own
+card with their time right after it, the times where both fit, one card for both, and the list that says
+who the second is for."""
 
 from playwright.sync_api import expect
 
@@ -9,8 +10,11 @@ from utils.local_time import at_local, local_day
 
 
 def add_a_second_person(screen, service) -> None:
-    """Their service is chosen, never left to whatever the shop lists first: another test's
-    service that waits for the barber's yes turned a booking for two into a request."""
+    """Offered once a time is chosen - the first on offer, unless one already is. Their service is chosen,
+    never left to whatever the shop lists first: another test's service that waits for the barber's yes
+    turned a booking for two into a request."""
+    if screen.by("confirm").is_hidden():
+        screen.by("slot").first.click()
     screen.by("add-person").click()
     screen.settled()
     screen.choose_service(service["id"], "service-2")
@@ -36,7 +40,8 @@ def test_the_times_for_two_are_where_both_fit_and_one_booking_makes_two(
 
     assert signed_in.times() == ["09:00"]
     signed_in.pick("09:00")
-    assert "+" in signed_in.text(signed_in.by("confirm-text"))
+    assert "שני תורים: 09:00 ו־09:30" in signed_in.text(signed_in.by("confirm-text"))
+    expect(signed_in.by("book")).to_have_text("קביעת שני התורים")
     signed_in.book(keep_answer=True)
     assert signed_in.last_answer["title"] == "שני התורים נקבעו"
     signed_in.go_to_my_bookings()
@@ -80,6 +85,10 @@ def test_the_control_is_not_offered_while_moving_a_booking(
 
     expect(signed_in.by("companion-field")).to_be_hidden()
     expect(signed_in.by("companion")).to_be_hidden()
+    # Nor once the new time is chosen: a move is the same booking, for one.
+    signed_in.by("slot").first.click()
+    expect(signed_in.by("confirm")).to_be_visible()
+    expect(signed_in.by("add-person")).to_be_hidden()
 
 
 def test_the_confirm_button_keeps_one_line_beside_the_words_for_two(
@@ -121,6 +130,7 @@ def test_a_second_person_is_told_at_a_glance_by_a_badge_and_a_card_headed_by_the
     signed_in = shop.sign_in_as(account)
     expect(signed_in.by("pair-badge")).to_be_hidden()
 
+    signed_in.by("slot").first.click()
     signed_in.by("add-person").click()
     signed_in.settled()
     expect(signed_in.by("pair-badge")).to_be_visible()
@@ -135,3 +145,39 @@ def test_a_second_person_is_told_at_a_glance_by_a_badge_and_a_card_headed_by_the
     signed_in.by("remove-person").click()
     signed_in.settled()
     expect(signed_in.by("pair-badge")).to_be_hidden()
+
+
+def test_a_second_person_is_offered_only_once_the_first_persons_time_is_chosen(
+    barbers, shop, account, ui_haircut, shop_tz
+):
+    barber = barbers.create_fake_barber()
+    barbers.set_hours(barber["id"], {"hours": dict.fromkeys(WEEK, ["09:00", "10:00"])}).assert_ok(200)
+    signed_in = shop.sign_in_as(account)
+    signed_in.choose(barber["id"], ui_haircut["id"], local_day(shop_tz, 6))
+    expect(signed_in.by("add-person")).to_be_hidden()
+
+    signed_in.pick("09:00")
+    expect(signed_in.by("add-person")).to_be_visible()
+    add_a_second_person(signed_in, ui_haircut)
+
+    # The time chosen stays chosen, and the card says when the second comes.
+    expect(signed_in.by("slot").filter(has_text="09:00")).to_have_attribute("aria-checked", "true")
+    expect(signed_in.by("companion-time")).to_have_text("09:30 – 10:00")
+    expect(signed_in.by("companion-when")).to_be_visible()
+
+
+def test_a_time_with_no_room_for_the_second_person_is_let_go_and_said_why(
+    barbers, shop, account, ui_haircut, shop_tz
+):
+    barber = barbers.create_fake_barber()
+    barbers.set_hours(barber["id"], {"hours": dict.fromkeys(WEEK, ["09:00", "10:00"])}).assert_ok(200)
+    signed_in = shop.sign_in_as(account)
+    signed_in.choose(barber["id"], ui_haircut["id"], local_day(shop_tz, 6))
+    signed_in.pick("09:30")
+
+    add_a_second_person(signed_in, ui_haircut)
+
+    expect(signed_in.message()).to_contain_text("אין מקום לשניכם ברצף ב־09:30")
+    expect(signed_in.by("confirm")).to_be_hidden()
+    assert signed_in.times() == ["09:00"]
+    expect(signed_in.by("companion")).to_be_visible()
