@@ -84,8 +84,8 @@ mutants:
   catches:
   - api
   changes:
-  - find: "\n        _refuse_clashes(session, wanted, body.barber_id, user.id)\n"
-    replace: "\n        _refuse_clashes(session, wanted, body.barber_id, None)\n"
+  - find: "\n    _refuse_clashes(session, wanted, barber_id, customer_id)\n"
+    replace: "\n    _refuse_clashes(session, wanted, barber_id, None)\n"
 - name: a price change reaches back into bookings
   file: app/views.py
   catches:
@@ -774,15 +774,15 @@ mutants:
   catches:
   - api
   changes:
-  - find: "        # is taken.\n        if _held_ahead(session, user.id, now) >= config.max_future_bookings:"
-    replace: "        # is taken.\n        if False:"
+  - find: "    # is taken.\n    if _held_ahead(session, customer_id, now) >= config.max_future_bookings:"
+    replace: "    # is taken.\n    if False:"
 - name: one more booking ahead than the limit is allowed
   file: app/routers/bookings.py
   catches:
   - api
   changes:
-  - find: "        # is taken.\n        if _held_ahead(session, user.id, now) >= config.max_future_bookings:"
-    replace: "        # is taken.\n        if _held_ahead(session, user.id, now) > config.max_future_bookings:"
+  - find: "    # is taken.\n    if _held_ahead(session, customer_id, now) >= config.max_future_bookings:"
+    replace: "    # is taken.\n    if _held_ahead(session, customer_id, now) > config.max_future_bookings:"
 - name: a cancelled booking still counts against the limit
   file: app/routers/bookings.py
   catches:
@@ -1321,7 +1321,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '    showDone(r.data.approval === "pending" ? "הבקשה נשלחה" : "התור נקבע", r.data);'
+  - find: '    showDone(r.data.approval === "pending" ? "הבקשה נשלחה" : "התור נקבע", r.data, null, true);'
     replace: '    popup("✓ התור נקבע", "", "ok");'
 - name: a moved time is answered by a popup and not by the card
   file: app/static/index.html
@@ -1498,8 +1498,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "    showDone(r.data.approval === \"pending\" ? \"הבקשה נשלחה\" : \"התור נקבע\", r.data);"
-    replace: "    showDone(\"התור נקבע\", r.data);"
+  - find: "    showDone(r.data.approval === \"pending\" ? \"הבקשה נשלחה\" : \"התור נקבע\", r.data, null, true);"
+    replace: "    showDone(\"התור נקבע\", r.data, null, true);"
 - name: a request is marked with a tick like a booking
   file: app/static/index.html
   catches:
@@ -1869,15 +1869,15 @@ mutants:
   catches:
   - api
   changes:
-  - find: "        if service.requires_approval or is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n        elif"
-    replace: "        if service.requires_approval or False:\n            booking.approval = \"pending\"\n        elif"
+  - find: "    if service.requires_approval or is_flagged(session, config, customer_id, now):\n        booking.approval = \"pending\"\n    elif"
+    replace: "    if service.requires_approval or False:\n        booking.approval = \"pending\"\n    elif"
 - name: a flagged customer is approved by silence after two hours
   file: app/routers/bookings.py
   catches:
   - api
   changes:
-  - find: "        if service.requires_approval or is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n        elif"
-    replace: "        if service.requires_approval or is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n            booking.decide_by = decide_by(config, now, wanted.start)\n        elif"
+  - find: "    if service.requires_approval or is_flagged(session, config, customer_id, now):\n        booking.approval = \"pending\"\n    elif"
+    replace: "    if service.requires_approval or is_flagged(session, config, customer_id, now):\n        booking.approval = \"pending\"\n        booking.decide_by = decide_by(config, now, wanted.start)\n    elif"
 - name: a customer's moves are not counted
   file: app/routers/bookings.py
   catches:
@@ -1904,15 +1904,15 @@ mutants:
   catches:
   - api
   changes:
-  - find: "        if service.requires_approval or is_flagged(session, config, user.id, now):"
-    replace: "        if is_flagged(session, config, user.id, now):"
+  - find: "    if service.requires_approval or is_flagged(session, config, customer_id, now):"
+    replace: "    if is_flagged(session, config, customer_id, now):"
 - name: a service that needs the barber is approved by silence after two hours
   file: app/routers/bookings.py
   catches:
   - api
   changes:
-  - find: "        if service.requires_approval or is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n        elif"
-    replace: "        if service.requires_approval or is_flagged(session, config, user.id, now):\n            booking.approval = \"pending\"\n            booking.decide_by = decide_by(config, now, wanted.start)\n        elif"
+  - find: "    if service.requires_approval or is_flagged(session, config, customer_id, now):\n        booking.approval = \"pending\"\n    elif"
+    replace: "    if service.requires_approval or is_flagged(session, config, customer_id, now):\n        booking.approval = \"pending\"\n        booking.decide_by = decide_by(config, now, wanted.start)\n    elif"
 - name: moving a booking of a service that needs the barber does not wait again
   file: app/routers/bookings.py
   catches:
@@ -2347,6 +2347,41 @@ mutants:
   changes:
   - find: '  $("app").classList.toggle("no-room-for-two", Boolean(me) && held + 2 > limit);'
     replace: '  $("app").classList.toggle("no-room-for-two", false);'
+- name: a booking for two can stand
+  file: app/routers/standing.py
+  catches:
+  - api
+  changes:
+  - find: "        if booking.group_id is not None:\n"
+    replace: "        if False:\n"
+- name: a booking stands twice
+  file: app/routers/standing.py
+  catches:
+  - api
+  changes:
+  - find: "        if current is not None and current.stopped_at is None:\n"
+    replace: "        if False:\n"
+- name: stopping a standing booking stops nothing
+  file: app/routers/standing.py
+  catches:
+  - api
+  changes:
+  - find: "            standing.stopped_at = now_utc()\n"
+    replace: "            pass\n"
+- name: a booking does not say it stands
+  file: app/views.py
+  catches:
+  - api
+  changes:
+  - find: "            if standing is not None and standing.stopped_at is None\n"
+    replace: "            if False\n"
+- name: a booking just made is not offered to stand
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '"התור נקבע", r.data, null, true);'
+    replace: '"התור נקבע", r.data);'
 - name: the service list says no minutes
   file: app/static/index.html
   catches:
