@@ -135,3 +135,20 @@ def test_a_second_person_is_told_at_a_glance_by_a_badge_and_a_card_headed_by_the
     signed_in.by("remove-person").click()
     signed_in.settled()
     expect(signed_in.by("pair-badge")).to_be_hidden()
+
+
+def test_the_second_persons_name_is_letters_only_and_the_button_waits(barbers, shop, account, ui_haircut, shop_tz):
+    barber = barbers.create_fake_barber()
+    signed_in = shop.sign_in_as(account)
+    signed_in.choose(barber["id"], ui_haircut["id"], local_day(shop_tz, 6))
+    add_a_second_person(signed_in, ui_haircut)
+    if signed_in.by("confirm").is_hidden():
+        signed_in.by("slot").first.click()
+
+    signed_in.by("person-name").fill("יוני 2")
+
+    expect(signed_in.by("person-name-error")).to_have_text("השם יכול להכיל רק אותיות")
+    expect(signed_in.by("book")).to_be_disabled()
+    signed_in.by("person-name").fill("יוני")
+    expect(signed_in.by("person-name-error")).to_be_hidden()
+    expect(signed_in.by("book")).to_be_enabled()
