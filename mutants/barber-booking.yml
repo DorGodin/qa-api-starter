@@ -2074,13 +2074,13 @@ mutants:
   changes:
   - find: "        await api(\"POST\", \"/push/unsubscribe\", { endpoint: subscription.endpoint });\n"
     replace: ""
-- name: a group takes a place for each person toward the limit
+- name: the bookings held ahead count a group once again
   file: app/routers/bookings.py
   catches:
   - api
   changes:
-  - find: "select(func.count(func.distinct(func.coalesce(Booking.group_id, Booking.id))))"
-    replace: "select(func.count())"
+  - find: "        select(func.count())\n        .select_from(Booking)\n        .where(Booking.customer_id == customer_id, Booking.status == \"confirmed\""
+    replace: "        select(func.count(func.distinct(func.coalesce(Booking.group_id, Booking.id))))\n        .select_from(Booking)\n        .where(Booking.customer_id == customer_id, Booking.status == \"confirmed\""
 - name: a group may be as big as the schema lets it
   file: app/routers/bookings.py
   catches:
@@ -2312,6 +2312,41 @@ mutants:
   changes:
   - find: '    body:has([data-testid="app"][data-role="customer"][data-tab="account"]:not([hidden])) footer { display:none; }'
     replace: ""
+- name: a customer at the limit is not told before choosing
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  const full = Boolean(me) && me.role === "customer" && !moving && held >= limit;'
+    replace: '  const full = false;'
+- name: a customer at the limit can still choose a time
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: "    part.inert = full;\n"
+    replace: ""
+- name: the page is told a limit of bookings ahead the shop does not hold
+  file: app/main.py
+  catches:
+  - api
+  changes:
+  - find: '"bookings_ahead_limit": config.max_future_bookings,'
+    replace: '"bookings_ahead_limit": 2,'
+- name: a group takes one place toward the limit again
+  file: app/routers/bookings.py
+  catches:
+  - api
+  changes:
+  - find: "        if _held_ahead(session, user.id, now) + len(body.people) > config.max_future_bookings:"
+    replace: "        if _held_ahead(session, user.id, now) + 1 > config.max_future_bookings:"
+- name: a second person is offered with one place left
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  $("app").classList.toggle("no-room-for-two", Boolean(me) && held + 2 > limit);'
+    replace: '  $("app").classList.toggle("no-room-for-two", false);'
 - name: the service list says no minutes
   file: app/static/index.html
   catches:
