@@ -157,7 +157,7 @@ def test_a_second_person_is_offered_only_once_the_first_persons_time_is_chosen(
     expect(signed_in.by("add-person")).to_be_hidden()
 
     signed_in.pick("09:00")
-    expect(signed_in.by("add-person")).to_be_visible()
+    expect(signed_in.by("add-person")).to_have_text("תור גם לילד או לחבר")
     add_a_second_person(signed_in, ui_haircut)
 
     # The time chosen stays chosen, and the card says when the second comes.

@@ -99,16 +99,17 @@ def test_the_ways_to_reach_the_shop_come_after_the_sign_in_not_before_it(shop, e
     assert first_button.bounding_box()["y"] > form_bottom["y"] + form_bottom["height"]
 
 
-def test_the_statement_and_the_policy_end_like_every_screen(shop, env_config):
+def test_the_statement_and_the_policy_carry_the_shop_and_no_foot(shop, env_config):
+    """The shop's name and address under the title, as on the policy; no foot of links to themselves - the way
+    back is the round button top left (the owner's choice, 2026-10-18)."""
     base = env_config["url"].rstrip("/")
     for path in ("/accessibility", "/privacy"):
         shop.page.goto(base + path)
 
         cuts = shop.page.locator(".cut")
-        assert cuts.count() == 2, f"{path}: a cut line above the content and one at its foot"
-        for i in range(2):
-            expect(cuts.nth(i)).to_have_attribute("aria-hidden", "true")
-        expect(shop.by("accessibility-link")).to_have_attribute("href", "/accessibility")
-        expect(shop.by("privacy-link")).to_have_attribute("href", "/privacy")
-        expect(shop.by("legal-scissors")).to_have_attribute("aria-hidden", "true")
+        assert cuts.count() == 1, f"{path}: one cut line, under the title"
+        expect(cuts.first).to_have_attribute("aria-hidden", "true")
+        expect(shop.page.locator("header p")).to_contain_text("TomGoldin")
+        expect(shop.page.locator("footer")).to_have_count(0)
+        expect(shop.page.get_by_test_id("back-top")).to_be_visible()
         assert violations(shop.page) == [], path
