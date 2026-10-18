@@ -2198,8 +2198,8 @@ mutants:
   catches:
   - ui
   changes:
-  - find: "  else say(`אין מקום לשניכם ברצף"
-    replace: "  else void (`אין מקום לשניכם ברצף"
+  - find: "    $(\"companion-note\").hidden = false;\n"
+    replace: ""
 - name: the second person's time does not start when the first ends
   file: app/static/index.html
   catches:
