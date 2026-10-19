@@ -119,7 +119,9 @@ def test_the_service_list_opens_below_its_field_with_each_service_on_one_line(si
     item = listed.locator(f'[data-value="{long["id"]}"]')
     expect(item).to_contain_text(long["name"])
     expect(item.locator("small")).to_have_text(re.compile(r"^45 דק׳ · "))
-    assert item.locator("small").evaluate("e => e.getBoundingClientRect().height < 2 * parseFloat(getComputedStyle(e).fontSize)"), "the minutes and price fold"
+    assert item.locator("small").evaluate(
+        "e => e.getBoundingClientRect().height < 2 * parseFloat(getComputedStyle(e).fontSize)"
+    ), "the minutes and price fold"
 
 
 def test_the_chosen_service_says_how_long_it_takes_beside_its_name(signed_in, services):

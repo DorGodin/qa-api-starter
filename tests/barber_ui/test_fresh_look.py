@@ -55,7 +55,11 @@ def test_the_letters_are_rubik_and_come_from_the_shop_itself(shop, account, env_
     shop.page.wait_for_function("() => [...document.fonts].some((f) => f.status === 'loaded')")
     assert shop.page.evaluate("getComputedStyle(document.body).fontFamily").startswith(("Rubik", '"Rubik"'))
     assert shop.by("book").evaluate("e => getComputedStyle(e).fontFamily").startswith(("Rubik", '"Rubik"'))
-    assert shop.by("service-button").evaluate("e => getComputedStyle(e).fontFamily").startswith(("Rubik", '"Rubik"'))
+    assert (
+        shop.by("service-button")
+        .evaluate("e => getComputedStyle(e).fontFamily")
+        .startswith(("Rubik", '"Rubik"'))
+    )
     fonts = [url for url in asked if "/fonts/" in url]
     assert fonts, "the page asked for no font file"
     home = urlparse(env_config["url"]).netloc
