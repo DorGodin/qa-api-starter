@@ -110,6 +110,7 @@ def test_the_statement_and_the_policy_carry_the_shop_and_no_foot(shop, env_confi
         assert cuts.count() == 1, f"{path}: one cut line, under the title"
         expect(cuts.first).to_have_attribute("aria-hidden", "true")
         expect(shop.page.locator("header p")).to_contain_text("TomGoldin")
+        expect(shop.page.locator("header p")).to_have_css("color", "rgb(138, 106, 31)")
         expect(shop.page.locator("footer")).to_have_count(0)
         expect(shop.page.get_by_test_id("back-top")).to_be_visible()
         assert violations(shop.page) == [], path
