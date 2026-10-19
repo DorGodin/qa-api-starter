@@ -2396,6 +2396,13 @@ mutants:
   changes:
   - find: '    if (customer) showTab("account");'
     replace: '    if (customer) showTab("book");'
+- name: the delete page's button does not open the question
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '    if (customer && deleting) $("delete-dialog").showModal();'
+    replace: ""
 - name: the service list says no minutes
   file: app/static/index.html
   catches:

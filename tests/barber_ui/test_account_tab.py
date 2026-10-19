@@ -152,3 +152,18 @@ def test_the_statement_and_the_policy_lead_back_to_the_personal_area(shop, accou
         signed_in.settled()
         expect(signed_in.by("account-panel")).to_be_visible()
         assert "#" not in signed_in.page.url
+
+
+def test_the_page_for_deleting_an_account_leads_to_the_personal_areas_question(shop, account, env_config):
+    """Google Play asks for a web address to delete an account from outside the app: it explains, and its
+    button opens the personal area with the dialog that asks."""
+    signed_in = shop.sign_in_as(account)
+    signed_in.page.goto(env_config["url"].rstrip("/") + "/delete-account")
+    expect(signed_in.page.get_by_role("heading", name="מחיקת חשבון")).to_be_visible()
+
+    signed_in.page.get_by_test_id("delete-start").click()
+    signed_in.settled()
+
+    expect(signed_in.by("account-panel")).to_be_visible()
+    expect(signed_in.by("delete-dialog")).to_be_visible()
+    assert "#" not in signed_in.page.url
