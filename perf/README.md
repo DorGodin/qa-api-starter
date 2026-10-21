@@ -54,8 +54,35 @@ booking lock deliberately broken, it **passed**. The rewritten script, against t
 broken server: 144 server errors and 287 unexpected statuses, exit 99. Against the fixed
 one: 101 races, 101 winners, 17,270 clean refusals, p95 62ms, no 5xx.
 
+### The evening rush: `barber/browse_rush.js`
+
+Everyone opens the app at once and looks before booking: the shop, the barbers, the services, a month's
+open days, one day's times, their own bookings. Reads lock nothing, so this one is about speed and clean
+answers.
+
+| Gate | Fails the run when |
+|---|---|
+| `unexpected_status` | any read answered other than 200 |
+| `open_days_without_times` | a barber open all week listed no times for a day |
+| p95 | times and open days over 800ms; the barbers and a customer's bookings over 500ms |
+
+### Sign-in by code: `barber/sign_in_rush.js`
+
+A crowd of new customers, each on a phone and an address of their own, asks for a code, reads it from the
+fake SMS inbox (`sms_inbox` in the ENV's block, handed over as `SMS_INBOX`) and signs in. Every step writes,
+so it is the write path every customer takes before a booking. One user signs in in about 40ms; ten at once
+queue behind the lock, which is correct, and the p95 gate is 1s.
+
+| Gate | Fails the run when |
+|---|---|
+| `unexpected_status` | any step answered other than expected |
+| `codes_never_received` | a code asked for never reached the inbox |
+| `right_codes_refused` | the code from the inbox was refused |
+
+Both make their own shop in `setup()` through `barber/shop.js`, as the booking race does.
+
 ```bash
-make perf-barber                       # ENV=barber
+make perf-barber                       # ENV=barber - all three
 make perf-barber PROFILE=stress VUS=50
 ```
 

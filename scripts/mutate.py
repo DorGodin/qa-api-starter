@@ -79,6 +79,20 @@ SUITES = {
         "-e",
         "HOLD=12s",
     ],
+    # The sign-in by code, under load: every step writes, so a write outside the lock is a 5xx here.
+    "load-sign-in": [
+        sys.executable,
+        "scripts/perf_run.py",
+        "perf/barber/sign_in_rush.js",
+        "--profile",
+        "load",
+        "-e",
+        "VUS=10",
+        "-e",
+        "RAMP=3s",
+        "-e",
+        "HOLD=12s",
+    ],
 }
 
 
@@ -298,7 +312,7 @@ def verdict(name: str, returncode: int) -> str:
     broken, and counting that as a catch would hide a survivor."""
     if returncode == 0:
         return "passed"
-    if name == "load" or returncode == 1:
+    if name.startswith("load") or returncode == 1:
         return "failed"
     return "error"
 

@@ -24,9 +24,10 @@ import exec from "k6/execution";
 import { Counter } from "k6/metrics";
 import { BASE_URL, authHeaders, login } from "../lib/session.js";
 import { stages, thresholds, track } from "../lib/profiles.js";
+import { addDays, json, makeShop } from "./shop.js";
 
 const BARBERS = Number(__ENV.BARBERS || 4);
-// A customer may hold only two bookings ahead. One customer per user would reach
+// A customer may hold only a few bookings ahead. One customer per user would reach
 // it within seconds, and from then on every request would be refused - the race
 // over again, as in the first version. So the pool is larger than the run can
 // fill, and each iteration books as the next customer in it.
@@ -62,41 +63,9 @@ export const options = {
   ),
 };
 
-const json = (body) => JSON.stringify(body);
-const runId = () => `${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`;
-const OPEN_ALL_WEEK = { hours: Object.fromEntries(["mon", "tue", "wed", "thu", "fri", "sat", "sun"].map((d) => [d, ["10:00", "19:00"]])) };
-
-function addDays(isoDate, days) {
-  const [y, m, d] = isoDate.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
-}
-
-function created(res, what) {
-  if (res.status !== 201 && res.status !== 200) {
-    throw new Error(`setup could not create ${what} on ${BASE_URL}: ${res.status} ${res.body}`);
-  }
-  return res;
-}
-
 export function setup() {
   const owner = login("owner");
-  const run = runId();
-  const password = `load-${run}-password`;
-
-  const service = created(
-    http.post(`${BASE_URL}/services`, json({ name: `QA load ${run}`, duration_minutes: 30, price_minor: 8000 }), authHeaders(owner, "POST /services")),
-    "a service",
-  ).json("id");
-
-  const barbers = [];
-  for (let i = 0; i < BARBERS; i++) {
-    const id = created(
-      http.post(`${BASE_URL}/barbers`, json({ username: `qa-load-${run}-b${i}`, password, display_name: `Load ${i}` }), authHeaders(owner, "POST /barbers")),
-      "a barber",
-    ).json("id");
-    created(http.put(`${BASE_URL}/barbers/${id}/hours`, json(OPEN_ALL_WEEK), authHeaders(owner, "PUT /barbers/:id/hours")), "hours");
-    barbers.push(id);
-  }
+  const { service, barbers, customers } = makeShop(owner, { barbers: BARBERS, customers: CUSTOMERS });
 
   // The targets come from the product's own availability, so the script never
   // computes a time zone or an opening hour. Only starts on the hour and the
@@ -115,23 +84,6 @@ export function setup() {
   }
   if (pool.length === 0) throw new Error("no free times: the pool is empty and nothing would be tested");
 
-  const hex = () => Math.floor(Math.random() * 65536).toString(16);
-  const runPrefix = `${hex()}:${hex()}:${hex()}:${hex()}`;
-  const customers = [];
-  for (let i = 0; i < CUSTOMERS; i++) {
-    const username = `qa-load-${run}-c${i}`;
-    // Each from an address of its own, as different people's phones: one address
-    // may make only a few accounts an hour. A new range every run - addresses
-    // reused from run to run would use up their hour on a long-lived copy - in
-    // IPv6's documentation range, 2001:db8::/32, which is never routed.
-    const address = `2001:db8:${runPrefix}:${i.toString(16)}`;
-    created(
-      http.post(`${BASE_URL}/customers`, json({ username, password, display_name: `Load customer ${i}` }), { headers: { "Content-Type": "application/json", "X-Forwarded-For": address }, tags: { name: "POST /customers" } }),
-      "a customer",
-    );
-    const token = http.post(`${BASE_URL}/auth/token`, json({ username, password }), { headers: { "Content-Type": "application/json" }, tags: { name: "POST /auth/token" } }).json("access_token");
-    customers.push(token);
-  }
   return { owner, service, barbers, pool, customers };
 }
 

@@ -246,7 +246,7 @@ sends it.
 ## Mutation testing
 
 `mutants/barber-booking.yml` is the proof that the barbershop suites catch what they claim:
-each entry breaks one rule and names the suite (`api`, `ui`, `ui-webkit`, `load`) that must go red.
+each entry breaks one rule and names the suite (`api`, `ui`, `ui-webkit`, `load`, `load-sign-in`) that must go red.
 `ui-webkit` is the phone tests on Safari's engine: a defect only one engine shows gets a mutant on
 that engine's suite, or it survives every run and proves nothing.
 

@@ -30,6 +30,7 @@ from obj.barber import (
 )
 from obj.barber.customers import new_device_address
 from obj.barber.sms_inbox import SmsInbox
+from utils.fake_sms import serving
 
 
 @pytest.fixture
@@ -64,37 +65,8 @@ def sms_inbox(env_config):
     url = env_config.get("sms_inbox")
     if not url:
         raise KeyError(f"ENV={env_config['env']} has no sms_inbox; the barbershop signs in by SMS code")
-    try:
-        requests.get(f"{url}/health", timeout=1).raise_for_status()
+    with serving(url, env_config.get("sms_inbox_bind", "127.0.0.1")):
         yield SmsInbox(url)
-        return
-    except requests.RequestException:
-        pass
-    proc = subprocess.Popen(
-        [
-            sys.executable,
-            "-m",
-            "utils.fake_sms",
-            "--port",
-            str(urlparse(url).port),
-            "--host",
-            env_config.get("sms_inbox_bind", "127.0.0.1"),
-        ],
-        cwd=Path(__file__).resolve().parents[2],
-    )
-    try:
-        for _ in range(50):
-            try:
-                if requests.get(f"{url}/health", timeout=1).ok:
-                    break
-            except requests.RequestException:
-                time.sleep(0.1)
-        else:
-            raise RuntimeError(f"the fake SMS provider did not start on {url}")
-        yield SmsInbox(url)
-    finally:
-        proc.terminate()
-        proc.wait(timeout=10)
 
 
 @pytest.fixture(scope="session")
