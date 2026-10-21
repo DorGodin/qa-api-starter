@@ -1064,7 +1064,7 @@ mutants:
   catches:
   - ui
   changes:
-  - find: '  .mini.on { visibility:visible; transform:none; }'
+  - find: '  .mini.on { visibility:visible; transform:translateY(var(--panned, 0px)); }'
     replace: '  .mini.on { }'
 - name: the slim bar stands over the brand from the start
   file: app/static/index.html
