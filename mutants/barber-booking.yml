@@ -2,8 +2,8 @@
 #
 # Each mutant breaks one rule of the product on purpose and names the suite that
 # must notice: api (tests/barber), ui (tests/barber_ui, a real browser), ui-webkit
-# (the phone tests on Safari's engine, for defects only Safari has) or load
-# (perf/barber/booking_race.js). `find` must appear exactly once in `file`;
+# (the phone tests on Safari's engine, for defects only Safari has), load
+# (perf/barber/booking_race.js) or load-sign-in (perf/barber/sign_in_rush.js). `find` must appear exactly once in `file`;
 # `make mutate-check` fails when the product changes under an anchor.
 #
 #   make mutate          run them all, report every survivor
@@ -1645,8 +1645,10 @@ mutants:
   catches:
   - api
   changes:
-  - find: "    return None\n\n\ndef picture("
-    replace: "    return \"jpg\"\n\n\ndef picture("
+  - find: "    return None\n\n\nPILLOW_FORMATS"
+    replace: "    return \"jpg\"\n\n\nPILLOW_FORMATS"
+  - find: ' or not _whole_picture(raw, extension):'
+    replace: ':'
 - name: a picture may be any size
   file: app/routers/courses.py
   catches:
@@ -3506,3 +3508,31 @@ mutants:
   changes:
   - find: "  $(\"account-foot\").querySelector('a[href=\"/privacy\"]').dataset.testid = \"account-privacy\";"
     replace: "  $(\"account-foot\").replaceChildren();"
+- name: a token's signature is not checked
+  file: app/security.py
+  catches:
+  - api
+  changes:
+  - find: 'options={"require": ["sub", "exp", "jti"]})'
+    replace: 'options={"require": ["sub", "exp", "jti"], "verify_signature": False})'
+- name: the API's map is served to anyone
+  file: app/main.py
+  catches:
+  - api
+  changes:
+  - find: docs = config.api_docs
+    replace: docs = True
+- name: a picture is accepted by its first bytes alone
+  file: app/routers/courses.py
+  catches:
+  - api
+  changes:
+  - find: ' or not _whole_picture(raw, extension):'
+    replace: ':'
+- name: checking a sign-in code writes outside the lock, under load
+  file: app/routers/auth.py
+  catches:
+  - load-sign-in
+  changes:
+  - find: "    with write_lock(session):\n        record = session.scalars("
+    replace: "    with memoryview(b\"\"):\n        record = session.scalars("

@@ -103,6 +103,8 @@ def main() -> int:
         "TEST_HOOKS": "true" if config["test_hooks"] else "false",
         "AUTH_PATH": config["auth"]["path"],
     }
+    if config.get("sms_inbox"):
+        k6_env["SMS_INBOX"] = config["sms_inbox"]
     for persona, username in config["personas"].items():
         k6_env[password_env_var(persona).replace("_PASSWORD", "_USER")] = username
         k6_env[password_env_var(persona)] = password_for(persona, config["env"])

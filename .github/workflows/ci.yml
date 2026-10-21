@@ -147,6 +147,12 @@ jobs:
       - name: the booking race under load - a double booking or a 5xx fails it
         env: { ENV: barber }
         run: python scripts/perf_run.py perf/barber/booking_race.js --profile load -e VUS=10 -e RAMP=2s -e HOLD=8s
+      - name: the evening rush on the read path - a 5xx or an open day without times fails it
+        env: { ENV: barber }
+        run: python scripts/perf_run.py perf/barber/browse_rush.js --profile load -e VUS=10 -e RAMP=2s -e HOLD=8s
+      - name: sign-in by code under load - a 5xx, a lost code or a right code refused fails it
+        env: { ENV: barber }
+        run: python scripts/perf_run.py perf/barber/sign_in_rush.js --profile load -e VUS=5 -e RAMP=2s -e HOLD=8s
 
   barber-pages:
     name: barbershop pages - ${{ matrix.screen }}

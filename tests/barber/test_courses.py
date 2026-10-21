@@ -7,7 +7,7 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 
-from obj.barber.courses import GIF_HEAD, JPEG_HEAD, PNG_1X1, WEBP_HEAD
+from obj.barber.courses import GIF_HEAD, JPEG_1X1, PNG_1X1, WEBP_1X1
 from utils.assertions import assert_refused
 
 
@@ -111,7 +111,7 @@ def test_the_button_opens_whatsapp_with_the_course_named_when_the_shop_has_a_num
 
 @pytest.mark.parametrize(
     ("raw", "ending", "kind"),
-    [(JPEG_HEAD, ".jpg", "image/jpeg"), (PNG_1X1, ".png", "image/png"), (WEBP_HEAD, ".webp", "image/webp")],
+    [(JPEG_1X1, ".jpg", "image/jpeg"), (PNG_1X1, ".png", "image/png"), (WEBP_1X1, ".webp", "image/webp")],
 )
 def test_a_picture_is_accepted_by_its_bytes_and_served(courses, api, raw, ending, kind):
     course = courses.create_fake_course()
@@ -128,7 +128,7 @@ def test_a_picture_is_accepted_by_its_bytes_and_served(courses, api, raw, ending
     [
         (GIF_HEAD, "invalid_image"),
         (b"<script>alert(1)</script>", "invalid_image"),
-        (JPEG_HEAD + b"\x00" * 3_000_000, "image_too_large"),
+        (JPEG_1X1 + b"\x00" * 3_000_000, "image_too_large"),
     ],
     ids=["a gif", "a script", "too large"],
 )
@@ -141,7 +141,7 @@ def test_a_picture_that_is_not_one_is_refused_and_the_course_keeps_none(courses,
 
 def test_a_new_picture_replaces_the_old_one(courses, api):
     course = courses.create_fake_course()
-    first = courses.set_image(course["id"], JPEG_HEAD).assert_ok(200).as_dict["image_url"]
+    first = courses.set_image(course["id"], JPEG_1X1).assert_ok(200).as_dict["image_url"]
 
     second = courses.set_image(course["id"], PNG_1X1).assert_ok(200).as_dict["image_url"]
 
