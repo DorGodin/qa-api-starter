@@ -27,6 +27,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from contextlib import nullcontext
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -34,6 +35,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from config.loader import is_local_host, load_env_config, password_env_var, password_for  # noqa: E402
+from utils.fake_sms import serving  # noqa: E402
 from utils.helpers import assert_not_prod  # noqa: E402
 from utils.perf_history import TREND_STATS, append, normalise  # noqa: E402
 
@@ -127,8 +129,16 @@ def main() -> int:
 
     started = datetime.now(UTC)
     clock = time.monotonic()
+    # A script that signs people in reads their codes from the fake SMS provider, which the suites start
+    # only for their own run: one is started here when nothing answers, and stopped after.
+    sms = (
+        serving(config["sms_inbox"], config.get("sms_inbox_bind", "127.0.0.1"))
+        if config.get("sms_inbox")
+        else nullcontext()
+    )
     try:
-        exit_code = subprocess.run(command, cwd=ROOT, env=k6_env).returncode
+        with sms:
+            exit_code = subprocess.run(command, cwd=ROOT, env=k6_env).returncode
     except FileNotFoundError:
         export.unlink(missing_ok=True)
         raise SystemExit("k6 is not installed. See perf/README.md.") from None

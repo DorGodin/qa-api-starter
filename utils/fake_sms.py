@@ -17,10 +17,17 @@ from __future__ import annotations
 import argparse
 import itertools
 import json
+import subprocess
+import sys
 import threading
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from urllib.parse import parse_qs, urlparse
+
+import requests
 
 _lock = threading.Lock()
 _messages: list[dict] = []
@@ -64,6 +71,37 @@ class Handler(BaseHTTPRequestHandler):
         # Quiet: a run sends hundreds of codes, and the suite's own output is
         # where a failure is read.
         pass
+
+
+def _answers(url: str) -> bool:
+    try:
+        return requests.get(f"{url}/health", timeout=1).ok
+    except requests.RequestException:
+        return False
+
+
+@contextmanager
+def serving(url: str, host: str = "127.0.0.1") -> Iterator[None]:
+    """The fake provider at `url` for as long as the block runs: the one already answering there, or one
+    started for the block and stopped after it - by the suites, and by a load run that signs people in."""
+    if _answers(url):
+        yield
+        return
+    proc = subprocess.Popen(
+        [sys.executable, "-m", "utils.fake_sms", "--port", str(urlparse(url).port), "--host", host],
+        cwd=Path(__file__).resolve().parents[1],
+    )
+    try:
+        for _ in range(50):
+            if _answers(url):
+                break
+            time.sleep(0.1)
+        else:
+            raise RuntimeError(f"the fake SMS provider did not start on {url}")
+        yield
+    finally:
+        proc.terminate()
+        proc.wait(timeout=10)
 
 
 def main() -> None:
