@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import pytest
 from playwright.sync_api import expect
 
-from obj.barber.booking_page import BookingPage
+from obj.barber.booking_page import BookingPage, a_device
 from utils.helpers import now_utc, to_iso
 from utils.local_time import at_local, local_day
 
@@ -106,7 +106,7 @@ def test_the_list_says_who_is_coming_to_the_staff(day, owner_screen, account):
 
 
 def test_a_barber_sees_their_own_day(day, browser, env_config, barbers):
-    screen = BookingPage(browser.new_page(), env_config["url"]).sign_in(
+    screen = BookingPage(a_device(browser).new_page(), env_config["url"]).sign_in(
         day["barber"]["username"], day["barber"]["password"]
     )
 

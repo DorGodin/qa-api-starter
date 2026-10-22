@@ -64,7 +64,7 @@ def test_the_poles_and_the_scissors_are_decoration_a_screen_reader_never_meets(s
 
 
 def test_the_poles_and_the_slim_bar_stand_still_for_whoever_asked_for_less_motion(browser, env_config):
-    context = browser.new_context(reduced_motion="reduce")
+    context = browser.new_context(reduced_motion="reduce", service_workers="block")
     page = context.new_page()
     page.goto(env_config["url"].rstrip("/") + "/")
     try:

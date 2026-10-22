@@ -36,12 +36,14 @@ def test_with_no_connection_the_shop_shows_its_own_page(chromium_only, shop):
     expect(shop.by("offline-retry")).to_be_visible()
 
 
-def test_the_shop_opens_by_itself_when_the_connection_comes_back(chromium_only, shop):
+def test_with_the_connection_back_the_shop_comes_from_the_server_not_the_kept_page(chromium_only, shop):
     shop.open().kept_for_no_connection()
     shop.page.context.set_offline(True)
     shop.page.goto(shop.base_url + "/")
     expect(shop.by("offline")).to_be_visible()
 
     shop.page.context.set_offline(False)
+    shop.page.goto(shop.base_url + "/")
 
     expect(shop.by("code-request-form")).to_be_visible()
+    expect(shop.by("offline")).to_have_count(0)
