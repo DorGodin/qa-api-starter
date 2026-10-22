@@ -43,6 +43,9 @@ def a_device(browser, **context_args):
     # Like a person who asked their device for less motion: the page's animations are extra, and a
     # test that measures a button mid-pop measures the pop. Motion has its own tests, which ask for it.
     context_args.setdefault("reduced_motion", "reduce")
+    # Without the page's worker: in WebKit the page's requests go through it, and page.route - every test that holds
+    # an answer back - sees none of them. The worker's own tests ask for it (test_offline_page).
+    context_args.setdefault("service_workers", "block")
     return browser.new_context(**context_args, extra_http_headers={"X-Forwarded-For": new_device_address()})
 
 
@@ -58,6 +61,15 @@ class BookingPage:
         """The signed-out screen, as anyone arriving sees it: the code sign-in."""
         self.page.goto(self.base_url + "/")
         expect(self.by("code-request-form")).to_be_visible()
+        return self
+
+    def kept_for_no_connection(self) -> BookingPage:
+        """Waits until the page's worker runs it and has kept the shop's page for no connection - the
+        worker is installed on the first visit, and only then can a lost connection be answered."""
+        self.page.wait_for_function(
+            "async () => navigator.serviceWorker.controller !== null && (await caches.keys()).length > 0"
+            " && (await (await caches.open((await caches.keys())[0])).match('/offline.html')) !== undefined"
+        )
         return self
 
     def reload(self) -> BookingPage:
