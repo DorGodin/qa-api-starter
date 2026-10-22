@@ -3536,3 +3536,32 @@ mutants:
   changes:
   - find: "    with write_lock(session):\n        record = session.scalars("
     replace: "    with memoryview(b\"\"):\n        record = session.scalars("
+- name: the worker may fetch nothing
+  file: app/main.py
+  catches:
+  - api
+  - ui
+  changes:
+  - find: '"Content-Security-Policy": "default-src ''none''; connect-src ''self''; frame-ancestors ''none''",'
+    replace: '"Content-Security-Policy": "default-src ''none''; frame-ancestors ''none''",'
+- name: with no connection the phone's own error shows
+  file: app/static/sw.js
+  catches:
+  - ui
+  changes:
+  - find: '    event.respondWith(fetch(event.request).catch(() => caches.match("/offline.html")));'
+    replace: '    return;'
+- name: the worker is registered only for notifications
+  file: app/static/index.html
+  catches:
+  - ui
+  changes:
+  - find: '  navigator.serviceWorker.getRegistration().then((found) => found || navigator.serviceWorker.register("/sw.js")).catch(() => {});'
+    replace: '  void 0;'
+- name: the poster has no code on it
+  file: app/main.py
+  catches:
+  - api
+  changes:
+  - find: '        html = html.replace("{{qr_svg}}", code)'
+    replace: '        html = html.replace("{{qr_svg}}", "")'

@@ -60,6 +60,15 @@ class BookingPage:
         expect(self.by("code-request-form")).to_be_visible()
         return self
 
+    def kept_for_no_connection(self) -> BookingPage:
+        """Waits until the page's worker runs it and has kept the shop's page for no connection - the
+        worker is installed on the first visit, and only then can a lost connection be answered."""
+        self.page.wait_for_function(
+            "async () => navigator.serviceWorker.controller !== null && (await caches.keys()).length > 0"
+            " && (await (await caches.open((await caches.keys())[0])).match('/offline.html')) !== undefined"
+        )
+        return self
+
     def reload(self) -> BookingPage:
         """Refresh the page, as a person pulling it down on a phone does, and wait
         until it has settled - signed in again, or showing the sign-in form."""

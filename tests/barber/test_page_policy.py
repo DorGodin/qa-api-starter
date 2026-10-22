@@ -66,3 +66,31 @@ def test_the_policy_lets_the_page_load_its_own_letters_and_no_one_elses(api):
 
     assert "font-src 'self'" in policy
     assert "https:" not in policy and "http:" not in policy
+
+
+def test_the_page_for_no_connection_runs_only_its_own_script(api):
+    page = api.request("GET", "/offline.html", persona=None)
+    policy = directives(page.headers["Content-Security-Policy"])
+
+    (script,) = re.findall(r"<script>(.*?)</script>", page.text, re.S)
+    assert page.status_code == 200 and "אין חיבור" in page.text
+    assert policy["script-src"] == [sha256(script)]
+    assert policy["connect-src"] == ["'self'"]
+
+
+def test_the_worker_may_reach_the_shop_and_no_one_else(api):
+    policy = directives(api.request("GET", "/sw.js", persona=None).headers["Content-Security-Policy"])
+
+    assert policy["connect-src"] == [
+        "'self'"
+    ], "the worker fetches a reminder's words and the page for no connection"
+    assert policy["default-src"] == ["'none'"]
+
+
+def test_the_poster_holds_a_code_that_opens_the_shop_and_runs_no_script(api):
+    page = api.request("GET", "/poster", persona=None)
+    policy = directives(page.headers["Content-Security-Policy"])
+
+    assert page.status_code == 200
+    assert "<svg" in page.text and "סרקו וקבעו תור" in page.text
+    assert policy["script-src"] == ["'none'"]
