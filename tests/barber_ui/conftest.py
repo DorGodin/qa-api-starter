@@ -93,7 +93,9 @@ def browser_context_args(browser_context_args, device):
     screen, touch and user agent, and forcing a desktop window over it would
     quietly turn the mobile run back into a desktop one."""
     # Still, as for a person who asked for less motion (see a_device); test_fresh_look asks for it.
-    still = {**browser_context_args, "reduced_motion": "reduce"}
+    # And without the page's worker: in WebKit the page's requests then go through it, and page.route - every test
+    # that holds an answer back - sees none of them. The worker has its own tests (test_offline_page), which allow it.
+    still = {**browser_context_args, "reduced_motion": "reduce", "service_workers": "block"}
     if device:
         return {**still, "record_video_size": browser_context_args["viewport"]}
     size = {"width": 1100, "height": 760}

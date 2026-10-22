@@ -6,6 +6,15 @@ from __future__ import annotations
 import pytest
 from playwright.sync_api import expect
 
+from obj.barber.booking_page import BookingPage, a_device
+
+
+@pytest.fixture
+def shop(browser, browser_context_args, env_config):
+    context = a_device(browser, **{**browser_context_args, "service_workers": "allow"})
+    yield BookingPage(context.new_page(), env_config["url"])
+    context.close()
+
 
 @pytest.fixture
 def chromium_only(browser_name):
