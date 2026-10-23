@@ -7,7 +7,7 @@ Faker==40.39.0
 pytest-playwright==0.9.0
 axe-playwright-python==0.1.8
 deepeval==4.2.6
-jsonschema==4.23.0
+jsonschema==4.26.0
 
 # the commit hooks (make hooks). Declared, so a relock pins it on purpose
 # instead of picking it up from whatever the virtualenv holds.
