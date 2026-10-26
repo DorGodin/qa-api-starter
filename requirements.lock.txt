@@ -74,7 +74,7 @@ referencing==0.37.0
 requests==2.34.2
 rich==14.3.4
 rpds-py==2026.6.3
-setuptools==84.0.0
+setuptools==84.1.0
 shellingham==1.5.4
 six==1.17.0
 sniffio==1.3.1
@@ -89,7 +89,7 @@ typing-inspection==0.4.4
 typing_extensions==4.16.0
 urllib3==2.8.0
 uvicorn==0.54.0
-virtualenv==21.14.9
+virtualenv==21.14.10
 wcwidth==0.9.1
 wheel==0.48.0
 yarl==1.25.1
