@@ -72,6 +72,7 @@ def test_times_that_are_slow_to_arrive_are_drawn_in_grey_and_gone_when_they_land
     signed_in = shop.sign_in_as(account)
     signed_in.choose(ui_barber["id"], ui_haircut["id"], local_day(shop_tz, 5))
     expect(signed_in.by("slot").first).to_be_visible()
+    signed_in.show_month_of(local_day(shop_tz, 6))
     let_go = hold(shop.page, "**/barbers/*/availability*")
 
     signed_in.day(local_day(shop_tz, 6)).click(no_wait_after=True)
